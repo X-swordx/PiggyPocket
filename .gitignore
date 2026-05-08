@@ -1,0 +1,10 @@
+# Claude 相关
+.claude/
+
+# 依赖目录
+**/node_modules/
+
+# 后端 (NestJS)
+nest-service/dist/
+nest-service/.env
+nest-service/.env.*
