@@ -1,0 +1,85 @@
+{
+	"easycom": {
+		"^uni-(.*)": "@dcloudio/uni-ui/lib/uni-$1/uni-$1.vue"
+	},
+	"pages": [
+		{
+			"path": "pages/index/index",
+			"style": {
+				"navigationBarTitleText": "猪猪口袋",
+				"navigationStyle": "custom",
+				"backgroundColor": "#F8F5F6"
+			}
+		},
+		{
+			"path": "pages/expiry/index",
+			"style": {
+				"navigationBarTitleText": "临期食品",
+				"navigationStyle": "custom",
+				"backgroundColor": "#F8F5F6"
+			}
+		},
+		{
+			"path": "pages/wishlist/index",
+			"style": {
+				"navigationBarTitleText": "心愿清单",
+				"navigationStyle": "custom",
+				"backgroundColor": "#F8F5F6"
+			}
+		},
+		{
+			"path": "pages/food-menu/index",
+			"style": {
+				"navigationBarTitleText": "美食菜单",
+				"navigationStyle": "custom",
+				"backgroundColor": "#F8F5F6"
+			}
+		},
+		{
+			"path": "pages/recipe-upload/index",
+			"style": {
+				"navigationBarTitleText": "上传菜谱",
+				"navigationStyle": "custom",
+				"backgroundColor": "#F8F5F6"
+			}
+		},
+		{
+			"path": "pages/dish-detail/index",
+			"style": {
+				"navigationBarTitleText": "菜品详情",
+				"navigationStyle": "custom",
+				"backgroundColor": "#F8F5F6"
+			}
+		},
+		{
+			"path": "pages/order/index",
+			"style": {
+				"navigationBarTitleText": "我的订单",
+				"navigationStyle": "custom",
+				"backgroundColor": "#F8F5F6"
+			}
+		},
+		{
+			"path": "pages/profile/index",
+			"style": {
+				"navigationBarTitleText": "我的",
+				"navigationStyle": "custom",
+				"backgroundColor": "#F8F5F6"
+			}
+		},
+		{
+			"path": "pages/add-food/index",
+			"style": {
+				"navigationBarTitleText": "添加食品",
+				"navigationStyle": "custom",
+				"backgroundColor": "#F8F5F6"
+			}
+		}
+	],
+	"globalStyle": {
+		"navigationBarTextStyle": "black",
+		"navigationBarTitleText": "猪猪口袋",
+		"navigationBarBackgroundColor": "#F8F5F6",
+		"backgroundColor": "#F8F5F6"
+	}
+}

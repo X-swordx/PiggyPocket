@@ -1,0 +1,25 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx:*)",
+      "Bash(npm install:*)",
+      "Bash(npm run:*)",
+      "WebFetch(domain:tongyi.aliyun.com)",
+      "Bash(curl -L -o /dev/null -s -w \"连接时间: %{time_connect}\\\\n开始传输时间: %{time_starttransfer}\\\\n总时间: %{time_total}\\\\nHTTP状态码: %{http_code}\\\\n下载速度: %{speed_download} bytes/s\\\\n\" https://tongyi.aliyun.com/)",
+      "mcp__chrome-devtools__new_page",
+      "WebFetch(domain:www.baidu.com)",
+      "Bash(start https://www.baidu.com/s?wd=抖音)",
+      "mcp__chrome-devtools__list_pages",
+      "mcp__chrome-devtools__navigate_page",
+      "mcp__chrome-devtools__take_snapshot",
+      "mcp__chrome-devtools__click",
+      "mcp__chrome-devtools__press_key",
+      "Bash(tasklist)",
+      "Bash(findstr chrome:*)",
+      "Bash(start chrome:*)",
+      "mcp__chrome-devtools__fill",
+      "mcp__chrome-devtools__wait_for",
+      "mcp__chrome-devtools__evaluate_script"
+    ]
+  }
+}
