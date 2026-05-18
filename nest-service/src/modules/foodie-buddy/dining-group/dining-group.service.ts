@@ -10,7 +10,7 @@ import { DiningGroupMember } from './entities/dining-group-member.entity';
 import { CreateDiningGroupDto } from './dto/create-dining-group.dto';
 import { AddMemberDto } from './dto/add-member.dto';
 import { UpdateNicknameDto } from './dto/update-nickname.dto';
-import { UserService } from '../user/user.service';
+import { UserService } from '../../user/user.service';
 
 @Injectable()
 export class DiningGroupService {

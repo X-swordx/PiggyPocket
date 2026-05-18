@@ -16,7 +16,7 @@ import { AddMemberDto } from './dto/add-member.dto';
 import { UpdateNicknameDto } from './dto/update-nickname.dto';
 
 @ApiTags('饭搭子组')
-@Controller('dining-groups')
+@Controller('foodie-buddy/dining-groups')
 export class DiningGroupController {
   constructor(private readonly diningGroupService: DiningGroupService) {}
 

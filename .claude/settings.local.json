@@ -19,7 +19,16 @@
       "Bash(start chrome:*)",
       "mcp__chrome-devtools__fill",
       "mcp__chrome-devtools__wait_for",
-      "mcp__chrome-devtools__evaluate_script"
+      "mcp__chrome-devtools__evaluate_script",
+      "Skill(superpowers:brainstorming)",
+      "Skill(superpowers:brainstorming:*)",
+      "Skill(superpowers:writing-plans)",
+      "Skill(superpowers:writing-plans:*)",
+      "Skill(superpowers:subagent-driven-development)",
+      "Skill(superpowers:subagent-driven-development:*)",
+      "Bash(mv f:/PiggyPocket/nest-service/src/modules/dining-group/entities/*.ts f:/PiggyPocket/nest-service/src/modules/foodie-buddy/dining-group/entities/)",
+      "Bash(mv f:/PiggyPocket/nest-service/src/modules/dining-group/dto/*.ts f:/PiggyPocket/nest-service/src/modules/foodie-buddy/dining-group/dto/)",
+      "Bash(mv f:/PiggyPocket/nest-service/src/modules/dining-group/*.spec.ts f:/PiggyPocket/nest-service/src/modules/foodie-buddy/dining-group/)"
     ]
   }
 }
