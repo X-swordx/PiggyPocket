@@ -7,7 +7,7 @@ import {
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 import { Order } from './order.entity';
-import { Dish } from '../../dish/entities/dish.entity';
+import { Dish } from '../../../dish/entities/dish.entity';
 
 @Entity('order_items')
 export class OrderItem {

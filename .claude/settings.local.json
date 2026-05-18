@@ -28,7 +28,13 @@
       "Skill(superpowers:subagent-driven-development:*)",
       "Bash(mv f:/PiggyPocket/nest-service/src/modules/dining-group/entities/*.ts f:/PiggyPocket/nest-service/src/modules/foodie-buddy/dining-group/entities/)",
       "Bash(mv f:/PiggyPocket/nest-service/src/modules/dining-group/dto/*.ts f:/PiggyPocket/nest-service/src/modules/foodie-buddy/dining-group/dto/)",
-      "Bash(mv f:/PiggyPocket/nest-service/src/modules/dining-group/*.spec.ts f:/PiggyPocket/nest-service/src/modules/foodie-buddy/dining-group/)"
+      "Bash(mv f:/PiggyPocket/nest-service/src/modules/dining-group/*.spec.ts f:/PiggyPocket/nest-service/src/modules/foodie-buddy/dining-group/)",
+      "Bash(mv /f/PiggyPocket/nest-service/src/modules/order/dto/*.ts /f/PiggyPocket/nest-service/src/modules/foodie-buddy/order/dto/)",
+      "Bash(mv /f/PiggyPocket/nest-service/src/modules/order/*.spec.ts /f/PiggyPocket/nest-service/src/modules/foodie-buddy/order/ 2>/dev/null || true)"
+    ],
+    "additionalDirectories": [
+      "F:\\PiggyPocket\\nest-service\\src\\modules\\order\\dto",
+      "F:\\PiggyPocket\\nest-service\\src\\modules\\order"
     ]
   }
 }

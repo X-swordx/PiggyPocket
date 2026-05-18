@@ -9,8 +9,8 @@ import {
   JoinColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
-import { User } from '../../user/entities/user.entity';
-import { DiningGroup } from '../../dining-group/entities/dining-group.entity';
+import { User } from '../../../user/entities/user.entity';
+import { DiningGroup } from '../../../dining-group/entities/dining-group.entity';
 import { OrderItem } from './order-item.entity';
 
 @Entity('orders')

@@ -4,7 +4,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { UserModule } from './modules/foodie-buddy/user/user.module';
 import { DishModule } from './modules/foodie-buddy/dish/dish.module';
 import { DiningGroupModule } from './modules/foodie-buddy/dining-group/dining-group.module';
-import { OrderModule } from './modules/order/order.module';
+import { OrderModule } from './modules/foodie-buddy/order/order.module';
 
 @Module({
   imports: [
