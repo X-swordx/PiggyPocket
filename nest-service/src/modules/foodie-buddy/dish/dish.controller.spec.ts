@@ -3,7 +3,7 @@ import { DishController } from './dish.controller';
 import { DishService } from './dish.service';
 import { CreateDishDto } from './dto/create-dish.dto';
 import { UpdateDishDto } from './dto/update-dish.dto';
-import { PaginationDto } from '../../common/dto/pagination.dto';
+import { PaginationDto } from '../../../common/dto/pagination.dto';
 import { Dish } from './entities/dish.entity';
 
 describe('DishController', () => {
