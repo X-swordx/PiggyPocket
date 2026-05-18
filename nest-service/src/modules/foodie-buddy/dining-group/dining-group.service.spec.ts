@@ -5,7 +5,7 @@ import { Repository } from 'typeorm';
 import { DiningGroupService } from './dining-group.service';
 import { DiningGroup } from './entities/dining-group.entity';
 import { DiningGroupMember } from './entities/dining-group-member.entity';
-import { UserService } from '../../user/user.service';
+import { UserService } from '../user/user.service';
 import { CreateDiningGroupDto } from './dto/create-dining-group.dto';
 import { AddMemberDto } from './dto/add-member.dto';
 import { UpdateNicknameDto } from './dto/update-nickname.dto';
