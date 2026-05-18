@@ -17,7 +17,7 @@ import { PaginationDto } from '../../common/dto/pagination.dto';
 import { User } from './entities/user.entity';
 
 @ApiTags('用户管理')
-@Controller('users')
+@Controller('foodie-buddy/users')
 export class UserController {
   constructor(private readonly userService: UserService) {}
 

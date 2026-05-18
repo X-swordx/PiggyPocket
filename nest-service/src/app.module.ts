@@ -1,7 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { UserModule } from './modules/user/user.module';
+import { UserModule } from './modules/foodie-buddy/user/user.module';
 import { DishModule } from './modules/dish/dish.module';
 import { DiningGroupModule } from './modules/dining-group/dining-group.module';
 import { OrderModule } from './modules/order/order.module';
