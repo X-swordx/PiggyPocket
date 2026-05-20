@@ -35,9 +35,10 @@
       <!-- Featured Cards -->
       <view class="cards">
         <!-- Food Tracker Card -->
-        <view class="card card-milk" @click="navigateTo('/pages/expiry/index')">
+        <view class="card" @click="navigateTo('/pages/expiry/index')">
           <view class="card-image">
             <view class="card-gradient"></view>
+            <image class="card-img" src="/static/milk.png" mode="aspectFill" />
             <view class="card-icon-overlay">
               <uni-icons type="list" size="24" color="#ffc2cc" />
             </view>
@@ -54,9 +55,10 @@
         </view>
 
         <!-- Bucket List Card -->
-        <view class="card card-buddha" @click="navigateTo('/pages/wishlist/index')">
+        <view class="card" @click="navigateTo('/pages/wishlist/index')">
           <view class="card-image">
             <view class="card-gradient"></view>
+            <image class="card-img" src="/static/buddha.png" mode="aspectFill" />
             <view class="card-icon-overlay">
               <uni-icons type="heart-filled" size="24" color="#ffc2cc" />
             </view>
@@ -73,9 +75,10 @@
         </view>
 
         <!-- Daily Menu Card -->
-        <view class="card card-pasta" @click="navigateTo('/pages/food-menu/index')">
+        <view class="card" @click="navigateTo('/pages/food-menu/index')">
           <view class="card-image">
             <view class="card-gradient"></view>
+            <image class="card-img" src="/static/pasta.png" mode="aspectFill" />
             <view class="card-icon-overlay">
               <uni-icons type="wallet" size="24" color="#ffc2cc" />
             </view>
@@ -321,21 +324,27 @@ const clearAllNotifications = () => {
   height: 160px;
   position: relative;
   overflow: hidden;
+  background: rgba(255, 194, 204, 0.2);
 }
 
 .card-img {
   width: 100%;
   height: 100%;
-  opacity: 0.6;
+  position: absolute;
+  top: 0;
+  left: 0;
+  z-index: 0;
+  mix-blend-mode: overlay;
 }
 
 .card-gradient {
-    position: absolute;
-    top: 0;
-    left: 0;
-    width: 100%;
-    height: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
   background: linear-gradient(135deg, rgba(255, 194, 204, 0.3) 0%, rgba(255, 194, 204, 0.1) 100%);
+  z-index: 1;
 }
 
 .card-icon-overlay {
@@ -346,6 +355,7 @@ const clearAllNotifications = () => {
   padding: 8px;
   border-radius: 8px;
   box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  z-index: 2;
 }
 
 .card-content {
@@ -385,18 +395,6 @@ const clearAllNotifications = () => {
   border-radius: 8px;
   font-weight: 600;
   font-size: 14px;
-}
-
-.card-milk .card-image {
-  background: linear-gradient(135deg, #8aa6cb 0%, #aec6cf 100%);
-}
-
-.card-buddha .card-image {
-  background: linear-gradient(135deg, #a8d5ba 0%, #c9e4ca 100%);
-}
-
-.card-pasta .card-image {
-  background: linear-gradient(135deg, #f0b7a4 0%, #f5cac3 100%);
 }
 
 /* Notification Drawer */
@@ -530,12 +528,22 @@ const clearAllNotifications = () => {
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideInRight {
-  from { transform: translateX(100%); }
-  to { transform: translateX(0); }
+  from {
+    transform: translateX(100%);
+  }
+
+  to {
+    transform: translateX(0);
+  }
 }
 </style>
