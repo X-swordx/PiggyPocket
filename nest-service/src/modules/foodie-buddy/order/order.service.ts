@@ -6,8 +6,8 @@ import { OrderItem } from './entities/order-item.entity';
 import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { CreateOrderItemDto } from './dto/create-order-item.dto';
-import { PaginationDto } from '../../common/dto/pagination.dto';
-import { OrderStatus } from '../../common/pipes/parse-order-status.pipe';
+import { PaginationDto } from '../../../common/dto/pagination.dto';
+import { OrderStatus } from '../../../common/pipes/parse-order-status.pipe';
 
 @Injectable()
 export class OrderService {

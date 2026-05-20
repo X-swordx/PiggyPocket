@@ -5,9 +5,9 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { CreateOrderItemDto } from './dto/create-order-item.dto';
-import { PaginationDto } from '../../common/dto/pagination.dto';
+import { PaginationDto } from '../../../common/dto/pagination.dto';
 import { Order } from './entities/order.entity';
-import { OrderStatus } from '../../common/pipes/parse-order-status.pipe';
+import { OrderStatus } from '../../../common/pipes/parse-order-status.pipe';
 
 describe('OrderController', () => {
   let controller: OrderController;

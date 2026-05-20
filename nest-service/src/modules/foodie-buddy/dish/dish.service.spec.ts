@@ -6,7 +6,7 @@ import { DishService } from './dish.service';
 import { Dish } from './entities/dish.entity';
 import { CreateDishDto } from './dto/create-dish.dto';
 import { UpdateDishDto } from './dto/update-dish.dto';
-import { PaginationDto } from '../../common/dto/pagination.dto';
+import { PaginationDto } from '../../../common/dto/pagination.dto';
 
 describe('DishService', () => {
   let service: DishService;

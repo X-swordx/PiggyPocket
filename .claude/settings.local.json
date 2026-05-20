@@ -19,7 +19,40 @@
       "Bash(start chrome:*)",
       "mcp__chrome-devtools__fill",
       "mcp__chrome-devtools__wait_for",
-      "mcp__chrome-devtools__evaluate_script"
+      "mcp__chrome-devtools__evaluate_script",
+      "Skill(superpowers:brainstorming)",
+      "Skill(superpowers:brainstorming:*)",
+      "Skill(superpowers:writing-plans)",
+      "Skill(superpowers:writing-plans:*)",
+      "Skill(superpowers:subagent-driven-development)",
+      "Skill(superpowers:subagent-driven-development:*)",
+      "Bash(mv f:/PiggyPocket/nest-service/src/modules/dining-group/entities/*.ts f:/PiggyPocket/nest-service/src/modules/foodie-buddy/dining-group/entities/)",
+      "Bash(mv f:/PiggyPocket/nest-service/src/modules/dining-group/dto/*.ts f:/PiggyPocket/nest-service/src/modules/foodie-buddy/dining-group/dto/)",
+      "Bash(mv f:/PiggyPocket/nest-service/src/modules/dining-group/*.spec.ts f:/PiggyPocket/nest-service/src/modules/foodie-buddy/dining-group/)",
+      "Bash(mv /f/PiggyPocket/nest-service/src/modules/order/dto/*.ts /f/PiggyPocket/nest-service/src/modules/foodie-buddy/order/dto/)",
+      "Bash(mv /f/PiggyPocket/nest-service/src/modules/order/*.spec.ts /f/PiggyPocket/nest-service/src/modules/foodie-buddy/order/ 2>/dev/null || true)",
+      "Bash(cd /f/PiggyPocket/nest-service && ls -la | head -20)",
+      "Read(//f/f/PiggyPocket/**)",
+      "Bash(./node_modules/.bin/tsc --noEmit)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)",
+      "Bash(export PATH=\"/e/nodejs:$PATH\")",
+      "Bash(/e/nodejs/npm.cmd run *)",
+      "Bash(ls -la /e/nodejs/)",
+      "Read(//e/nodejs//**)",
+      "Bash(/e/nodejs/node ./node_modules/typescript/bin/tsc --noEmit)",
+      "Bash(/e/nodejs/npm run *)",
+      "Bash(whereis npm *)",
+      "Bash(/e/nodejs/node.exe -v)",
+      "Bash(nvm version *)",
+      "Bash(nvm list *)",
+      "Bash(nvm use *)",
+      "Bash(npm -v)",
+      "Bash(npm test *)"
+    ],
+    "additionalDirectories": [
+      "F:\\PiggyPocket\\nest-service\\src\\modules\\order\\dto",
+      "F:\\PiggyPocket\\nest-service\\src\\modules\\order"
     ]
   }
 }

@@ -15,11 +15,11 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { CreateOrderItemDto } from './dto/create-order-item.dto';
-import { PaginationDto } from '../../common/dto/pagination.dto';
-import { ParseOrderStatusPipe, OrderStatus } from '../../common/pipes/parse-order-status.pipe';
+import { PaginationDto } from '../../../common/dto/pagination.dto';
+import { ParseOrderStatusPipe, OrderStatus } from '../../../common/pipes/parse-order-status.pipe';
 
 @ApiTags('订单管理')
-@Controller('orders')
+@Controller('foodie-buddy/orders')
 export class OrderController {
   constructor(private readonly orderService: OrderService) {}
 

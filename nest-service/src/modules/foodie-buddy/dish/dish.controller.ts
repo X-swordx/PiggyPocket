@@ -13,10 +13,10 @@ import { ApiTags, ApiOperation, ApiQuery } from '@nestjs/swagger';
 import { DishService } from './dish.service';
 import { CreateDishDto } from './dto/create-dish.dto';
 import { UpdateDishDto } from './dto/update-dish.dto';
-import { PaginationDto } from '../../common/dto/pagination.dto';
+import { PaginationDto } from '../../../common/dto/pagination.dto';
 
 @ApiTags('菜品管理')
-@Controller('dishes')
+@Controller('foodie-buddy/dishes')
 export class DishController {
   constructor(private readonly dishService: DishService) {}
 
