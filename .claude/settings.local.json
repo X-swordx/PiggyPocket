@@ -50,7 +50,9 @@
       "Bash(npm -v)",
       "Bash(npm test *)",
       "Bash(iconv -f UTF-16 -t UTF-8 \"f:/PiggyPocket/CLAUDE.md\")",
-      "Bash(node \"f:/PiggyPocket/write_claude.js\")"
+      "Bash(node \"f:/PiggyPocket/write_claude.js\")",
+      "Bash(npm --prefix mobile run type-check)",
+      "Bash(npm --prefix mobile run build:mp-weixin)"
     ],
     "additionalDirectories": [
       "F:\\PiggyPocket\\nest-service\\src\\modules\\order\\dto",

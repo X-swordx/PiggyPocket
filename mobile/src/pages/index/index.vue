@@ -8,7 +8,7 @@
         </view>
       </view>
       <view class="header-center">
-        <text class="title">猪猪口袋</text>
+        <text class="title">猪猪生活本</text>
       </view>
       <view class="header-right">
         <view class="icon-btn" @click="openNotificationDrawer">
@@ -135,6 +135,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { onShareAppMessage } from '@dcloudio/uni-app'
 import TabBar from '@/components/TabBar.vue'
 import uniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
 
@@ -153,6 +154,12 @@ const handleTabChange = (index: number) => {
 const navigateTo = (url: string) => {
   uni.navigateTo({ url })
 }
+
+onShareAppMessage(() => ({
+  title: '猪猪生活本',
+  path: '/pages/index/index',
+  imageUrl: '/static/logo.png'
+}))
 
 // Notification Drawer
 interface Notification {
@@ -182,7 +189,7 @@ const notifications = ref<Notification[]>([
   },
   {
     title: '系统公告',
-    content: '新版猪猪口袋已上线，快来体验新功能',
+    content: '新版猪猪生活本已上线，快来体验新功能',
     time: '昨天',
     icon: 'sound-filled',
     bgColor: '#ffc2cc'

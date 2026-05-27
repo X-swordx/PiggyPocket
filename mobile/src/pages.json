@@ -6,10 +6,11 @@
 		{
 			"path": "pages/index/index",
 			"style": {
-				"navigationBarTitleText": "猪猪口袋",
+				"navigationBarTitleText": "猪猪生活本",
 				"navigationStyle": "custom",
 				"backgroundColor": "#F8F5F6"
-			}
+			},
+			"enableShareAppMessage": true
 		},
 		{
 			"path": "pages/expiry/index",
@@ -78,7 +79,7 @@
 	],
 	"globalStyle": {
 		"navigationBarTextStyle": "black",
-		"navigationBarTitleText": "猪猪口袋",
+		"navigationBarTitleText": "猪猪生活本",
 		"navigationBarBackgroundColor": "#F8F5F6",
 		"backgroundColor": "#F8F5F6"
 	}
