@@ -69,6 +69,15 @@
 			}
 		},
 		{
+			"path": "pages/foodie-buddy/index",
+			"style": {
+				"navigationBarTitleText": "饭搭子管理",
+				"navigationStyle": "custom",
+				"backgroundColor": "#F8F5F6"
+			},
+			"enableShareAppMessage": true
+		},
+		{
 			"path": "pages/add-food/index",
 			"style": {
 				"navigationBarTitleText": "添加食品",

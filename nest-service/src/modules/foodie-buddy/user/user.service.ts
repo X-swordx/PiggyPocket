@@ -1,16 +1,27 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from './entities/user.entity';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { WechatLoginDto } from './dto/wechat-login.dto';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
+
+interface WechatCodeSessionResponse {
+  openid?: string;
+  session_key?: string;
+  unionid?: string;
+  errcode?: number;
+  errmsg?: string;
+}
 
 @Injectable()
 export class UserService {
   constructor(
     @InjectRepository(User)
     private readonly userRepository: Repository<User>,
+    private readonly configService: ConfigService,
   ) {}
 
   async create(createUserDto: CreateUserDto) {
@@ -24,6 +35,28 @@ export class UserService {
 
     const user = this.userRepository.create(createUserDto);
     return await this.userRepository.save(user);
+  }
+
+  async wechatLogin(wechatLoginDto: WechatLoginDto) {
+    const appid = this.configService.get<string>('WECHAT_APPID');
+    const secret = this.configService.get<string>('WECHAT_SECRET');
+    if (!appid || !secret) {
+      throw new BadRequestException('微信小程序配置缺失');
+    }
+
+    const url = `https://api.weixin.qq.com/sns/jscode2session?appid=${encodeURIComponent(appid)}&secret=${encodeURIComponent(secret)}&js_code=${encodeURIComponent(wechatLoginDto.code)}&grant_type=authorization_code`;
+    const response = await fetch(url);
+    const session = (await response.json()) as WechatCodeSessionResponse;
+
+    if (!response.ok || !session.openid) {
+      throw new BadRequestException(session.errmsg || '微信登录失败');
+    }
+
+    return this.create({
+      openid: session.openid,
+      nickname: wechatLoginDto.nickname,
+      avatar: wechatLoginDto.avatar,
+    });
   }
 
   async findAll(paginationDto: PaginationDto) {

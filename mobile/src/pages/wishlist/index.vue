@@ -258,6 +258,7 @@ const handleTabChange = (index: number) => {
   align-items: center;
   justify-content: space-between;
   padding: 24px 16px 8px;
+  padding-top: calc(24px + var(--status-bar-height));
   background: rgba(248, 245, 246, 0.8);
   position: sticky;
   top: 0;

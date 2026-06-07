@@ -13,6 +13,7 @@ import { ApiTags, ApiOperation, ApiResponse } from '@nestjs/swagger';
 import { UserService } from './user.service';
 import { CreateUserDto } from './dto/create-user.dto';
 import { UpdateUserDto } from './dto/update-user.dto';
+import { WechatLoginDto } from './dto/wechat-login.dto';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
 import { User } from './entities/user.entity';
 
@@ -26,6 +27,13 @@ export class UserController {
   @ApiResponse({ status: 201, description: '创建成功', type: User })
   create(@Body() createUserDto: CreateUserDto) {
     return this.userService.create(createUserDto);
+  }
+
+  @Post('wechat-login')
+  @ApiOperation({ summary: '微信小程序登录' })
+  @ApiResponse({ status: 201, description: '登录成功', type: User })
+  wechatLogin(@Body() wechatLoginDto: WechatLoginDto) {
+    return this.userService.wechatLogin(wechatLoginDto);
   }
 
   @Get()

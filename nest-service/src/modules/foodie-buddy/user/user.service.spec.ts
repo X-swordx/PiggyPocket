@@ -1,6 +1,7 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
 import { NotFoundException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Repository } from 'typeorm';
 import { UserService } from './user.service';
 import { User } from './entities/user.entity';
@@ -32,6 +33,10 @@ describe('UserService', () => {
     remove: jest.fn(),
   };
 
+  const mockConfigService = {
+    get: jest.fn(),
+  };
+
   beforeEach(async () => {
     const module: TestingModule = await Test.createTestingModule({
       providers: [
@@ -39,6 +44,10 @@ describe('UserService', () => {
         {
           provide: getRepositoryToken(User),
           useValue: mockUserRepository,
+        },
+        {
+          provide: ConfigService,
+          useValue: mockConfigService,
         },
       ],
     }).compile();
@@ -85,6 +94,33 @@ describe('UserService', () => {
       expect(repository.create).not.toHaveBeenCalled();
       expect(repository.save).not.toHaveBeenCalled();
       expect(result).toEqual(mockUser);
+    });
+  });
+
+  describe('wechatLogin', () => {
+    it('应该通过微信 code 登录并创建用户', async () => {
+      mockConfigService.get.mockImplementation((key: string) => {
+        if (key === 'WECHAT_APPID') return 'appid';
+        if (key === 'WECHAT_SECRET') return 'secret';
+        return undefined;
+      });
+      global.fetch = jest.fn().mockResolvedValue({
+        ok: true,
+        json: jest.fn().mockResolvedValue({ openid: 'wechat-openid', session_key: 'secret-session' }),
+      } as any);
+      mockUserRepository.findOne.mockResolvedValue(null);
+      mockUserRepository.create.mockReturnValue({ openid: 'wechat-openid', nickname: '微信用户' });
+      mockUserRepository.save.mockResolvedValue({ ...mockUser, openid: 'wechat-openid', nickname: '微信用户' });
+
+      const result = await service.wechatLogin({ code: 'login-code', nickname: '微信用户' });
+
+      expect(global.fetch).toHaveBeenCalled();
+      expect(repository.create).toHaveBeenCalledWith({
+        openid: 'wechat-openid',
+        nickname: '微信用户',
+        avatar: undefined,
+      });
+      expect((result as any).session_key).toBeUndefined();
     });
   });
 

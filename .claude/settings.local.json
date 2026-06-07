@@ -52,7 +52,18 @@
       "Bash(iconv -f UTF-16 -t UTF-8 \"f:/PiggyPocket/CLAUDE.md\")",
       "Bash(node \"f:/PiggyPocket/write_claude.js\")",
       "Bash(npm --prefix mobile run type-check)",
-      "Bash(npm --prefix mobile run build:mp-weixin)"
+      "Bash(npm --prefix mobile run build:mp-weixin)",
+      "Bash(npm --prefix \"nest-service\" run build)",
+      "Bash(npm --prefix \"mobile\" run type-check)",
+      "Bash(npm --prefix \"mobile\" run build:mp-weixin)",
+      "Bash(npm --prefix \"nest-service\" test -- user dining-group)",
+      "Bash(npm --prefix \"mobile\" run dev:h5)",
+      "Bash(python -)",
+      "Bash(\"/c/Program Files/Google/Chrome/Application/chrome.exe\" --remote-debugging-port=9222 --user-data-dir=\"C:/Users/Administrator/AppData/Local/Temp/claude-chrome-devtools\" --no-first-run --no-default-browser-check about:blank)",
+      "mcp__chrome-devtools__list_console_messages",
+      "Bash(node -)",
+      "Bash(node mobile/scripts/create-share-image.js)",
+      "Bash(powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"mobile/scripts/compress-logo.ps1\")"
     ],
     "additionalDirectories": [
       "F:\\PiggyPocket\\nest-service\\src\\modules\\order\\dto",

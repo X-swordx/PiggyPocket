@@ -222,6 +222,7 @@ const clearAllNotifications = () => {
   align-items: center;
   justify-content: space-between;
   padding: 16px;
+  padding-top: calc(16px + var(--status-bar-height));
   background: #F8F5F6;
   position: sticky;
   top: 0;

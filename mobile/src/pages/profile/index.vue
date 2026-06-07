@@ -17,7 +17,8 @@
         <view class="profile-header">
           <view class="avatar-section">
             <view class="avatar">
-              <view class="avatar-img" style="background: linear-gradient(135deg, #ffc2cc 0%, #f8a5b4 100%); display: flex; align-items: center; justify-content: center;">
+              <view class="avatar-img"
+                style="background: linear-gradient(135deg, #ffc2cc 0%, #f8a5b4 100%); display: flex; align-items: center; justify-content: center;">
                 <uni-icons type="person-filled" size="40" color="#fff" />
               </view>
               <view class="avatar-badge">
@@ -38,9 +39,9 @@
 
       <!-- Quick Stats -->
       <view class="stats-grid">
-        <view class="stat-card">
+        <view class="stat-card" @click="goToFoodieBuddy">
           <text class="stat-value">{{ stats.orders }}</text>
-          <text class="stat-label">已下单</text>
+          <text class="stat-label">饭搭子</text>
         </view>
         <view class="stat-card">
           <text class="stat-value">{{ stats.recipes }}</text>
@@ -132,6 +133,10 @@ const goToDishDetail = (order: any) => {
   })
 }
 
+const goToFoodieBuddy = () => {
+  uni.navigateTo({ url: '/pages/foodie-buddy/index' })
+}
+
 const handleTabChange = (index: number) => {
   if (index === 0) {
     uni.reLaunch({ url: '/pages/index/index' })
@@ -156,6 +161,7 @@ const handleTabChange = (index: number) => {
   align-items: center;
   justify-content: space-between;
   padding: 16px;
+  padding-top: calc(16px + var(--status-bar-height));
   background: rgba(248, 245, 246, 0.8);
   position: sticky;
   top: 0;
