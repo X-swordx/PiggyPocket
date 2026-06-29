@@ -2,6 +2,7 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { FoodieBuddyModule } from './modules/foodie-buddy/foodie-buddy.module';
+import { OssModule } from './modules/oss/oss.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { FoodieBuddyModule } from './modules/foodie-buddy/foodie-buddy.module';
       inject: [ConfigService],
     }),
     FoodieBuddyModule,
+    OssModule,
   ],
 })
 export class AppModule {}

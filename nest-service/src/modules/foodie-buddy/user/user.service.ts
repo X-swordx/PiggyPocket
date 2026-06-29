@@ -52,11 +52,30 @@ export class UserService {
       throw new BadRequestException(session.errmsg || '微信登录失败');
     }
 
-    return this.create({
+    const existing = await this.userRepository.findOne({
+      where: { openid: session.openid },
+    });
+    if (existing) {
+      const nickname = wechatLoginDto.nickname;
+      const avatar = wechatLoginDto.avatar;
+      const shouldUpdate =
+        (nickname && nickname !== existing.nickname) ||
+        (avatar && avatar !== existing.avatar);
+
+      if (shouldUpdate) {
+        if (nickname) existing.nickname = nickname;
+        if (avatar) existing.avatar = avatar;
+        return await this.userRepository.save(existing);
+      }
+      return existing;
+    }
+
+    const user = this.userRepository.create({
       openid: session.openid,
       nickname: wechatLoginDto.nickname,
       avatar: wechatLoginDto.avatar,
     });
+    return await this.userRepository.save(user);
   }
 
   async findAll(paginationDto: PaginationDto) {

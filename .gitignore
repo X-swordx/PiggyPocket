@@ -3,6 +3,7 @@
 
 # 依赖目录
 **/node_modules/
+**/.env
 
 # 后端 (NestJS)
 nest-service/dist/

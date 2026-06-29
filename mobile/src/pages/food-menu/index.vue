@@ -40,9 +40,14 @@
             <text>{{ dishes.length }} 道菜可选</text>
           </view>
         </view>
-        <view class="dishes">
-          <view v-for="(dish, index) in dishes" :key="index" class="dish-card" @click="goToDetail">
-            <view class="dish-image" :style="{ backgroundColor: dish.bgColor }"></view>
+        <view v-if="loading" style="padding: 24px; text-align: center; color: #777;">加载中...</view>
+        <view v-else-if="error" style="padding: 24px; text-align: center; color: #ba1a1a;">{{ error }}</view>
+        <view v-else-if="dishes.length === 0" style="padding: 24px; text-align: center; color: #777;">暂无菜品，去上传第一道菜谱吧</view>
+        <view v-else class="dishes">
+          <view v-for="(dish, index) in dishes" :key="dish.id" class="dish-card" @click="goToDetail(dish)">
+            <view class="dish-image" :style="{ backgroundColor: dish.bgColor }">
+              <image v-if="dish.image" class="dish-img" :src="dish.image" mode="aspectFill" />
+            </view>
             <view class="dish-info">
               <view class="dish-text">
                 <text class="dish-name">{{ dish.name }}</text>
@@ -91,42 +96,52 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import TabBar from '@/components/TabBar.vue'
 import uniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
+import { getDishes, SELECTED_DISHES_KEY, type FoodieDish } from '@/services/foodieBuddy'
 
 interface Dish {
+  id: number
   name: string
   calories: string
   time: string
   selected: boolean
   bgColor: string
+  image?: string
 }
 
-const dishes = ref<Dish[]>([
-  {
-    name: '新鲜佛陀碗',
-    calories: '450',
-    time: '15 分钟',
-    selected: false,
-    bgColor: '#a8d5ba'
-  },
-  {
-    name: '手工披萨',
-    calories: '820',
-    time: '25 分钟',
-    selected: true,
-    bgColor: '#e67e22'
-  },
-  {
-    name: '奶油青酱意面',
-    calories: '540',
-    time: '20 分钟',
-    selected: false,
-    bgColor: '#27ae60'
-  }
-])
+const colors = ['#a8d5ba', '#e67e22', '#27ae60', '#f0b7a4', '#8aa6cb', '#a88fca']
+const dishes = ref<Dish[]>([])
+const loading = ref(false)
+const error = ref('')
 
 const selectedCount = computed(() => dishes.value.filter(d => d.selected).length)
+
+const mapDish = (dish: FoodieDish, index: number): Dish => ({
+  id: dish.id,
+  name: dish.name,
+  calories: dish.calories ? String(dish.calories) : '--',
+  time: dish.cookingTime || '未知',
+  selected: false,
+  bgColor: dish.bgColor || colors[index % colors.length],
+  image: dish.image
+})
+
+const loadDishes = async () => {
+  loading.value = true
+  error.value = ''
+  try {
+    const result = await getDishes({ page: 1, pageSize: 100 })
+    dishes.value = result.list.map(mapDish)
+  } catch (err: any) {
+    error.value = err.message || '菜品加载失败'
+  } finally {
+    loading.value = false
+  }
+}
+
+onShow(loadDishes)
 
 const goBack = () => {
   uni.navigateBack()
@@ -141,11 +156,13 @@ const toggleDish = (index: number) => {
 }
 
 const goToOrder = () => {
+  const selectedDishes = dishes.value.filter((dish) => dish.selected)
+  uni.setStorageSync(SELECTED_DISHES_KEY, selectedDishes)
   uni.navigateTo({ url: '/pages/order/index' })
 }
 
-const goToDetail = () => {
-  uni.navigateTo({ url: '/pages/dish-detail/index' })
+const goToDetail = (dish: Dish) => {
+  uni.navigateTo({ url: `/pages/dish-detail/index?id=${dish.id}` })
 }
 
 const handleTabChange = (index: number) => {

@@ -63,7 +63,20 @@
       "mcp__chrome-devtools__list_console_messages",
       "Bash(node -)",
       "Bash(node mobile/scripts/create-share-image.js)",
-      "Bash(powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"mobile/scripts/compress-logo.ps1\")"
+      "Bash(powershell.exe -NoProfile -ExecutionPolicy Bypass -File \"mobile/scripts/compress-logo.ps1\")",
+      "Bash(npm --prefix nest-service test -- user.service.spec.ts)",
+      "WebFetch(domain:help.aliyun.com)",
+      "Bash(curl -s \"http://localhost:3000/api/foodie-buddy/users\")",
+      "Bash(curl -s \"http://localhost:3000/api/foodie-buddy/orders?status=completed&page=1&pageSize=5\")",
+      "Bash(curl -s \"http://localhost:3000/api/foodie-buddy/orders?page=1&pageSize=5\")",
+      "Bash(curl -s \"http://localhost:3000/api/foodie-buddy/orders?userId=1&status=completed&page=1&pageSize=5\")",
+      "Bash(curl -s \"http://localhost:3000/api/foodie-buddy/orders?userId=1&page=1&pageSize=5\")",
+      "Bash(stat -c '%y %n' src/pages/history-menu/index.vue src/pages.json)",
+      "Bash(stat -c '%y %n' dist/dev/mp-weixin/pages/history-menu/index.js dist/dev/mp-weixin/app.json)",
+      "Bash(grep -E '\"miniprogramRoot\"|\"compileType\"' dist/dev/mp-weixin/project.config.json)",
+      "Bash(git check-ignore *)",
+      "Bash(git rm *)",
+      "Bash(grep -E \"\\\\.env$\")"
     ],
     "additionalDirectories": [
       "F:\\PiggyPocket\\nest-service\\src\\modules\\order\\dto",

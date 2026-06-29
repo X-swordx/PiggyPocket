@@ -69,6 +69,14 @@
 			}
 		},
 		{
+			"path": "pages/history-menu/index",
+			"style": {
+				"navigationBarTitleText": "历史菜单",
+				"navigationStyle": "custom",
+				"backgroundColor": "#F8F5F6"
+			}
+		},
+		{
 			"path": "pages/foodie-buddy/index",
 			"style": {
 				"navigationBarTitleText": "饭搭子管理",

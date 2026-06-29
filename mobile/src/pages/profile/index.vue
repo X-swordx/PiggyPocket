@@ -17,8 +17,8 @@
         <view class="profile-header">
           <view class="avatar-section">
             <view class="avatar">
-              <view class="avatar-img"
-                style="background: linear-gradient(135deg, #ffc2cc 0%, #f8a5b4 100%); display: flex; align-items: center; justify-content: center;">
+              <image v-if="userInfo.avatar" class="avatar-img" :src="userInfo.avatar" mode="aspectFill" />
+              <view v-else class="avatar-img avatar-placeholder">
                 <uni-icons type="person-filled" size="40" color="#fff" />
               </view>
               <view class="avatar-badge">
@@ -33,6 +33,18 @@
               <uni-icons type="heart-filled" size="14" color="#ffc2cc" />
               <text>{{ userInfo.wishCount }} 个美食愿望</text>
             </view>
+            <button class="sync-profile-btn" @click="openProfileEditor">同步微信资料</button>
+          </view>
+        </view>
+        <view v-if="showProfileEditor" class="profile-editor">
+          <button class="avatar-picker" open-type="chooseAvatar" @chooseavatar="onChooseAvatar">
+            <image v-if="profileForm.avatar" class="editor-avatar" :src="profileForm.avatar" mode="aspectFill" />
+            <text v-else>选择微信头像</text>
+          </button>
+          <input class="nickname-input" type="nickname" v-model="profileForm.nickname" placeholder="请输入微信昵称" />
+          <view class="profile-actions">
+            <button class="cancel-profile-btn" @click="showProfileEditor = false">取消</button>
+            <button class="save-profile-btn" @click="saveWechatProfile">保存资料</button>
           </view>
         </view>
       </view>
@@ -43,9 +55,9 @@
           <text class="stat-value">{{ stats.orders }}</text>
           <text class="stat-label">饭搭子</text>
         </view>
-        <view class="stat-card">
+        <view class="stat-card" @click="goToHistoryMenu">
           <text class="stat-value">{{ stats.recipes }}</text>
-          <text class="stat-label">我的菜谱</text>
+          <text class="stat-label">历史菜单</text>
         </view>
         <view class="stat-card">
           <text class="stat-value">{{ stats.wishlist }}</text>
@@ -61,17 +73,23 @@
           <view></view>
         </view>
         <view class="orders-list">
-          <view v-for="(order, index) in todayOrders" :key="index" class="order-item" @click="goToDishDetail(order)">
-            <view class="order-icon" v-if="index === 0" style="background: #f0b7a4;">
-            </view>
-            <view class="order-icon" v-else style="background: #a8d5ba;">
+          <view v-if="todayOrders.length === 0" style="padding: 16px; color: #777; text-align: center;">今天还没有订单</view>
+          <view v-for="order in todayOrders" :key="order.id"
+            class="order-item"
+            :class="{ completed: order.status === 'completed' }"
+            @click="goToDishDetail(order)">
+            <view class="order-icon" :style="order.bgColor ? { background: order.bgColor } : {}">
+              <image v-if="order.image" class="order-image" :src="order.image" mode="aspectFill" />
             </view>
             <view class="order-info">
-              <text class="order-name">{{ order.name }}</text>
-              <text class="order-time">已下单 · {{ order.time }}</text>
+              <text class="order-name">{{ order.name }} x{{ order.quantity }}</text>
+              <text class="order-time">{{ order.remark }}</text>
             </view>
-            <view class="order-price">
-              <text>¥{{ order.price }}</text>
+            <view class="order-action"
+              :class="{ done: order.status === 'completed' }"
+              @click.stop="markCompleted(order)">
+              <uni-icons v-if="order.status === 'completed'" type="checkmark-filled" size="14" color="#fff" />
+              <text>已完成</text>
             </view>
           </view>
         </view>
@@ -88,50 +106,189 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import TabBar from '@/components/TabBar.vue'
 import uniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
+import { getCurrentUser, getDiningGroup, getMyDiningGroups, getOrders, refreshCurrentUser, updateOrderStatus, type FoodieOrder } from '@/services/foodieBuddy'
+import { uploadToOSS } from '@/services/oss'
 
 const userInfo = ref({
   name: '猪猪主人',
-  id: '88886666',
-  wishCount: 128
+  id: '',
+  avatar: '',
+  wishCount: 0
 })
 
 const stats = ref({
-  orders: 12,
-  recipes: 25,
-  wishlist: 8
+  orders: 0,
+  recipes: 0,
+  wishlist: 0
 })
 
 interface Order {
+  id: number
+  dishId?: number
   name: string
-  time: string
-  price: string
+  remark: string,
+  quantity: number,
+  status: FoodieOrder['status']
+  image?: string
+  bgColor?: string
 }
 
-const todayOrders = ref<Order[]>([
-  {
-    name: '番茄培根意面',
-    time: '12:30',
-    price: '32'
-  },
-  {
-    name: '田园蔬果沙拉',
-    time: '10:15',
-    price: '28'
+const todayOrders = ref<Order[]>([])
+const showProfileEditor = ref(false)
+const profileForm = ref({
+  nickname: '',
+  avatar: ''
+})
+let hasPromptedWechatProfile = false
+
+const isToday = (dateText: string) => {
+  const date = new Date(dateText)
+  const today = new Date()
+  return date.getFullYear() === today.getFullYear()
+    && date.getMonth() === today.getMonth()
+    && date.getDate() === today.getDate()
+}
+
+const formatTime = (dateText: string) => {
+  const date = new Date(dateText)
+  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+}
+
+const mapOrder = (order: FoodieOrder): Order => {
+  const firstItem = order.items?.[0]
+  return {
+    id: order.id,
+    dishId: firstItem?.dishId,
+    name: firstItem?.dish?.name || order.orderNo,
+    remark: firstItem?.remark || '',
+    quantity: firstItem?.quantity || 1,
+    status: order.status,
+    image: firstItem?.dish?.image || '',
+    bgColor: firstItem?.dish?.bgColor || ''
   }
-])
+}
+
+const loadProfile = async () => {
+  try {
+    const user = await getCurrentUser()
+    userInfo.value = {
+      name: user.nickname || user.name || '猪猪主人',
+      id: String(user.id),
+      avatar: user.avatar || '',
+      wishCount: 0
+    }
+
+    if (!hasPromptedWechatProfile && (!user.nickname || !user.avatar)) {
+      hasPromptedWechatProfile = true
+      uni.showModal({
+        title: '同步微信资料',
+        content: '是否同步微信昵称和头像？',
+        confirmText: '去同步',
+        success: (res) => {
+          if (res.confirm) openProfileEditor()
+        }
+      })
+    }
+
+    const groups = await getMyDiningGroups(user.id)
+    let buddyCount = 0
+    if (groups[0]) {
+      const group = await getDiningGroup(groups[0].id)
+      buddyCount = (group.members || []).filter((member) => member.userId !== user.id).length
+    }
+
+    const orders = await getOrders({ userId: user.id, page: 1, pageSize: 50 })
+    const completedOrders = await getOrders({ userId: user.id, status: 'completed', page: 1, pageSize: 1 })
+
+    stats.value = {
+      orders: buddyCount,
+      recipes: completedOrders.total,
+      wishlist: 0
+    }
+    todayOrders.value = orders.list.filter((order) => isToday(order.createdAt)).map(mapOrder)
+  } catch (err: any) {
+    uni.showToast({ title: err.message || '资料加载失败', icon: 'none' })
+  }
+}
+
+const openProfileEditor = () => {
+  profileForm.value = {
+    nickname: userInfo.value.name === '猪猪主人' ? '' : userInfo.value.name,
+    avatar: userInfo.value.avatar
+  }
+  showProfileEditor.value = true
+}
+
+const onChooseAvatar = async (event: any) => {
+  const localAvatar = event.detail?.avatarUrl
+  if (!localAvatar) return
+
+  try {
+    uni.showLoading({ title: '上传头像...' })
+    profileForm.value.avatar = await uploadToOSS(localAvatar, 'avatars')
+  } catch (err: any) {
+    uni.showToast({ title: err.message || '头像上传失败', icon: 'none' })
+  } finally {
+    uni.hideLoading()
+  }
+}
+
+const saveWechatProfile = async () => {
+  const nickname = profileForm.value.nickname.trim()
+  if (!nickname) {
+    uni.showToast({ title: '请输入微信昵称', icon: 'none' })
+    return
+  }
+
+  try {
+    const user = await refreshCurrentUser({
+      nickname,
+      avatar: profileForm.value.avatar
+    })
+    userInfo.value = {
+      name: user.nickname || user.name || '猪猪主人',
+      id: String(user.id),
+      avatar: user.avatar || '',
+      wishCount: userInfo.value.wishCount
+    }
+    showProfileEditor.value = false
+    uni.showToast({ title: '微信资料已保存', icon: 'success' })
+  } catch (err: any) {
+    uni.showToast({ title: err.message || '保存失败', icon: 'none' })
+  }
+}
 
 const goToSettings = () => {
   uni.showToast({ title: '设置功能开发中', icon: 'none' })
 }
 
-const goToDishDetail = (order: any) => {
-  // 跳转到菜品详情页，传递菜品名称
+const goToDishDetail = (order: Order) => {
+  if (!order.dishId) return
   uni.navigateTo({
-    url: `/pages/dish-detail/index?name=${encodeURIComponent(order.name)}`
+    url: `/pages/dish-detail/index?id=${order.dishId}`
   })
 }
+
+const markCompleted = async (order: Order) => {
+  if (order.status === 'completed') return
+  try {
+    await updateOrderStatus(order.id, 'completed')
+    order.status = 'completed'
+    stats.value.recipes += 1
+    uni.showToast({ title: '已标记完成', icon: 'success' })
+  } catch (err: any) {
+    uni.showToast({ title: err.message || '操作失败', icon: 'none' })
+  }
+}
+
+const goToHistoryMenu = () => {
+  uni.navigateTo({ url: '/pages/history-menu/index' })
+}
+
+onShow(loadProfile)
 
 const goToFoodieBuddy = () => {
   uni.navigateTo({ url: '/pages/foodie-buddy/index' })
@@ -229,6 +386,13 @@ const handleTabChange = (index: number) => {
   height: 100%;
 }
 
+.avatar-placeholder {
+  background: linear-gradient(135deg, #ffc2cc 0%, #f8a5b4 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
 .avatar-badge {
   position: absolute;
   bottom: -4px;
@@ -276,6 +440,90 @@ const handleTabChange = (index: number) => {
   font-size: 12px;
   font-weight: 500;
   color: #ffc2cc;
+}
+
+.sync-profile-btn {
+  width: fit-content;
+  margin: 8px 0 0;
+  padding: 0 12px;
+  height: 28px;
+  line-height: 28px;
+  border-radius: 999px;
+  background: rgba(255, 194, 204, 0.16);
+  color: #f08da0;
+  font-size: 12px;
+}
+
+.sync-profile-btn::after {
+  border: none;
+}
+
+.profile-editor {
+  margin: 0 16px 24px;
+  padding: 16px;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(255, 194, 204, 0.1);
+}
+
+.avatar-picker {
+  height: 48px;
+  line-height: 48px;
+  margin: 0 0 12px;
+  border-radius: 8px;
+  background: rgba(255, 194, 204, 0.12);
+  color: #f08da0;
+  font-size: 14px;
+}
+
+.avatar-picker::after {
+  border: none;
+}
+
+.editor-avatar {
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  vertical-align: middle;
+}
+
+.nickname-input {
+  height: 44px;
+  padding: 0 12px;
+  border-radius: 8px;
+  background: #F8F5F6;
+  font-size: 14px;
+}
+
+.profile-actions {
+  display: flex;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.cancel-profile-btn,
+.save-profile-btn {
+  flex: 1;
+  height: 36px;
+  line-height: 36px;
+  border-radius: 999px;
+  font-size: 14px;
+}
+
+.cancel-profile-btn {
+  background: #F8F5F6;
+  color: #777;
+}
+
+.save-profile-btn {
+  background: #ffc2cc;
+  color: white;
+}
+
+.cancel-profile-btn::after,
+.save-profile-btn::after {
+  border: none;
 }
 
 .stats-grid {
@@ -351,6 +599,32 @@ const handleTabChange = (index: number) => {
 .order-item:active {
   background: rgba(255, 194, 204, 0.05);
   transform: scale(0.995);
+}
+
+.order-item.completed {
+  opacity: 0.65;
+}
+
+.order-item.completed .order-icon {
+  filter: grayscale(0.6);
+}
+
+.order-action {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  border-radius: 999px;
+  background: #ffc2cc;
+  color: white;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.order-action.done {
+  background: #e5e7eb;
+  color: #9ca3af;
 }
 
 .order-icon {

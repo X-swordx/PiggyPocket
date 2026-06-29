@@ -98,7 +98,7 @@ describe('UserService', () => {
   });
 
   describe('wechatLogin', () => {
-    it('应该通过微信 code 登录并创建用户', async () => {
+    beforeEach(() => {
       mockConfigService.get.mockImplementation((key: string) => {
         if (key === 'WECHAT_APPID') return 'appid';
         if (key === 'WECHAT_SECRET') return 'secret';
@@ -108,6 +108,9 @@ describe('UserService', () => {
         ok: true,
         json: jest.fn().mockResolvedValue({ openid: 'wechat-openid', session_key: 'secret-session' }),
       } as any);
+    });
+
+    it('应该通过微信 code 登录并创建用户', async () => {
       mockUserRepository.findOne.mockResolvedValue(null);
       mockUserRepository.create.mockReturnValue({ openid: 'wechat-openid', nickname: '微信用户' });
       mockUserRepository.save.mockResolvedValue({ ...mockUser, openid: 'wechat-openid', nickname: '微信用户' });
@@ -121,6 +124,43 @@ describe('UserService', () => {
         avatar: undefined,
       });
       expect((result as any).session_key).toBeUndefined();
+    });
+
+    it('用户已存在且没有新资料时应返回现有用户', async () => {
+      const existingUser = { ...mockUser, openid: 'wechat-openid' };
+      mockUserRepository.findOne.mockResolvedValue(existingUser);
+
+      const result = await service.wechatLogin({ code: 'login-code' });
+
+      expect(repository.findOne).toHaveBeenCalledWith({ where: { openid: 'wechat-openid' } });
+      expect(repository.create).not.toHaveBeenCalled();
+      expect(repository.save).not.toHaveBeenCalled();
+      expect(result).toEqual(existingUser);
+    });
+
+    it('用户已存在且传入微信资料时应更新用户', async () => {
+      const existingUser = { ...mockUser, openid: 'wechat-openid', nickname: undefined, avatar: undefined } as any;
+      mockUserRepository.findOne.mockResolvedValue(existingUser);
+      mockUserRepository.save.mockResolvedValue({
+        ...existingUser,
+        nickname: '微信用户',
+        avatar: 'http://example.com/wechat-avatar.jpg',
+      });
+
+      const result = await service.wechatLogin({
+        code: 'login-code',
+        nickname: '微信用户',
+        avatar: 'http://example.com/wechat-avatar.jpg',
+      });
+
+      expect(repository.create).not.toHaveBeenCalled();
+      expect(repository.save).toHaveBeenCalledWith({
+        ...existingUser,
+        nickname: '微信用户',
+        avatar: 'http://example.com/wechat-avatar.jpg',
+      });
+      expect(result.nickname).toBe('微信用户');
+      expect(result.avatar).toBe('http://example.com/wechat-avatar.jpg');
     });
   });
 

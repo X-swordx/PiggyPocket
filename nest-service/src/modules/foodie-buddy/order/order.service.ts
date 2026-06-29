@@ -39,13 +39,16 @@ export class OrderService {
     return await this.orderRepository.save(order);
   }
 
-  async findAll(paginationDto: PaginationDto, status?: string) {
+  async findAll(paginationDto: PaginationDto, status?: string, userId?: number) {
     const { page, pageSize } = paginationDto;
     const skip = (page - 1) * pageSize;
 
     const where: any = {};
     if (status) {
       where.status = status;
+    }
+    if (userId) {
+      where.userId = userId;
     }
 
     const [list, total] = await this.orderRepository.findAndCount({

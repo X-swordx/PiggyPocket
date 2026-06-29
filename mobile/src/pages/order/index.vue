@@ -16,12 +16,9 @@
         <text>已选菜品</text>
       </view>
       <view class="order-list">
-        <view v-for="(item, index) in orderItems" :key="index" class="order-item">
-          <view class="item-image" v-if="item.name === '手工披萨'" style="background: #e67e22;">
-          </view>
-          <view class="item-image" v-else-if="item.name === '新鲜佛陀碗'" style="background: #a8d5ba;">
-          </view>
-          <view class="item-image" v-else style="background: #f0b7a4;">
+        <view v-if="orderItems.length === 0" style="padding: 24px; text-align: center; color: #777;">暂无已选菜品</view>
+        <view v-for="(item, index) in orderItems" :key="item.dishId" class="order-item">
+          <view class="item-image" :style="{ background: item.bgColor }">
           </view>
           <view class="item-info">
             <text class="item-name">{{ item.name }}</text>
@@ -61,33 +58,41 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { onLoad } from '@dcloudio/uni-app'
 import uniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
+import {
+  createOrder,
+  getCurrentUser,
+  getMyDiningGroups,
+  SELECTED_DISHES_KEY,
+  type SelectedDish
+} from '@/services/foodieBuddy'
 
 interface OrderItem {
+  dishId: number
   name: string
   remark: string
   quantity: number
+  bgColor: string
+  image?: string
 }
 
-const orderItems = ref<OrderItem[]>([
-  {
-    name: '手工披萨',
-    remark: '加芝士',
-    quantity: 1
-  },
-  {
-    name: '新鲜佛陀碗',
-    remark: '多酱汁',
-    quantity: 1
-  },
-  {
-    name: '草莓奶昔',
-    remark: '去冰',
-    quantity: 1
-  }
-])
+const orderItems = ref<OrderItem[]>([])
+const submitting = ref(false)
 
 const totalItems = computed(() => orderItems.value.reduce((sum, item) => sum + item.quantity, 0))
+
+onLoad(() => {
+  const selectedDishes = (uni.getStorageSync(SELECTED_DISHES_KEY) || []) as SelectedDish[]
+  orderItems.value = selectedDishes.map((dish) => ({
+    dishId: dish.id,
+    name: dish.name,
+    remark: '',
+    quantity: 1,
+    bgColor: dish.bgColor,
+    image: dish.image
+  }))
+})
 
 const goBack = () => {
   uni.navigateBack()
@@ -105,8 +110,34 @@ const increaseQty = (index: number) => {
   orderItems.value[index].quantity++
 }
 
-const confirmOrder = () => {
-  uni.showToast({ title: '订单已提交', icon: 'success' })
+const confirmOrder = async () => {
+  if (submitting.value) return
+  if (orderItems.value.length === 0) {
+    uni.showToast({ title: '请先选择菜品', icon: 'none' })
+    return
+  }
+
+  submitting.value = true
+  try {
+    const user = await getCurrentUser()
+    const groups = await getMyDiningGroups(user.id)
+    await createOrder({
+      userId: user.id,
+      groupId: groups[0]?.id,
+      items: orderItems.value.map((item) => ({
+        dishId: item.dishId,
+        quantity: item.quantity,
+        remark: item.remark
+      }))
+    })
+    uni.removeStorageSync(SELECTED_DISHES_KEY)
+    uni.showToast({ title: '订单已提交', icon: 'success' })
+    setTimeout(() => uni.reLaunch({ url: '/pages/profile/index' }), 800)
+  } catch (err: any) {
+    uni.showToast({ title: err.message || '下单失败', icon: 'none' })
+  } finally {
+    submitting.value = false
+  }
 }
 </script>
 

@@ -1,5 +1,24 @@
+import { Type } from 'class-transformer';
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
-import { IsNotEmpty, IsString, IsOptional, IsIn } from 'class-validator';
+import {
+  IsArray,
+  IsIn,
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
+
+class DishIngredientDto {
+  @ApiProperty({ description: '食材名称' })
+  @IsString()
+  name: string;
+
+  @ApiProperty({ description: '用量' })
+  @IsString()
+  amount: string;
+}
 
 export class CreateDishDto {
   @ApiProperty({ description: '菜品名称' })
@@ -26,4 +45,38 @@ export class CreateDishDto {
   @IsOptional()
   @IsIn([0, 1], { message: '状态只能是 0 或 1' })
   status?: number;
+
+  @ApiPropertyOptional({ description: '热量' })
+  @IsOptional()
+  @IsInt()
+  calories?: number;
+
+  @ApiPropertyOptional({ description: '烹饪时间' })
+  @IsOptional()
+  @IsString()
+  cookingTime?: string;
+
+  @ApiPropertyOptional({ description: '用料', type: [DishIngredientDto] })
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => DishIngredientDto)
+  ingredients?: DishIngredientDto[];
+
+  @ApiPropertyOptional({ description: '烹饪步骤', type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  steps?: string[];
+
+  @ApiPropertyOptional({ description: '标签', type: [String] })
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  tags?: string[];
+
+  @ApiPropertyOptional({ description: '背景色' })
+  @IsOptional()
+  @IsString()
+  bgColor?: string;
 }

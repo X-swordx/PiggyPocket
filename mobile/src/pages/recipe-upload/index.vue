@@ -13,10 +13,17 @@
     <scroll-view scroll-y class="content">
       <!-- Photo Upload -->
       <view class="upload-section">
-        <view class="upload-area" @click="chooseImage">
+        <view class="upload-area" @click="chooseImage" v-if="!coverImage">
           <uni-icons type="camera-filled" size="40" color="#ffc2cc" />
           <text class="upload-text">添加美食封面图</text>
           <text class="upload-hint">美食的照片越好看，人气越高哦</text>
+        </view>
+        <view class="cover-preview" v-else @click="chooseImage">
+          <image class="cover-image" :src="coverImage" mode="aspectFill" />
+          <view class="cover-change-btn">
+            <uni-icons type="camera-filled" size="16" color="#fff" />
+            <text>更换封面</text>
+          </view>
         </view>
       </view>
 
@@ -129,8 +136,12 @@
 <script setup lang="ts">
 import { ref } from 'vue'
 import uniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
+import { createDish } from '@/services/foodieBuddy'
+import { uploadToOSS } from '@/services/oss'
 
 const recipeName = ref('')
+const coverImage = ref('')
+const publishing = ref(false)
 
 interface Ingredient {
   name: string
@@ -171,8 +182,16 @@ const goBack = () => {
 const chooseImage = () => {
   uni.chooseImage({
     count: 1,
-    success: () => {
-      uni.showToast({ title: '图片选择成功', icon: 'success' })
+    success: async (res) => {
+      try {
+        uni.showLoading({ title: '上传中...' })
+        coverImage.value = await uploadToOSS(res.tempFilePaths[0], 'dishes')
+        uni.showToast({ title: '封面图上传成功', icon: 'success' })
+      } catch (err: any) {
+        uni.showToast({ title: err.message || '上传失败', icon: 'none' })
+      } finally {
+        uni.hideLoading()
+      }
     }
   })
 }
@@ -194,8 +213,16 @@ const removeStep = (index: number) => {
 const addStepImage = (index: number) => {
   uni.chooseImage({
     count: 1,
-    success: () => {
-      uni.showToast({ title: '步骤图片添加成功', icon: 'success' })
+    success: async (res) => {
+      try {
+        uni.showLoading({ title: '上传中...' })
+        await uploadToOSS(res.tempFilePaths[0], 'dishes/steps')
+        uni.showToast({ title: '步骤图片上传成功', icon: 'success' })
+      } catch (err: any) {
+        uni.showToast({ title: err.message || '上传失败', icon: 'none' })
+      } finally {
+        uni.hideLoading()
+      }
     }
   })
 }
@@ -212,8 +239,58 @@ const saveDraft = () => {
   uni.showToast({ title: '草稿已保存', icon: 'success' })
 }
 
-const publishRecipe = () => {
-  uni.showToast({ title: '菜谱发布成功', icon: 'success' })
+const getActiveTags = () => tags.value.filter((tag) => tag.active).map((tag) => tag.name)
+
+const getCategory = (activeTags: string[]) => {
+  if (activeTags.includes('健康轻食')) return '凉菜'
+  if (activeTags.includes('甜点')) return '饮品'
+  return '主食'
+}
+
+const buildDescription = (validIngredients: Ingredient[], validSteps: Step[]) => {
+  const ingredientText = validIngredients.map((item) => `${item.name} ${item.amount}`.trim()).join('、')
+  const stepText = validSteps.map((item, index) => `${index + 1}. ${item.text}`).join('\n')
+  return [ingredientText ? `用料：${ingredientText}` : '', stepText ? `步骤：\n${stepText}` : '']
+    .filter(Boolean)
+    .join('\n')
+}
+
+const publishRecipe = async () => {
+  if (publishing.value) return
+  const name = recipeName.value.trim()
+  if (!name) {
+    uni.showToast({ title: '请输入菜谱名称', icon: 'none' })
+    return
+  }
+
+  const validIngredients = ingredients.value.filter((item) => item.name.trim() || item.amount.trim())
+  const validSteps = steps.value.filter((item) => item.text.trim())
+  const activeTags = getActiveTags()
+
+  publishing.value = true
+  try {
+    await createDish({
+      name,
+      description: buildDescription(validIngredients, validSteps),
+      category: getCategory(activeTags),
+      image: coverImage.value,
+      status: 1,
+      cookingTime: validSteps.length ? `${validSteps.length * 5} 分钟` : undefined,
+      ingredients: validIngredients.map((item) => ({
+        name: item.name.trim(),
+        amount: item.amount.trim()
+      })),
+      steps: validSteps.map((item) => item.text.trim()),
+      tags: activeTags,
+      bgColor: '#f0b7a4'
+    })
+    uni.showToast({ title: '菜谱发布成功', icon: 'success' })
+    setTimeout(() => uni.navigateBack(), 800)
+  } catch (err: any) {
+    uni.showToast({ title: err.message || '发布失败', icon: 'none' })
+  } finally {
+    publishing.value = false
+  }
 }
 </script>
 
@@ -284,6 +361,33 @@ const publishRecipe = () => {
 .upload-hint {
   font-size: 12px;
   color: #777;
+}
+
+.cover-preview {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 16 / 9;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.cover-image {
+  width: 100%;
+  height: 100%;
+}
+
+.cover-change-btn {
+  position: absolute;
+  bottom: 12px;
+  right: 12px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 12px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 999px;
+  font-size: 12px;
+  color: #fff;
 }
 
 .input-section {

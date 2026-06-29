@@ -77,33 +77,92 @@
 
 <script setup lang="ts">
 import { computed, ref } from 'vue'
-import { onShareAppMessage } from '@dcloudio/uni-app'
+import { onLoad, onShareAppMessage, onShow } from '@dcloudio/uni-app'
+import {
+  addDiningGroupMember,
+  createDiningGroup,
+  getCurrentUser,
+  getDiningGroup,
+  getMyDiningGroups,
+  removeDiningGroupMember,
+  type DiningGroup,
+  type DiningGroupMember,
+  type FoodieUser
+} from '@/services/foodieBuddy'
 
-interface DiningGroupMember {
-  id: number
-  groupId: number
-  userId: number
-  nickname: string
-}
+const currentUser = ref<FoodieUser | null>(null)
+const currentGroup = ref<DiningGroup | null>(null)
+const members = ref<DiningGroupMember[]>([])
+const inviteGroupId = ref<number | null>(null)
+const loading = ref(false)
 
-const members = ref<DiningGroupMember[]>([
-  { id: 1, groupId: 0, userId: -1, nickname: '妈妈' },
-  { id: 2, groupId: 0, userId: -2, nickname: '室友 小王' },
-  { id: 3, groupId: 0, userId: -3, nickname: '老婆' }
-])
-
-const buddyMembers = computed(() => members.value)
+const buddyMembers = computed(() => members.value.filter((member) => member.userId !== currentUser.value?.id))
 const buddyCount = computed(() => buddyMembers.value.length)
 
-const memberName = (member: DiningGroupMember) => member.nickname
+const memberName = (member: DiningGroupMember) => member.nickname || member.user?.nickname || member.user?.name || '饭搭子'
+
+const loadGroup = async (groupId?: number) => {
+  const user = currentUser.value || await getCurrentUser()
+  currentUser.value = user
+
+  if (groupId) {
+    try {
+      await addDiningGroupMember(groupId, {
+        openid: user.openid,
+        nickname: user.nickname || user.name
+      })
+    } catch (err: any) {
+      if (!String(err.message || '').includes('已在组内')) {
+        uni.showToast({ title: err.message || '加入饭搭子失败', icon: 'none' })
+      }
+    }
+    currentGroup.value = await getDiningGroup(groupId)
+  } else {
+    const groups = await getMyDiningGroups(user.id)
+    currentGroup.value = groups[0] || null
+  }
+
+  if (currentGroup.value) {
+    const detail = await getDiningGroup(currentGroup.value.id)
+    currentGroup.value = detail
+    members.value = detail.members || []
+  } else {
+    members.value = []
+  }
+}
+
+const refresh = async () => {
+  loading.value = true
+  try {
+    await loadGroup(inviteGroupId.value || undefined)
+  } catch (err: any) {
+    uni.showToast({ title: err.message || '饭搭子加载失败', icon: 'none' })
+  } finally {
+    loading.value = false
+  }
+}
+
+const createGroup = async () => {
+  if (!currentUser.value) {
+    currentUser.value = await getCurrentUser()
+  }
+  await createDiningGroup({ name: '我的饭搭子', creatorId: currentUser.value.id })
+  await refresh()
+}
 
 const unlinkBuddy = (member: DiningGroupMember) => {
+  if (!currentGroup.value) return
   uni.showModal({
     title: '解除关联',
     content: `确定要解除与${memberName(member)}的关联吗？`,
-    success: (res) => {
-      if (!res.confirm) return
-      members.value = members.value.filter((item) => item.id !== member.id)
+    success: async (res) => {
+      if (!res.confirm || !currentGroup.value) return
+      try {
+        await removeDiningGroupMember(currentGroup.value.id, member.userId)
+        await refresh()
+      } catch (err: any) {
+        uni.showToast({ title: err.message || '解除失败', icon: 'none' })
+      }
     }
   })
 }
@@ -115,12 +174,22 @@ const goBack = () => {
 }
 
 const showMore = () => {
-  uni.showToast({ title: '更多功能开发中', icon: 'none' })
+  if (currentGroup.value) {
+    uni.showToast({ title: currentGroup.value.name, icon: 'none' })
+    return
+  }
+  createGroup().catch((err: any) => uni.showToast({ title: err.message || '创建失败', icon: 'none' }))
 }
+
+onLoad((options: any) => {
+  inviteGroupId.value = options?.groupId ? Number(options.groupId) : null
+})
+
+onShow(refresh)
 
 onShareAppMessage(() => ({
   title: '邀请你成为我的饭搭子',
-  path: '/pages/foodie-buddy/index',
+  path: currentGroup.value ? `/pages/foodie-buddy/index?groupId=${currentGroup.value.id}` : '/pages/foodie-buddy/index',
   imageUrl: '../../static/logo.png'
 }))
 </script>

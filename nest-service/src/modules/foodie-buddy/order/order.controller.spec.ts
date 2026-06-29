@@ -91,7 +91,7 @@ describe('OrderController', () => {
 
       const result = await controller.findAll(paginationDto);
 
-      expect(service.findAll).toHaveBeenCalledWith(paginationDto, undefined);
+      expect(service.findAll).toHaveBeenCalledWith(paginationDto, undefined, undefined);
       expect(result).toEqual(expectedResult);
     });
 
@@ -109,7 +109,7 @@ describe('OrderController', () => {
 
       const result = await controller.findAll(paginationDto, status);
 
-      expect(service.findAll).toHaveBeenCalledWith(paginationDto, status);
+      expect(service.findAll).toHaveBeenCalledWith(paginationDto, status, undefined);
       expect(result).toEqual(expectedResult);
     });
   });

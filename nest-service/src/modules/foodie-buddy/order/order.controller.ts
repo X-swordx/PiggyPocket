@@ -32,11 +32,13 @@ export class OrderController {
   @Get()
   @ApiOperation({ summary: '获取订单列表' })
   @ApiQuery({ name: 'status', required: false, description: '按状态筛选' })
+  @ApiQuery({ name: 'userId', required: false, description: '按用户筛选' })
   findAll(
     @Query() paginationDto: PaginationDto,
     @Query('status', new ParseOrderStatusPipe()) status?: OrderStatus,
+    @Query('userId') userId?: string,
   ) {
-    return this.orderService.findAll(paginationDto, status);
+    return this.orderService.findAll(paginationDto, status, userId ? Number(userId) : undefined);
   }
 
   @Get('group/:groupId')

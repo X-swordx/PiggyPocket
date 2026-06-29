@@ -33,6 +33,30 @@ export class Dish {
   @Column({ type: 'tinyint', default: 1, comment: '状态：0=下架，1=上架' })
   status: number;
 
+  @ApiProperty({ description: '热量' })
+  @Column({ type: 'int', nullable: true, comment: '热量' })
+  calories?: number;
+
+  @ApiProperty({ description: '烹饪时间' })
+  @Column({ type: 'varchar', length: 50, nullable: true, comment: '烹饪时间' })
+  cookingTime?: string;
+
+  @ApiProperty({ description: '用料' })
+  @Column({ type: 'simple-json', nullable: true, comment: '用料' })
+  ingredients?: Array<{ name: string; amount: string }>;
+
+  @ApiProperty({ description: '烹饪步骤' })
+  @Column({ type: 'simple-json', nullable: true, comment: '烹饪步骤' })
+  steps?: string[];
+
+  @ApiProperty({ description: '标签' })
+  @Column({ type: 'simple-json', nullable: true, comment: '标签' })
+  tags?: string[];
+
+  @ApiProperty({ description: '背景色' })
+  @Column({ type: 'varchar', length: 20, nullable: true, comment: '背景色' })
+  bgColor?: string;
+
   @ApiProperty({ description: '创建时间' })
   @CreateDateColumn({ type: 'datetime', comment: '创建时间' })
   createdAt: Date;

@@ -154,6 +154,7 @@
 import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import uniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
+import { uploadToOSS } from '@/services/oss'
 
 interface FormData {
   name: string
@@ -201,8 +202,16 @@ const uploadImage = () => {
     count: 1,
     sizeType: ['compressed'],
     sourceType: ['album', 'camera'],
-    success: (res) => {
-      formData.value.imageUrl = res.tempFilePaths[0]
+    success: async (res) => {
+      try {
+        uni.showLoading({ title: '上传中...' })
+        formData.value.imageUrl = await uploadToOSS(res.tempFilePaths[0], 'foods')
+        uni.showToast({ title: '图片上传成功', icon: 'success' })
+      } catch (err: any) {
+        uni.showToast({ title: err.message || '上传失败', icon: 'none' })
+      } finally {
+        uni.hideLoading()
+      }
     }
   })
 }

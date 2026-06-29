@@ -115,26 +115,25 @@
         <view class="spacer"></view>
       </view>
 
-      <!-- Original Dish Detail Mode - preserved and updated to match design system -->
+      <!-- Original Dish Detail Mode -->
       <view v-else class="dish-detail">
-        <!-- Hero Image - with gradient overlay -->
-        <view class="hero-section">
-          <view class="hero-image" style="background: linear-gradient(135deg, #f0b7a4 0%, #f5cac3 100%);">
-            <view class="hero-gradient-overlay"></view>
-          </view>
-          <view class="hero-overlay">
-            <text class="dish-name">{{ dish.name }}</text>
-            <view class="dish-meta">
-              <view class="meta-item">
-                <uni-icons type="fire" size="16" color="#6b7280" />
-                <text>{{ dish.calories }} kcal</text>
-              </view>
-              <view class="meta-item">
-                <uni-icons type="clock" size="16" color="#6b7280" />
-                <text>{{ dish.time }} mins</text>
-              </view>
+        <!-- Hero Image -->
+        <view class="hero-section" @click="editing && chooseCover()">
+          <view class="hero-image">
+            <image v-if="dish.image" class="hero-bg-image" :src="dish.image" mode="aspectFill" />
+            <view v-else class="hero-fallback-bg"
+              :style="{ background: `linear-gradient(135deg, ${dish.bgColor || '#f0b7a4'} 0%, #f5cac3 100%)` }"></view>
+            <view v-if="editing" class="hero-edit-mask">
+              <uni-icons type="camera-filled" size="28" color="#fff" />
+              <text>更换封面</text>
             </view>
           </view>
+        </view>
+
+        <!-- Dish Name -->
+        <view class="dish-name-section">
+          <text v-if="!editing" class="dish-name">{{ dish.name }}</text>
+          <input v-else class="edit-input name-input" v-model="editForm.name" placeholder="菜品名称" />
         </view>
 
         <!-- Dish Info -->
@@ -146,11 +145,16 @@
           <view class="info-grid">
             <view class="info-card">
               <text class="info-label">能量</text>
-              <text class="info-value">{{ dish.calories }} 千卡</text>
+              <text v-if="!editing" class="info-value">{{ dish.calories }} 千卡</text>
+              <view v-else class="edit-input-wrap">
+                <input class="edit-input" v-model="editForm.calories" type="number" placeholder="千卡" />
+                <text class="edit-suffix">千卡</text>
+              </view>
             </view>
             <view class="info-card">
               <text class="info-label">烹饪时间</text>
-              <text class="info-value">{{ dish.time }} 分钟</text>
+              <text v-if="!editing" class="info-value">{{ dish.time }}</text>
+              <input v-else class="edit-input" v-model="editForm.time" placeholder="如：30 分钟" />
             </view>
           </view>
         </view>
@@ -160,13 +164,26 @@
           <view class="section-header">
             <view class="header-line"></view>
             <text>用料清单</text>
-          </view>
-          <view class="ingredients-list">
-            <view v-for="(ing, index) in dish.ingredients" :key="index" class="ingredient-item">
-              <text class="ingredient-name">{{ ing.name }}</text>
-              <text class="ingredient-amount">{{ ing.amount }}</text>
+            <view v-if="editing" class="add-ing-btn" @click="addIngredient">
+              <uni-icons type="plus" size="16" color="#ffc2cc" />
             </view>
           </view>
+          <view class="ingredients-list" v-if="displayIngredients.length">
+            <view v-for="(ing, index) in displayIngredients" :key="index" class="ingredient-item">
+              <template v-if="!editing">
+                <text class="ingredient-name">{{ ing.name }}</text>
+                <text class="ingredient-amount">{{ ing.amount }}</text>
+              </template>
+              <template v-else>
+                <input class="edit-input ing-name-input" v-model="ing.name" placeholder="食材" />
+                <input class="edit-input ing-amount-input" v-model="ing.amount" placeholder="用量" />
+                <view class="ing-del-btn" @click="removeIngredient(index)">
+                  <uni-icons type="clear" size="18" color="#ba1a1a" />
+                </view>
+              </template>
+            </view>
+          </view>
+          <view v-else style="padding: 16px; color: #777;">暂无用料信息</view>
         </view>
 
         <!-- Cooking Steps -->
@@ -174,27 +191,48 @@
           <view class="section-header">
             <view class="header-line"></view>
             <text>烹饪步骤</text>
+            <view v-if="editing" class="add-ing-btn" @click="addStep">
+              <uni-icons type="plus" size="16" color="#ffc2cc" />
+            </view>
           </view>
-          <view class="steps-list">
-            <view v-for="(step, index) in dish.steps" :key="index" class="step-item">
+          <view class="steps-list" v-if="displaySteps.length">
+            <view v-for="(step, index) in displaySteps" :key="index" class="step-item">
               <view class="step-number">{{ index + 1 }}</view>
               <view class="step-content">
-                <text>{{ step }}</text>
+                <text v-if="!editing">{{ step }}</text>
+                <view v-else class="step-edit-row">
+                  <textarea class="edit-textarea" v-model="displaySteps[index]" placeholder="步骤描述" />
+                  <view class="step-del-btn" @click="removeStep(index)">
+                    <uni-icons type="clear" size="18" color="#ba1a1a" />
+                  </view>
+                </view>
               </view>
             </view>
           </view>
+          <view v-else style="padding: 16px; color: #777;">暂无步骤信息</view>
         </view>
 
         <!-- Bottom spacer -->
         <view class="spacer-dish"></view>
       </view>
-    </view>
 
-    <!-- Bottom Action Button - only for dish mode -->
-    <view class="bottom-bar" v-if="!isFoodExpiry && !addedToWishlist">
-      <view class="add-btn" @click="addToWishlist">
-        <uni-icons type="star" size="20" color="#321018" />
-        <text>添加到心愿单</text>
+      <!-- Edit / Save bottom bar for dish mode -->
+      <view class="bottom-bar" v-if="!isFoodExpiry">
+        <template v-if="!editing">
+          <view class="edit-btn" @click="startEditing">
+            <uni-icons type="compose" size="20" color="#321018" />
+            <text>修改</text>
+          </view>
+        </template>
+        <template v-else>
+          <view class="cancel-btn" @click="cancelEditing">
+            <text>取消</text>
+          </view>
+          <view class="save-btn" @click="saveDish">
+            <uni-icons type="checkmarkempty" size="20" color="#fff" />
+            <text>保存</text>
+          </view>
+        </template>
       </view>
     </view>
   </view>
@@ -204,6 +242,8 @@
 import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import uniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
+import { getDish, updateDish, type FoodieDish } from '@/services/foodieBuddy'
+import { uploadToOSS } from '@/services/oss'
 
 interface Dish {
   name: string
@@ -211,6 +251,8 @@ interface Dish {
   time: string
   ingredients: Array<{ name: string; amount: string }>
   steps: string[]
+  bgColor?: string
+  image?: string
 }
 
 interface FoodItem {
@@ -227,24 +269,14 @@ interface FoodItem {
   notes?: string
 }
 
-const dish: Dish = {
-  name: '番茄培根意面',
-  calories: '450',
-  time: '20',
-  ingredients: [
-    { name: '意大利面', amount: '100g' },
-    { name: '番茄', amount: '2个' },
-    { name: '培根', amount: '3片' },
-    { name: '洋葱', amount: '1/4个' },
-    { name: '橄榄油', amount: '适量' }
-  ],
-  steps: [
-    '锅中烧水，水开后放入意面煮8-10分钟。',
-    '热锅凉油，放入洋葱丁和培根片翻炒出香味。',
-    '加入切好的番茄块，炒出汤汁。',
-    '将煮好的意面放入锅中，加入适量盐和黑胡椒，拌匀即可。'
-  ]
-}
+const dishId = ref<number>(0)
+const dish = ref<Dish>({
+  name: '',
+  calories: '--',
+  time: '未知',
+  ingredients: [],
+  steps: []
+})
 
 const food = ref<FoodItem>({
   name: '',
@@ -257,10 +289,137 @@ const food = ref<FoodItem>({
 
 const isFoodExpiry = computed(() => !!food.value.name)
 
-const addedToWishlist = ref(false)
+// --- Edit mode ---
+const editing = ref(false)
+const saving = ref(false)
+
+interface EditForm {
+  name: string
+  calories: string
+  time: string
+  ingredients: Array<{ name: string; amount: string }>
+  steps: string[]
+  image: string
+}
+
+const editForm = ref<EditForm>({
+  name: '',
+  calories: '',
+  time: '',
+  ingredients: [],
+  steps: [],
+  image: ''
+})
+
+const displayIngredients = computed(() => editing.value ? editForm.value.ingredients : dish.value.ingredients)
+const displaySteps = computed(() => editing.value ? editForm.value.steps : dish.value.steps)
+
+const startEditing = () => {
+  editForm.value = {
+    name: dish.value.name,
+    calories: dish.value.calories === '--' ? '' : dish.value.calories,
+    time: dish.value.time === '未知' ? '' : dish.value.time,
+    ingredients: dish.value.ingredients.length ? dish.value.ingredients.map(i => ({ ...i })) : [],
+    steps: dish.value.steps.length ? [...dish.value.steps] : [],
+    image: dish.value.image || ''
+  }
+  editing.value = true
+}
+
+const cancelEditing = () => {
+  editing.value = false
+}
+
+const chooseCover = () => {
+  uni.chooseImage({
+    count: 1,
+    success: async (res) => {
+      try {
+        uni.showLoading({ title: '上传中...' })
+        editForm.value.image = await uploadToOSS(res.tempFilePaths[0], 'dishes')
+        uni.showToast({ title: '封面更新成功', icon: 'success' })
+      } catch (err: any) {
+        uni.showToast({ title: err.message || '上传失败', icon: 'none' })
+      } finally {
+        uni.hideLoading()
+      }
+    }
+  })
+}
+
+const addIngredient = () => {
+  editForm.value.ingredients.push({ name: '', amount: '' })
+}
+
+const removeIngredient = (index: number) => {
+  editForm.value.ingredients.splice(index, 1)
+}
+
+const addStep = () => {
+  editForm.value.steps.push('')
+}
+
+const removeStep = (index: number) => {
+  editForm.value.steps.splice(index, 1)
+}
+
+const saveDish = async () => {
+  if (saving.value) return
+  if (!editForm.value.name.trim()) {
+    uni.showToast({ title: '请输入菜品名称', icon: 'none' })
+    return
+  }
+
+  saving.value = true
+  try {
+    const validIngredients = editForm.value.ingredients.filter(i => i.name.trim() || i.amount.trim())
+    const validSteps = editForm.value.steps.filter(s => s.trim())
+    const payload: Partial<FoodieDish> = {
+      name: editForm.value.name.trim(),
+      calories: editForm.value.calories ? Number(editForm.value.calories) : undefined,
+      cookingTime: editForm.value.time || undefined,
+      ingredients: validIngredients.length ? validIngredients : undefined,
+      steps: validSteps.length ? validSteps : undefined,
+      image: editForm.value.image || undefined,
+    }
+
+    const updated = await updateDish(dishId.value, payload)
+    dish.value = mapDish(updated)
+    editing.value = false
+    uni.showToast({ title: '保存成功', icon: 'success' })
+  } catch (err: any) {
+    uni.showToast({ title: err.message || '保存失败', icon: 'none' })
+  } finally {
+    saving.value = false
+  }
+}
+// --- End edit mode ---
+
+const mapDish = (item: FoodieDish): Dish => ({
+  name: item.name,
+  calories: item.calories ? String(item.calories) : '--',
+  time: item.cookingTime || '未知',
+  ingredients: item.ingredients || [],
+  steps: item.steps?.length ? item.steps : (item.description ? [item.description] : []),
+  bgColor: item.bgColor,
+  image: item.image
+})
+
+const loadDish = async (id: number) => {
+  try {
+    dishId.value = id
+    dish.value = mapDish(await getDish(id))
+  } catch (err: any) {
+    uni.showToast({ title: err.message || '菜品加载失败', icon: 'none' })
+  }
+}
 
 onLoad((options: any) => {
-  if (options && options.name) {
+  if (options?.id) {
+    loadDish(Number(options.id))
+    return
+  }
+  if (options && (options.mode === 'expiry' || options.expiryDate)) {
     food.value = {
       name: decodeURIComponent(options.name) || '',
       expiryDate: decodeURIComponent(options.expiryDate) || '',
@@ -312,14 +471,6 @@ const shareDish = () => {
   uni.showToast({ title: '更多功能', icon: 'none' })
 }
 
-const addToWishlist = () => {
-  addedToWishlist.value = true
-  uni.showToast({
-    title: '已添加至心愿单',
-    icon: 'success'
-  })
-}
-
 const editFood = () => {
   uni.showToast({ title: '编辑功能开发中', icon: 'none' })
 }
@@ -366,7 +517,8 @@ const deleteFood = () => {
   box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.05);
 }
 
-.back-btn, .share-btn {
+.back-btn,
+.share-btn {
   width: 40px;
   height: 40px;
   display: flex;
@@ -376,7 +528,8 @@ const deleteFood = () => {
   transition: background-color 0.2s;
 }
 
-.back-btn:active, .share-btn:active {
+.back-btn:active,
+.share-btn:active {
   background: rgba(255, 194, 204, 0.1);
   transform: scale(0.95);
 }
@@ -418,15 +571,31 @@ const deleteFood = () => {
   width: 100%;
   height: 240px;
   overflow: hidden;
+  position: relative;
+}
+
+.hero-bg-image {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
+}
+
+.hero-fallback-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  z-index: 1;
 }
 
 /* Gradient overlay rule: from-primary/30 to-primary/10 mix-blend-overlay */
 .hero-gradient-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom right, rgba(255, 194, 204, 0.3), rgba(255, 194, 204, 0.1));
-  mix-blend-mode: overlay;
-  z-index: 10;
+  background: linear-gradient(to bottom right, rgba(255, 194, 204, 0.55), rgba(255, 194, 204, 0.25));
+  z-index: 5;
 }
 
 .category-badge {
@@ -714,41 +883,19 @@ const deleteFood = () => {
   width: 100%;
 }
 
-.hero-overlay {
-  position: absolute;
-  bottom: 16px;
-  left: 16px;
-  right: 16px;
-  background: rgba(255, 255, 255, 0.9);
-  backdrop-filter: blur(8px);
-  padding: 16px;
-  border-radius: 12px;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+.dish-name-section {
+  padding: 16px 16px 0;
 }
 
-.dish-name {
+.dish-name-section .dish-name {
   font-size: 24px;
   font-weight: 700;
-  color: #374151;
-  display: block;
-  margin-bottom: 8px;
+  color: #1f1a1b;
 }
 
-.dish-meta {
-  display: flex;
-  gap: 16px;
-  margin-top: 8px;
-}
-
-.meta-item {
-  display: flex;
-  align-items: center;
-  gap: 4px;
-  font-size: 14px;
-  color: #6b7280;
-}
-
-.info-section, .ingredients-section, .steps-section {
+.info-section,
+.ingredients-section,
+.steps-section {
   padding: 24px 16px 0;
 }
 
@@ -880,26 +1027,126 @@ const deleteFood = () => {
   height: 100px;
 }
 
-/* Bottom Bar - Glassmorphism */
+/* ========== Edit Mode Styles ========== */
+.hero-edit-mask {
+  position: absolute;
+  inset: 0;
+  z-index: 10;
+  background: rgba(0, 0, 0, 0.35);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.edit-input {
+  width: 100%;
+  padding: 8px 12px;
+  background: #fff;
+  border: 1px solid rgba(255, 194, 204, 0.3);
+  border-radius: 8px;
+  font-size: 14px;
+  color: #1f1a1b;
+}
+
+.name-input {
+  font-size: 24px;
+  font-weight: 700;
+  padding: 12px 16px;
+}
+
+.edit-input-wrap {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+
+.edit-input-wrap .edit-input {
+  flex: 1;
+  text-align: center;
+}
+
+.edit-suffix {
+  font-size: 12px;
+  color: #9ca3af;
+  white-space: nowrap;
+}
+
+.add-ing-btn {
+  width: 28px;
+  height: 28px;
+  border-radius: 50%;
+  background: rgba(255, 194, 204, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+}
+
+.ing-name-input {
+  flex: 2;
+}
+
+.ing-amount-input {
+  flex: 1;
+  text-align: right;
+}
+
+.ing-del-btn {
+  flex-shrink: 0;
+  padding: 4px;
+}
+
+.step-edit-row {
+  display: flex;
+  align-items: flex-start;
+  gap: 8px;
+}
+
+.edit-textarea {
+  flex: 1;
+  min-height: 60px;
+  padding: 8px 12px;
+  background: #fff;
+  border: 1px solid rgba(255, 194, 204, 0.3);
+  border-radius: 8px;
+  font-size: 14px;
+  line-height: 1.5;
+  color: #1f1a1b;
+}
+
+.step-del-btn {
+  flex-shrink: 0;
+  padding: 4px;
+  margin-top: 4px;
+}
+
+/* Bottom Bar - Edit / Save */
 .bottom-bar {
   position: fixed;
   bottom: 0;
   left: 0;
   right: 0;
+  display: flex;
+  gap: 12px;
   padding: 16px;
   padding-bottom: calc(16px + env(safe-area-inset-bottom));
-  background: rgba(255, 255, 255, 0.8);
+  background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-top: 1px solid rgba(255, 194, 204, 0.2);
+  border-top: 1px solid rgba(255, 194, 204, 0.15);
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
   z-index: 100;
 }
 
-.add-btn {
-  width: 100%;
-  height: 56px;
-  background: #ffc2cc;
+.edit-btn,
+.save-btn,
+.cancel-btn {
+  height: 52px;
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -907,13 +1154,33 @@ const deleteFood = () => {
   gap: 8px;
   font-weight: 600;
   font-size: 16px;
-  color: #321018;
-  box-shadow: 0 4px 12px rgba(255, 194, 204, 0.3);
-  transition: all 0.2s;
 }
 
-.add-btn:active {
-  transform: scale(0.98);
-  filter: brightness(1.05);
+.edit-btn {
+  flex: 1;
+  background: #ffc2cc;
+  color: #321018;
+  box-shadow: 0 4px 12px rgba(255, 194, 204, 0.3);
 }
+
+.cancel-btn {
+  flex: 1;
+  background: #f8f5f6;
+  color: #777;
+  border: 1px solid rgba(255, 194, 204, 0.2);
+}
+
+.save-btn {
+  flex: 2;
+  background: #ffc2cc;
+  color: #fff;
+  box-shadow: 0 4px 12px rgba(255, 194, 204, 0.3);
+}
+
+.edit-btn:active,
+.save-btn:active,
+.cancel-btn:active {
+  transform: scale(0.98);
+}
+
 </style>
