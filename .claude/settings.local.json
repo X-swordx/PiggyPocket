@@ -76,7 +76,8 @@
       "Bash(grep -E '\"miniprogramRoot\"|\"compileType\"' dist/dev/mp-weixin/project.config.json)",
       "Bash(git check-ignore *)",
       "Bash(git rm *)",
-      "Bash(grep -E \"\\\\.env$\")"
+      "Bash(grep -E \"\\\\.env$\")",
+      "Bash(git push *)"
     ],
     "additionalDirectories": [
       "F:\\PiggyPocket\\nest-service\\src\\modules\\order\\dto",

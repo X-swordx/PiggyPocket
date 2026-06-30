@@ -21,18 +21,10 @@
               <view v-else class="avatar-img avatar-placeholder">
                 <uni-icons type="person-filled" size="40" color="#fff" />
               </view>
-              <view class="avatar-badge">
-                <uni-icons type="wallet-filled" size="12" color="#fff" />
-              </view>
             </view>
           </view>
           <view class="profile-info">
             <text class="user-name">{{ userInfo.name }}</text>
-            <text class="user-id">ID: {{ userInfo.id }}</text>
-            <view class="wish-count">
-              <uni-icons type="heart-filled" size="14" color="#ffc2cc" />
-              <text>{{ userInfo.wishCount }} 个美食愿望</text>
-            </view>
             <button class="sync-profile-btn" @click="openProfileEditor">同步微信资料</button>
           </view>
         </view>
@@ -74,10 +66,8 @@
         </view>
         <view class="orders-list">
           <view v-if="todayOrders.length === 0" style="padding: 16px; color: #777; text-align: center;">今天还没有订单</view>
-          <view v-for="order in todayOrders" :key="order.id"
-            class="order-item"
-            :class="{ completed: order.status === 'completed' }"
-            @click="goToDishDetail(order)">
+          <view v-for="order in todayOrders" :key="order.id" class="order-item"
+            :class="{ completed: order.status === 'completed' }" @click="goToDishDetail(order)">
             <view class="order-icon" :style="order.bgColor ? { background: order.bgColor } : {}">
               <image v-if="order.image" class="order-image" :src="order.image" mode="aspectFill" />
             </view>
@@ -85,8 +75,7 @@
               <text class="order-name">{{ order.name }} x{{ order.quantity }}</text>
               <text class="order-time">{{ order.remark }}</text>
             </view>
-            <view class="order-action"
-              :class="{ done: order.status === 'completed' }"
+            <view class="order-action" :class="{ done: order.status === 'completed' }"
               @click.stop="markCompleted(order)">
               <uni-icons v-if="order.status === 'completed'" type="checkmark-filled" size="14" color="#fff" />
               <text>已完成</text>

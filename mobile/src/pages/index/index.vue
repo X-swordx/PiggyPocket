@@ -2,25 +2,20 @@
   <view class="container">
     <!-- Header -->
     <view class="header">
-      <view class="header-left">
-        <view class="avatar-circle">
-          <uni-icons type="person-filled" size="24" color="#333" />
-        </view>
-      </view>
-      <view class="header-center">
-        <text class="title">猪猪生活本</text>
-      </view>
       <view class="header-right">
         <view class="icon-btn" @click="openNotificationDrawer">
           <uni-icons type="notification" size="24" color="#333" />
         </view>
+      </view>
+      <view class="header-center">
+        <text class="title">猪猪生活本</text>
       </view>
     </view>
 
     <!-- Main Content -->
     <view class="content">
       <!-- Announcement Bar -->
-      <view class="announcement">
+      <!-- <view class="announcement">
         <view class="announcement-icon">
           <uni-icons type="sound-filled" size="20" color="#fff" />
         </view>
@@ -30,7 +25,7 @@
         <view class="announcement-arrow">
           <uni-icons type="right" size="20" color="#999" />
         </view>
-      </view>
+      </view> -->
 
       <!-- Featured Cards -->
       <view class="cards">
@@ -230,23 +225,11 @@ const clearAllNotifications = () => {
   border-bottom: 1px solid rgba(255, 194, 204, 0.1);
 }
 
-.avatar-circle {
-  width: 48px;
-  height: 48px;
-  background: rgba(255, 194, 204, 0.2);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.header-left {
-  display: flex;
-}
-
 .header-center {
   flex: 1;
   text-align: center;
+  padding-right: 48px;
+  box-sizing: border-box;
 }
 
 .title {
@@ -257,7 +240,6 @@ const clearAllNotifications = () => {
 
 .header-right {
   display: flex;
-  justify-content: flex-end;
   width: 48px;
 }
 
