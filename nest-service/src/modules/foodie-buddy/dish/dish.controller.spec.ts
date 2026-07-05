@@ -10,6 +10,8 @@ describe('DishController', () => {
   let controller: DishController;
   let service: DishService;
 
+  const userId = 1;
+
   const mockDish: Dish = {
     id: 1,
     name: '宫保鸡丁',
@@ -17,6 +19,8 @@ describe('DishController', () => {
     category: '热菜',
     image: 'http://example.com/dish.jpg',
     status: 1,
+    userId,
+    groupId: 10,
     createdAt: new Date(),
     updatedAt: new Date(),
   };
@@ -57,6 +61,8 @@ describe('DishController', () => {
         description: '经典川菜',
         category: '热菜',
         status: 1,
+        userId,
+        groupId: 10,
       };
 
       mockDishService.create.mockResolvedValue(mockDish);
@@ -80,9 +86,13 @@ describe('DishController', () => {
 
       mockDishService.findAll.mockResolvedValue(expectedResult);
 
-      const result = await controller.findAll(paginationDto);
+      const result = await controller.findAll(paginationDto, userId);
 
-      expect(service.findAll).toHaveBeenCalledWith(paginationDto, undefined);
+      expect(service.findAll).toHaveBeenCalledWith(
+        paginationDto,
+        userId,
+        undefined,
+      );
       expect(result).toEqual(expectedResult);
     });
 
@@ -98,9 +108,13 @@ describe('DishController', () => {
 
       mockDishService.findAll.mockResolvedValue(expectedResult);
 
-      const result = await controller.findAll(paginationDto, category);
+      const result = await controller.findAll(paginationDto, userId, category);
 
-      expect(service.findAll).toHaveBeenCalledWith(paginationDto, category);
+      expect(service.findAll).toHaveBeenCalledWith(
+        paginationDto,
+        userId,
+        category,
+      );
       expect(result).toEqual(expectedResult);
     });
   });
@@ -109,9 +123,9 @@ describe('DishController', () => {
     it('应该返回单个菜品', async () => {
       mockDishService.findOne.mockResolvedValue(mockDish);
 
-      const result = await controller.findOne(1);
+      const result = await controller.findOne(1, userId);
 
-      expect(service.findOne).toHaveBeenCalledWith(1);
+      expect(service.findOne).toHaveBeenCalledWith(1, userId);
       expect(result).toEqual(mockDish);
     });
   });
@@ -125,9 +139,9 @@ describe('DishController', () => {
 
       mockDishService.update.mockResolvedValue(updatedDish);
 
-      const result = await controller.update(1, updateDishDto);
+      const result = await controller.update(1, userId, updateDishDto);
 
-      expect(service.update).toHaveBeenCalledWith(1, updateDishDto);
+      expect(service.update).toHaveBeenCalledWith(1, userId, updateDishDto);
       expect(result).toEqual(updatedDish);
     });
   });
@@ -136,9 +150,9 @@ describe('DishController', () => {
     it('应该删除菜品', async () => {
       mockDishService.remove.mockResolvedValue({ success: true });
 
-      const result = await controller.remove(1);
+      const result = await controller.remove(1, userId);
 
-      expect(service.remove).toHaveBeenCalledWith(1);
+      expect(service.remove).toHaveBeenCalledWith(1, userId);
       expect(result).toEqual({ success: true });
     });
   });

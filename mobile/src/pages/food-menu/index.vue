@@ -99,7 +99,12 @@ import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import TabBar from '@/components/TabBar.vue'
 import uniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
-import { getDishes, SELECTED_DISHES_KEY, type FoodieDish } from '@/services/foodieBuddy'
+import {
+  getDishes,
+  getCurrentUser,
+  SELECTED_DISHES_KEY,
+  type FoodieDish
+} from '@/services/foodieBuddy'
 
 interface Dish {
   id: number
@@ -132,7 +137,8 @@ const loadDishes = async () => {
   loading.value = true
   error.value = ''
   try {
-    const result = await getDishes({ page: 1, pageSize: 100 })
+    const user = await getCurrentUser()
+    const result = await getDishes({ userId: user.id, page: 1, pageSize: 100 })
     dishes.value = result.list.map(mapDish)
   } catch (err: any) {
     error.value = err.message || '菜品加载失败'

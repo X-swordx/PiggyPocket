@@ -57,6 +57,14 @@ export class Dish {
   @Column({ type: 'varchar', length: 20, nullable: true, comment: '背景色' })
   bgColor?: string;
 
+  @ApiProperty({ description: '创建者ID' })
+  @Column({ type: 'int', comment: '创建者ID' })
+  userId: number;
+
+  @ApiProperty({ description: '所属饭搭子组ID' })
+  @Column({ type: 'int', comment: '所属饭搭子组ID' })
+  groupId: number;
+
   @ApiProperty({ description: '创建时间' })
   @CreateDateColumn({ type: 'datetime', comment: '创建时间' })
   createdAt: Date;

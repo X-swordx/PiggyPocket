@@ -31,6 +31,8 @@ export interface FoodieDish {
   steps?: string[]
   tags?: string[]
   bgColor?: string
+  userId?: number
+  groupId?: number
   createdAt?: string
   updatedAt?: string
 }
@@ -167,15 +169,23 @@ export const getCurrentUser = async () => {
   return currentUserPromise
 }
 
-export const getDishes = (query?: { page?: number; pageSize?: number; category?: string }) => {
+export const getDishes = (query: {
+  userId: number
+  page?: number
+  pageSize?: number
+  category?: string
+}) => {
   return request<PageResult<FoodieDish>>({
     url: '/foodie-buddy/dishes',
     query
   })
 }
 
-export const getDish = (id: number) => {
-  return request<FoodieDish>({ url: `/foodie-buddy/dishes/${id}` })
+export const getDish = (id: number, userId: number) => {
+  return request<FoodieDish>({
+    url: `/foodie-buddy/dishes/${id}`,
+    query: { userId }
+  })
 }
 
 export const createDish = (data: Partial<FoodieDish>) => {
@@ -186,11 +196,24 @@ export const createDish = (data: Partial<FoodieDish>) => {
   })
 }
 
-export const updateDish = (id: number, data: Partial<FoodieDish>) => {
+export const updateDish = (
+  id: number,
+  userId: number,
+  data: Partial<FoodieDish>
+) => {
   return request<FoodieDish>({
     url: `/foodie-buddy/dishes/${id}`,
     method: 'PUT',
+    query: { userId },
     data
+  })
+}
+
+export const deleteDish = (id: number, userId: number) => {
+  return request<{ success: boolean }>({
+    url: `/foodie-buddy/dishes/${id}`,
+    method: 'DELETE',
+    query: { userId }
   })
 }
 

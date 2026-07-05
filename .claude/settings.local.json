@@ -111,7 +111,10 @@
       "Bash(echo \"exit: $?\")",
       "WebFetch(domain:developers.weixin.qq.com)",
       "Bash(git commit -m 'feat: 图片上传前增加隐私协议检查，临期列表显示食品图片 *)",
-      "Bash(git commit *)"
+      "Bash(git commit *)",
+      "Bash(npx jest *)",
+      "Bash(git checkout *)",
+      "Bash(git commit -m 'feat: 菜品关联 userId 与饭搭子组共享 *)"
     ],
     "additionalDirectories": [
       "F:\\PiggyPocket\\nest-service\\src\\modules\\order\\dto",

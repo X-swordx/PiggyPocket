@@ -28,32 +28,44 @@ export class DishController {
 
   @Get()
   @ApiOperation({ summary: '获取菜品列表' })
+  @ApiQuery({ name: 'userId', required: true, description: '当前用户ID' })
   @ApiQuery({ name: 'category', required: false, description: '按分类筛选' })
   findAll(
     @Query() paginationDto: PaginationDto,
+    @Query('userId', ParseIntPipe) userId: number,
     @Query('category') category?: string,
   ) {
-    return this.dishService.findAll(paginationDto, category);
+    return this.dishService.findAll(paginationDto, userId, category);
   }
 
   @Get(':id')
   @ApiOperation({ summary: '获取单个菜品' })
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.dishService.findOne(id);
+  @ApiQuery({ name: 'userId', required: true, description: '当前用户ID' })
+  findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('userId', ParseIntPipe) userId: number,
+  ) {
+    return this.dishService.findOne(id, userId);
   }
 
   @Put(':id')
   @ApiOperation({ summary: '更新菜品' })
+  @ApiQuery({ name: 'userId', required: true, description: '当前用户ID' })
   update(
     @Param('id', ParseIntPipe) id: number,
+    @Query('userId', ParseIntPipe) userId: number,
     @Body() updateDishDto: UpdateDishDto,
   ) {
-    return this.dishService.update(id, updateDishDto);
+    return this.dishService.update(id, userId, updateDishDto);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: '删除菜品' })
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.dishService.remove(id);
+  @ApiQuery({ name: 'userId', required: true, description: '当前用户ID' })
+  remove(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('userId', ParseIntPipe) userId: number,
+  ) {
+    return this.dishService.remove(id, userId);
   }
 }

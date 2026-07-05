@@ -10,6 +10,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 
+
 class DishIngredientDto {
   @ApiProperty({ description: '食材名称' })
   @IsString()
@@ -79,4 +80,16 @@ export class CreateDishDto {
   @IsOptional()
   @IsString()
   bgColor?: string;
+
+  @ApiProperty({ description: '创建者ID' })
+  @IsNotEmpty({ message: '创建者ID不能为空' })
+  @Type(() => Number)
+  @IsInt({ message: '创建者ID必须是整数' })
+  userId: number;
+
+  @ApiProperty({ description: '所属饭搭子组ID' })
+  @IsNotEmpty({ message: '所属饭搭子组ID不能为空' })
+  @Type(() => Number)
+  @IsInt({ message: '所属饭搭子组ID必须是整数' })
+  groupId: number;
 }

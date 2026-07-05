@@ -219,6 +219,10 @@
       <!-- Edit / Save bottom bar for dish mode -->
       <view class="bottom-bar" v-if="!isFoodExpiry">
         <template v-if="!editing">
+          <view class="delete-btn-bar" @click="handleDeleteDish">
+            <uni-icons type="trash" size="20" color="#ba1a1a" />
+            <text>删除</text>
+          </view>
           <view class="edit-btn" @click="startEditing">
             <uni-icons type="compose" size="20" color="#321018" />
             <text>修改</text>
@@ -245,7 +249,14 @@ import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import uniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
 import PrivacyModal from '@/components/PrivacyModal.vue'
-import { getDish, updateDish, type FoodieDish } from '@/services/foodieBuddy'
+import {
+  getCurrentUser,
+  getDish,
+  updateDish,
+  deleteDish,
+  type FoodieDish,
+  type FoodieUser
+} from '@/services/foodieBuddy'
 import { uploadToOSS } from '@/services/oss'
 import {
   getExpiryFood,
@@ -279,6 +290,7 @@ interface FoodItem {
   notes?: string
 }
 
+const currentUser = ref<FoodieUser | null>(null)
 const dishId = ref<number>(0)
 const foodId = ref<number>(0)
 const dish = ref<Dish>({
@@ -407,7 +419,11 @@ const saveDish = async () => {
       image: editForm.value.image || undefined,
     }
 
-    const updated = await updateDish(dishId.value, payload)
+    if (!currentUser.value) {
+      uni.showToast({ title: '请先登录', icon: 'none' })
+      return
+    }
+    const updated = await updateDish(dishId.value, currentUser.value.id, payload)
     dish.value = mapDish(updated)
     editing.value = false
     uni.showToast({ title: '保存成功', icon: 'success' })
@@ -431,8 +447,10 @@ const mapDish = (item: FoodieDish): Dish => ({
 
 const loadDish = async (id: number) => {
   try {
+    const user = await getCurrentUser()
+    currentUser.value = user
     dishId.value = id
-    dish.value = mapDish(await getDish(id))
+    dish.value = mapDish(await getDish(id, user.id))
   } catch (err: any) {
     uni.showToast({ title: err.message || '菜品加载失败', icon: 'none' })
   }
@@ -519,6 +537,31 @@ const goBack = () => {
 
 const shareDish = () => {
   uni.showToast({ title: '更多功能', icon: 'none' })
+}
+
+const handleDeleteDish = () => {
+  if (!dishId.value) return
+  if (!currentUser.value) {
+    uni.showToast({ title: '请先登录', icon: 'none' })
+    return
+  }
+  uni.showModal({
+    title: '确认删除',
+    content: '确定要删除这道菜吗？',
+    success: async (res) => {
+      if (res.confirm) {
+        try {
+          await deleteDish(dishId.value, currentUser.value!.id)
+          uni.showToast({ title: '已删除', icon: 'success' })
+          setTimeout(() => {
+            uni.navigateBack()
+          }, 1000)
+        } catch (err: any) {
+          uni.showToast({ title: err.message || '删除失败', icon: 'none' })
+        }
+      }
+    }
+  })
 }
 
 const editFood = () => {
@@ -1204,7 +1247,8 @@ const deleteFood = () => {
 
 .edit-btn,
 .save-btn,
-.cancel-btn {
+.cancel-btn,
+.delete-btn-bar {
   height: 52px;
   border-radius: 12px;
   display: flex;
@@ -1216,10 +1260,17 @@ const deleteFood = () => {
 }
 
 .edit-btn {
-  flex: 1;
+  flex: 2;
   background: #ffc2cc;
   color: #321018;
   box-shadow: 0 4px 12px rgba(255, 194, 204, 0.3);
+}
+
+.delete-btn-bar {
+  flex: 1;
+  background: #f8f5f6;
+  color: #ba1a1a;
+  border: 1px solid rgba(186, 26, 26, 0.2);
 }
 
 .cancel-btn {
@@ -1238,7 +1289,8 @@ const deleteFood = () => {
 
 .edit-btn:active,
 .save-btn:active,
-.cancel-btn:active {
+.cancel-btn:active,
+.delete-btn-bar:active {
   transform: scale(0.98);
 }
 

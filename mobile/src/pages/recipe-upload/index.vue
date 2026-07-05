@@ -115,6 +115,26 @@
         </view>
       </view>
 
+      <!-- Dining Group Selector -->
+      <view class="group-section" v-if="groupsLoaded">
+        <text class="section-title">分享到饭搭子</text>
+        <picker
+          v-if="groups.length > 0"
+          mode="selector"
+          :range="groupNames"
+          :value="selectedGroupIndex"
+          @change="onGroupChange"
+        >
+          <view class="group-picker">
+            <text>{{ groupNames[selectedGroupIndex] }}</text>
+            <uni-icons type="arrowdown" size="14" color="#777" />
+          </view>
+        </picker>
+        <view v-else class="group-empty">
+          <text>暂无饭搭子组，创建或加入后才能发布菜谱</text>
+        </view>
+      </view>
+
       <!-- Spacer for fixed button -->
       <view style="height: 100px;"></view>
     </scroll-view>
@@ -136,16 +156,51 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import uniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
 import PrivacyModal from '@/components/PrivacyModal.vue'
-import { createDish } from '@/services/foodieBuddy'
+import {
+  createDish,
+  getCurrentUser,
+  getMyDiningGroups,
+  type DiningGroup,
+  type FoodieUser
+} from '@/services/foodieBuddy'
 import { uploadToOSS } from '@/services/oss'
 
 const recipeName = ref('')
 const coverImage = ref('')
 const publishing = ref(false)
 const privacyModal = ref<InstanceType<typeof PrivacyModal>>()
+
+const currentUser = ref<FoodieUser | null>(null)
+const groups = ref<DiningGroup[]>([])
+const groupsLoaded = ref(false)
+const selectedGroupIndex = ref(0)
+
+const groupNames = computed(() =>
+  groups.value.map((g) => g.name || `饭搭子 ${g.id}`)
+)
+
+const loadUserAndGroups = async () => {
+  try {
+    const user = await getCurrentUser()
+    currentUser.value = user
+    const myGroups = await getMyDiningGroups(user.id)
+    groups.value = myGroups
+    selectedGroupIndex.value = 0
+  } catch (err: any) {
+    uni.showToast({ title: err.message || '加载饭搭子组失败', icon: 'none' })
+  } finally {
+    groupsLoaded.value = true
+  }
+}
+
+onMounted(loadUserAndGroups)
+
+const onGroupChange = (e: { detail: { value: number } }) => {
+  selectedGroupIndex.value = e.detail.value
+}
 
 interface Ingredient {
   name: string
@@ -291,9 +346,20 @@ const publishRecipe = async () => {
     return
   }
 
+  if (!currentUser.value) {
+    uni.showToast({ title: '请先登录', icon: 'none' })
+    return
+  }
+
+  if (groups.value.length === 0) {
+    uni.showToast({ title: '请先创建或加入饭搭子组', icon: 'none' })
+    return
+  }
+
   const validIngredients = ingredients.value.filter((item) => item.name.trim() || item.amount.trim())
   const validSteps = steps.value.filter((item) => item.text.trim())
   const activeTags = getActiveTags()
+  const group = groups.value[selectedGroupIndex.value]
 
   publishing.value = true
   try {
@@ -310,7 +376,9 @@ const publishRecipe = async () => {
       })),
       steps: validSteps.map((item) => item.text.trim()),
       tags: activeTags,
-      bgColor: '#f0b7a4'
+      bgColor: '#f0b7a4',
+      userId: currentUser.value.id,
+      groupId: group.id
     })
     uni.showToast({ title: '菜谱发布成功', icon: 'success' })
     setTimeout(() => uni.navigateBack(), 800)
@@ -443,8 +511,30 @@ const publishRecipe = async () => {
   font-size: 16px;
 }
 
-.ingredients-section, .steps-section, .tags-section {
+.ingredients-section, .steps-section, .tags-section, .group-section {
   padding: 16px;
+}
+
+.group-picker {
+  margin-top: 12px;
+  height: 48px;
+  background: white;
+  border-radius: 12px;
+  padding: 0 16px;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  color: #111;
+}
+
+.group-empty {
+  margin-top: 12px;
+  padding: 16px;
+  background: rgba(186, 26, 26, 0.05);
+  border-radius: 12px;
+  font-size: 14px;
+  color: #ba1a1a;
 }
 
 .section-header {
