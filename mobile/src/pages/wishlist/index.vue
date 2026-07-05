@@ -8,9 +8,6 @@
       <view class="title">
         <text>心愿清单</text>
       </view>
-      <view class="add-btn" @click="addWish">
-        <uni-icons type="plus" size="24" color="#333" />
-      </view>
     </view>
 
     <!-- Progress Section -->
@@ -19,7 +16,7 @@
         <view class="progress-header">
           <view class="progress-title">
             <text class="label">心愿进度</text>
-            <text class="count">{{ completedCount }} <text class="total">/ {{ items.length }} 项</text></text>
+            <text class="count">{{ completedCount }} <text class="total">/ {{ totalCount }} 项</text></text>
           </view>
           <view class="progress-icon">
             <uni-icons type="star-filled" size="24" color="#ec4899" />
@@ -47,7 +44,7 @@
 
     <!-- Wishlist Items -->
     <view class="items">
-      <view v-for="(item, index) in filteredItems" :key="index" class="item" @click="toggleItem(index)">
+      <view v-for="item in filteredItems" :key="item.id" class="item" @click="toggleItem(item)">
         <view class="checkbox" :class="{ checked: item.completed }">
           <uni-icons v-if="item.completed" type="checkmarkempty" size="16" color="#fff" />
         </view>
@@ -107,6 +104,11 @@
       </view>
     </view>
 
+    <!-- Add Wish FAB -->
+    <view class="fab" @click="addWish">
+      <uni-icons type="plus" size="28" color="#fff" />
+    </view>
+
     <!-- Tab Bar -->
     <TabBar :current-index="0" @change="handleTabChange" />
   </view>
@@ -114,57 +116,22 @@
 
 <script setup lang="ts">
 import { ref, computed } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import TabBar from '@/components/TabBar.vue'
 import uniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
-
-interface WishItem {
-  title: string
-  category: string
-  tagClass: string
-  completed: boolean
-  filter: number
-}
+import {
+  getActiveWishes,
+  getCompletedCount,
+  getTotalCount,
+  completeWish,
+  addWish as addWishToStore,
+  type Wish
+} from '@/services/wishlist'
 
 const filters = ['全部', '旅行', '技能', '健康', '家居']
 const currentFilter = ref(0)
 
-const items = ref<WishItem[]>([
-  {
-    title: '春天去日本旅游',
-    category: '旅行',
-    tagClass: 'travel',
-    completed: true,
-    filter: 1
-  },
-  {
-    title: '学会制作舒芙',
-    category: '技能',
-    tagClass: 'skill',
-    completed: false,
-    filter: 2
-  },
-  {
-    title: '完成一次5公里马拉松',
-    category: '健康',
-    tagClass: 'health',
-    completed: false,
-    filter: 3
-  },
-  {
-    title: '今年阅读20本书',
-    category: '成长',
-    tagClass: 'growth',
-    completed: true,
-    filter: 0
-  },
-  {
-    title: '去看北极光',
-    category: '旅行',
-    tagClass: 'travel',
-    completed: false,
-    filter: 1
-  }
-])
+const items = ref<Wish[]>([])
 
 const filteredItems = computed(() => {
   if (currentFilter.value === 0) {
@@ -173,19 +140,43 @@ const filteredItems = computed(() => {
   return items.value.filter(item => item.filter === currentFilter.value)
 })
 
-const completedCount = computed(() => items.value.filter(item => item.completed).length)
-const remainingCount = computed(() => items.value.length - completedCount.value)
+const completedCount = ref(0)
+const totalCount = ref(0)
+const remainingCount = computed(() => totalCount.value - completedCount.value)
 const progressPercent = computed(() => {
-  if (items.value.length === 0) return 0
-  return Math.round((completedCount.value / items.value.length) * 100)
+  if (totalCount.value === 0) return 0
+  return Math.round((completedCount.value / totalCount.value) * 100)
 })
+
+const reload = async () => {
+  try {
+    const [active, completed, total] = await Promise.all([
+      getActiveWishes(),
+      getCompletedCount(),
+      getTotalCount()
+    ])
+    items.value = active
+    completedCount.value = completed
+    totalCount.value = total
+  } catch (err: any) {
+    uni.showToast({ title: err.message || '心愿加载失败', icon: 'none' })
+  }
+}
+
+onShow(reload)
 
 const goBack = () => {
   uni.navigateBack()
 }
 
-const toggleItem = (index: number) => {
-  items.value[index].completed = !items.value[index].completed
+const toggleItem = async (item: Wish) => {
+  try {
+    await completeWish(item.id)
+    await reload()
+    uni.showToast({ title: '心愿已实现', icon: 'success' })
+  } catch (err: any) {
+    uni.showToast({ title: err.message || '操作失败', icon: 'none' })
+  }
 }
 
 // Add Wish Modal
@@ -217,21 +208,25 @@ const closeModal = () => {
   newWishCategory.value = 'travel'
 }
 
-const submitWish = () => {
+const submitWish = async () => {
   if (!newWishTitle.value.trim()) {
     uni.showToast({ title: '请输入心愿名称', icon: 'none' })
     return
   }
   const category = categoryOptions.find(c => c.value === newWishCategory.value)
-  items.value.push({
-    title: newWishTitle.value.trim(),
-    category: category?.label || '旅行',
-    tagClass: category?.tagClass || 'travel',
-    completed: false,
-    filter: category?.filter || 1
-  })
-  uni.showToast({ title: '添加成功', icon: 'success' })
-  closeModal()
+  try {
+    await addWishToStore({
+      title: newWishTitle.value.trim(),
+      category: category?.label || '旅行',
+      tagClass: category?.tagClass || 'travel',
+      filter: category?.filter || 1
+    })
+    uni.showToast({ title: '添加成功', icon: 'success' })
+    closeModal()
+    await reload()
+  } catch (err: any) {
+    uni.showToast({ title: err.message || '添加失败', icon: 'none' })
+  }
 }
 
 const handleTabChange = (index: number) => {
@@ -265,7 +260,7 @@ const handleTabChange = (index: number) => {
   z-index: 10;
 }
 
-.back-btn, .add-btn {
+.back-btn {
   width: 40px;
   height: 40px;
   display: flex;
@@ -274,8 +269,19 @@ const handleTabChange = (index: number) => {
   border-radius: 50%;
 }
 
-.add-btn {
+.fab {
+  position: fixed;
+  right: 20px;
+  bottom: calc(80px + env(safe-area-inset-bottom));
+  width: 52px;
+  height: 52px;
+  border-radius: 50%;
   background: #ffc2cc;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 4px 12px rgba(255, 194, 204, 0.5);
+  z-index: 20;
 }
 
 .title {

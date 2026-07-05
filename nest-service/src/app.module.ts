@@ -2,6 +2,8 @@ import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { FoodieBuddyModule } from './modules/foodie-buddy/foodie-buddy.module';
+import { WishModule } from './modules/wish/wish.module';
+import { ExpiryModule } from './modules/expiry/expiry.module';
 import { OssModule } from './modules/oss/oss.module';
 
 @Module({
@@ -26,6 +28,8 @@ import { OssModule } from './modules/oss/oss.module';
       inject: [ConfigService],
     }),
     FoodieBuddyModule,
+    WishModule,
+    ExpiryModule,
     OssModule,
   ],
 })

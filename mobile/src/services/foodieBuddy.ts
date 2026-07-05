@@ -141,6 +141,10 @@ export const refreshCurrentUser = async (profile?: WechatProfile) => {
   return user
 }
 
+// 开发兜底：微信开发者工具未登录时 wx.login 返回 mock code，无法走真实登录。
+// 此时用本地写死的用户（id=1）跳过登录，便于联调。真机/正式环境不会触发，上线前移除。
+const DEV_FALLBACK_USER: FoodieUser = { id: 1, openid: 'dev' }
+
 export const getCurrentUser = async () => {
   const cached = uni.getStorageSync(CURRENT_USER_KEY) as FoodieUser | ''
   if (cached && cached.id) {
@@ -148,9 +152,17 @@ export const getCurrentUser = async () => {
   }
 
   if (!currentUserPromise) {
-    currentUserPromise = refreshCurrentUser().finally(() => {
-      currentUserPromise = null
-    })
+    currentUserPromise = refreshCurrentUser()
+      .catch((err: unknown) => {
+        if (err instanceof Error && /mock code/.test(err.message)) {
+          uni.setStorageSync(CURRENT_USER_KEY, DEV_FALLBACK_USER)
+          return DEV_FALLBACK_USER
+        }
+        throw err
+      })
+      .finally(() => {
+        currentUserPromise = null
+      })
   }
   return currentUserPromise
 }

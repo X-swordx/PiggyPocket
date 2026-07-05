@@ -77,6 +77,14 @@
 			}
 		},
 		{
+			"path": "pages/fulfilled-wishes/index",
+			"style": {
+				"navigationBarTitleText": "实现心愿",
+				"navigationStyle": "custom",
+				"backgroundColor": "#F8F5F6"
+			}
+		},
+		{
 			"path": "pages/foodie-buddy/index",
 			"style": {
 				"navigationBarTitleText": "饭搭子管理",

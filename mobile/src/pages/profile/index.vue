@@ -51,9 +51,9 @@
           <text class="stat-value">{{ stats.recipes }}</text>
           <text class="stat-label">历史菜单</text>
         </view>
-        <view class="stat-card">
-          <text class="stat-value">{{ stats.wishlist }}</text>
-          <text class="stat-label">心愿单</text>
+        <view class="stat-card" @click="goToFulfilledWishes">
+          <text class="stat-value">{{ stats.fulfilled }}</text>
+          <text class="stat-label">实现心愿</text>
         </view>
       </view>
 
@@ -100,6 +100,7 @@ import TabBar from '@/components/TabBar.vue'
 import uniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
 import { getCurrentUser, getDiningGroup, getMyDiningGroups, getOrders, refreshCurrentUser, updateOrderStatus, type FoodieOrder } from '@/services/foodieBuddy'
 import { uploadToOSS } from '@/services/oss'
+import { getCompletedCount } from '@/services/wishlist'
 
 const userInfo = ref({
   name: '猪猪主人',
@@ -111,7 +112,7 @@ const userInfo = ref({
 const stats = ref({
   orders: 0,
   recipes: 0,
-  wishlist: 0
+  fulfilled: 0
 })
 
 interface Order {
@@ -191,11 +192,12 @@ const loadProfile = async () => {
 
     const orders = await getOrders({ userId: user.id, page: 1, pageSize: 50 })
     const completedOrders = await getOrders({ userId: user.id, status: 'completed', page: 1, pageSize: 1 })
+    const fulfilledCount = await getCompletedCount()
 
     stats.value = {
       orders: buddyCount,
       recipes: completedOrders.total,
-      wishlist: 0
+      fulfilled: fulfilledCount
     }
     todayOrders.value = orders.list.filter((order) => isToday(order.createdAt)).map(mapOrder)
   } catch (err: any) {
@@ -275,6 +277,10 @@ const markCompleted = async (order: Order) => {
 
 const goToHistoryMenu = () => {
   uni.navigateTo({ url: '/pages/history-menu/index' })
+}
+
+const goToFulfilledWishes = () => {
+  uni.navigateTo({ url: '/pages/fulfilled-wishes/index' })
 }
 
 onShow(loadProfile)
