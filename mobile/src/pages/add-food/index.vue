@@ -6,7 +6,7 @@
         <uni-icons type="left" size="24" color="#ffc2cc" />
       </view>
       <view class="title">
-        <text>添加食品</text>
+        <text>{{ isEditing ? '编辑食品' : '添加食品' }}</text>
       </view>
       <view class="placeholder-btn">
       </view>
@@ -147,6 +147,8 @@
         <text>确认添加</text>
       </view>
     </view>
+
+    <PrivacyModal ref="privacyModal" />
   </view>
 </template>
 
@@ -154,7 +156,9 @@
 import { ref } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import uniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
+import PrivacyModal from '@/components/PrivacyModal.vue'
 import { uploadToOSS } from '@/services/oss'
+import { addExpiryFood, editExpiryFood, getExpiryFood } from '@/services/expiry'
 
 interface FormData {
   name: string
@@ -175,6 +179,11 @@ const formData = ref<FormData>({
   notes: '',
   imageUrl: ''
 })
+
+const editingId = ref(0)
+const isEditing = ref(false)
+const submitting = ref(false)
+const privacyModal = ref<InstanceType<typeof PrivacyModal>>()
 
 const storageOptions = [
   { label: '冷藏', value: 'fridge', icon: 'home' },
@@ -197,21 +206,32 @@ const onDateChange = (e: any) => {
   formData.value.expiryDate = e.detail.value
 }
 
-const uploadImage = () => {
-  uni.chooseImage({
+const uploadImage = async () => {
+  const agreed = await privacyModal.value?.ensurePrivacyAgreement()
+  if (!agreed) return
+
+  uni.chooseMedia({
     count: 1,
-    sizeType: ['compressed'],
+    mediaType: ['image'],
     sourceType: ['album', 'camera'],
+    sizeType: ['compressed'],
     success: async (res) => {
+      const tempFilePath = res.tempFiles?.[0]?.tempFilePath
+      if (!tempFilePath) return
       try {
         uni.showLoading({ title: '上传中...' })
-        formData.value.imageUrl = await uploadToOSS(res.tempFilePaths[0], 'foods')
+        formData.value.imageUrl = await uploadToOSS(tempFilePath, 'foods')
         uni.showToast({ title: '图片上传成功', icon: 'success' })
       } catch (err: any) {
         uni.showToast({ title: err.message || '上传失败', icon: 'none' })
       } finally {
         uni.hideLoading()
       }
+    },
+    fail: (err) => {
+      console.error('chooseMedia fail', err)
+      if (err.errMsg?.includes('cancel')) return
+      uni.showToast({ title: err.errMsg || '选择图片失败', icon: 'none' })
     }
   })
 }
@@ -225,24 +245,29 @@ const getRandomBgColor = () => {
   return colors[Math.floor(Math.random() * colors.length)]
 }
 
-const calculateDaysFromToday = (expiryDateStr: string): number => {
-  const today = new Date()
-  const expiry = new Date(expiryDateStr)
-  const diffTime = expiry.getTime() - today.getTime()
-  return Math.ceil(diffTime / (1000 * 60 * 60 * 24))
-}
-
-const getStatus = (days: number): { status: 'fresh' | 'expiring' | 'expired', statusText: string } => {
-  if (days < 0) {
-    return { status: 'expired', statusText: '已过期' }
-  } else if (days <= 3) {
-    return { status: 'expiring', statusText: '即将过期' }
-  } else {
-    return { status: 'fresh', statusText: '新鲜' }
+onLoad(async (options: any) => {
+  if (options?.id) {
+    editingId.value = Number(options.id)
+    isEditing.value = true
+    try {
+      const food = await getExpiryFood(editingId.value)
+      formData.value = {
+        name: food.name,
+        expiryDate: food.expiryDate,
+        quantity: food.quantity || 1,
+        storage: food.storage || 'fridge',
+        category: food.category || 'dairy',
+        notes: food.notes || '',
+        imageUrl: food.imageUrl || ''
+      }
+    } catch (err: any) {
+      uni.showToast({ title: err.message || '加载失败', icon: 'none' })
+    }
   }
-}
+})
 
-const submitForm = () => {
+const submitForm = async () => {
+  if (submitting.value) return
   if (!formData.value.name.trim()) {
     uni.showToast({ title: '请输入食品名称', icon: 'none' })
     return
@@ -252,47 +277,33 @@ const submitForm = () => {
     return
   }
 
-  const days = calculateDaysFromToday(formData.value.expiryDate)
-  const { status, statusText } = getStatus(days)
-  const daysText = days < 0 ? `${Math.abs(days)}天前过期` : days === 0 ? '今天过期' : `${days}天后过期`
-
-  // Get storage label
-  const storageLabel = {
-    fridge: '冰箱 (冷藏室)',
-    freezer: '冰箱 (冷冻室)',
-    pantry: '常温储藏'
-  }[formData.value.storage] || formData.value.storage
-
-  // Get category label
-  const categoryLabel = categories.find(c => c.value === formData.value.category)?.label || '其他'
-
-  // Prepare data to return to previous page
-  const newItem = {
-    name: formData.value.name,
+  const payload = {
+    name: formData.value.name.trim(),
     expiryDate: formData.value.expiryDate,
-    daysText,
-    daysCount: String(Math.abs(days)),
-    status,
-    statusText,
-    tab: status === 'expiring' || status === 'expired' ? 1 : 0,
-    bgColor: getRandomBgColor(),
-    category: categoryLabel,
-    spec: `${formData.value.quantity} · ${formData.value.quantity > 1 ? '件' : '件'}`,
-    storage: storageLabel,
-    notes: formData.value.notes
+    quantity: formData.value.quantity || 1,
+    storage: formData.value.storage,
+    category: formData.value.category,
+    notes: formData.value.notes || undefined,
+    imageUrl: formData.value.imageUrl || undefined
   }
 
-  // For now, just show success and go back
-  // In a real app, you would store this in a global store or backend
-  uni.showToast({
-    title: '添加成功',
-    icon: 'success',
-    duration: 1500
-  })
-
-  setTimeout(() => {
-    uni.navigateBack()
-  }, 1500)
+  submitting.value = true
+  try {
+    if (isEditing.value) {
+      await editExpiryFood(editingId.value, payload)
+      uni.showToast({ title: '保存成功', icon: 'success', duration: 1500 })
+    } else {
+      await addExpiryFood({ ...payload, bgColor: getRandomBgColor() })
+      uni.showToast({ title: '添加成功', icon: 'success', duration: 1500 })
+    }
+    setTimeout(() => {
+      uni.navigateBack()
+    }, 1500)
+  } catch (err: any) {
+    uni.showToast({ title: err.message || '操作失败', icon: 'none' })
+  } finally {
+    submitting.value = false
+  }
 }
 </script>
 

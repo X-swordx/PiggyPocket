@@ -235,6 +235,8 @@
         </template>
       </view>
     </view>
+
+    <PrivacyModal ref="privacyModal" />
   </view>
 </template>
 
@@ -242,8 +244,16 @@
 import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import uniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
+import PrivacyModal from '@/components/PrivacyModal.vue'
 import { getDish, updateDish, type FoodieDish } from '@/services/foodieBuddy'
 import { uploadToOSS } from '@/services/oss'
+import {
+  getExpiryFood,
+  removeExpiryFood,
+  CATEGORY_LABELS,
+  STORAGE_LABELS,
+  STORAGE_LABEL_DEFAULT
+} from '@/services/expiry'
 
 interface Dish {
   name: string
@@ -270,6 +280,7 @@ interface FoodItem {
 }
 
 const dishId = ref<number>(0)
+const foodId = ref<number>(0)
 const dish = ref<Dish>({
   name: '',
   calories: '--',
@@ -292,6 +303,7 @@ const isFoodExpiry = computed(() => !!food.value.name)
 // --- Edit mode ---
 const editing = ref(false)
 const saving = ref(false)
+const privacyModal = ref<InstanceType<typeof PrivacyModal>>()
 
 interface EditForm {
   name: string
@@ -330,19 +342,31 @@ const cancelEditing = () => {
   editing.value = false
 }
 
-const chooseCover = () => {
-  uni.chooseImage({
+const chooseCover = async () => {
+  const agreed = await privacyModal.value?.ensurePrivacyAgreement()
+  if (!agreed) return
+
+  uni.chooseMedia({
     count: 1,
+    mediaType: ['image'],
+    sourceType: ['album', 'camera'],
     success: async (res) => {
+      const tempFilePath = res.tempFiles?.[0]?.tempFilePath
+      if (!tempFilePath) return
       try {
         uni.showLoading({ title: '上传中...' })
-        editForm.value.image = await uploadToOSS(res.tempFilePaths[0], 'dishes')
+        editForm.value.image = await uploadToOSS(tempFilePath, 'dishes')
         uni.showToast({ title: '封面更新成功', icon: 'success' })
       } catch (err: any) {
         uni.showToast({ title: err.message || '上传失败', icon: 'none' })
       } finally {
         uni.hideLoading()
       }
+    },
+    fail: (err) => {
+      console.error('chooseMedia fail', err)
+      if (err.errMsg?.includes('cancel')) return
+      uni.showToast({ title: err.errMsg || '选择图片失败', icon: 'none' })
     }
   })
 }
@@ -414,7 +438,33 @@ const loadDish = async (id: number) => {
   }
 }
 
+const loadExpiryFood = async (id: number) => {
+  try {
+    foodId.value = id
+    const item = await getExpiryFood(id)
+    food.value = {
+      name: item.name,
+      expiryDate: item.expiryDate,
+      daysText: item.daysText,
+      daysCount: String(Math.abs(item.daysRemaining)),
+      status: item.status,
+      statusText: item.statusText,
+      bgColor: item.bgColor || getRandomBgColor(),
+      category: item.category ? CATEGORY_LABELS[item.category] || '未分类' : '未分类',
+      spec: `${item.quantity} 件`,
+      storage: item.storage ? STORAGE_LABELS[item.storage] || STORAGE_LABEL_DEFAULT : STORAGE_LABEL_DEFAULT,
+      notes: item.notes || ''
+    }
+  } catch (err: any) {
+    uni.showToast({ title: err.message || '食品加载失败', icon: 'none' })
+  }
+}
+
 onLoad((options: any) => {
+  if (options?.mode === 'expiry' && options?.id) {
+    loadExpiryFood(Number(options.id))
+    return
+  }
   if (options?.id) {
     loadDish(Number(options.id))
     return
@@ -472,19 +522,28 @@ const shareDish = () => {
 }
 
 const editFood = () => {
-  uni.showToast({ title: '编辑功能开发中', icon: 'none' })
+  if (!foodId.value) return
+  uni.navigateTo({
+    url: `/pages/add-food/index?id=${foodId.value}`
+  })
 }
 
 const deleteFood = () => {
+  if (!foodId.value) return
   uni.showModal({
     title: '确认删除',
     content: '确定要删除这个食品记录吗？',
-    success: (res) => {
+    success: async (res) => {
       if (res.confirm) {
-        uni.showToast({ title: '已删除', icon: 'success' })
-        setTimeout(() => {
-          uni.navigateBack()
-        }, 1000)
+        try {
+          await removeExpiryFood(foodId.value)
+          uni.showToast({ title: '已删除', icon: 'success' })
+          setTimeout(() => {
+            uni.navigateBack()
+          }, 1000)
+        } catch (err: any) {
+          uni.showToast({ title: err.message || '删除失败', icon: 'none' })
+        }
       }
     }
   })

@@ -28,8 +28,15 @@
 
     <!-- Content -->
     <view class="content">
-      <view v-for="(item, index) in filteredItems" :key="index" class="item-card" @click="goToDetail(item)">
-        <view class="item-image" :style="{ backgroundColor: item.bgColor }">
+      <view v-if="loading" class="state-text">
+        <text>加载中...</text>
+      </view>
+      <view v-else-if="!filteredItems.length" class="state-text">
+        <text>暂无食品记录</text>
+      </view>
+      <view v-for="item in filteredItems" :key="item.id" class="item-card" @click="goToDetail(item)">
+        <view class="item-image" :style="{ backgroundColor: item.bgColor || '#ffc2cc' }">
+          <image v-if="item.imageUrl" class="food-img" :src="item.imageUrl" mode="aspectFill" />
           <view class="status-dot" :class="item.status"></view>
         </view>
         <view class="item-info">
@@ -62,68 +69,45 @@
 </template>
 
 <script setup lang="ts">
-import { ref, computed } from 'vue'
+import { ref, watch } from 'vue'
+import { onShow } from '@dcloudio/uni-app'
 import TabBar from '@/components/TabBar.vue'
 import uniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
-
-interface FoodItem {
-  name: string
-  expiryDate: string
-  daysText: string
-  status: 'fresh' | 'expiring' | 'expired'
-  statusText: string
-  tab: number
-  bgColor: string
-}
+import {
+  getAllFoods,
+  getExpiringFoods,
+  getExpiredFoods,
+  type ExpiryFood
+} from '@/services/expiry'
 
 const tabs = ['全部', '即将过期', '已过期']
 const currentTab = ref(0)
 
-const items = ref<FoodItem[]>([
-  {
-    name: '全脂牛奶 (1L)',
-    expiryDate: '2023-10-25',
-    daysText: '2天后过期',
-    status: 'expiring',
-    statusText: '即将过期',
-    tab: 1,
-    bgColor: '#8aa6cb'
-  },
-  {
-    name: '有机牛油果',
-    expiryDate: '2023-11-05',
-    daysText: '12天后过期',
-    status: 'fresh',
-    statusText: '新鲜',
-    tab: 0,
-    bgColor: '#a8d5ba'
-  },
-  {
-    name: '酸种面包',
-    expiryDate: '2023-10-28',
-    daysText: '5天后过期',
-    status: 'fresh',
-    statusText: '新鲜',
-    tab: 0,
-    bgColor: '#d4a373'
-  },
-  {
-    name: '蓝莓酸奶',
-    expiryDate: '2023-10-24',
-    daysText: '明天',
-    status: 'expiring',
-    statusText: '即将过期',
-    tab: 1,
-    bgColor: '#a88fca'
-  }
-])
+const items = ref<ExpiryFood[]>([])
+const loading = ref(false)
 
-const filteredItems = computed(() => {
-  if (currentTab.value === 0) {
-    return items.value
+const filteredItems = items
+
+const loadList = async () => {
+  loading.value = true
+  try {
+    if (currentTab.value === 1) {
+      items.value = await getExpiringFoods()
+    } else if (currentTab.value === 2) {
+      items.value = await getExpiredFoods()
+    } else {
+      items.value = await getAllFoods()
+    }
+  } catch (err: any) {
+    uni.showToast({ title: err.message || '食品加载失败', icon: 'none' })
+    items.value = []
+  } finally {
+    loading.value = false
   }
-  return items.value.filter(item => item.tab === currentTab.value)
-})
+}
+
+watch(currentTab, loadList)
+onShow(loadList)
 
 const goBack = () => {
   uni.navigateBack()
@@ -147,9 +131,9 @@ const handleTabChange = (index: number) => {
   }
 }
 
-const goToDetail = (item: FoodItem) => {
+const goToDetail = (item: ExpiryFood) => {
   uni.navigateTo({
-    url: `/pages/dish-detail/index?name=${encodeURIComponent(item.name)}&expiryDate=${encodeURIComponent(item.expiryDate)}&status=${encodeURIComponent(item.status)}&statusText=${encodeURIComponent(item.statusText)}&daysText=${encodeURIComponent(item.daysText)}&bgColor=${encodeURIComponent(item.bgColor)}`
+    url: `/pages/dish-detail/index?id=${item.id}&mode=expiry`
   })
 }
 </script>
@@ -240,6 +224,13 @@ const goToDetail = (item: FoodItem) => {
   padding-bottom: 140px;
 }
 
+.state-text {
+  padding: 48px 0;
+  text-align: center;
+  color: #999;
+  font-size: 14px;
+}
+
 .item-card {
   display: flex;
   align-items: center;
@@ -254,13 +245,15 @@ const goToDetail = (item: FoodItem) => {
 .item-image {
   width: 80px;
   height: 80px;
-  background: rgba(255, 194, 204, 0.1);
   border-radius: 8px;
   position: relative;
   overflow: hidden;
 }
 
 .food-img {
+  position: absolute;
+  top: 0;
+  left: 0;
   width: 100%;
   height: 100%;
 }
@@ -272,6 +265,7 @@ const goToDetail = (item: FoodItem) => {
   width: 8px;
   height: 8px;
   border-radius: 50%;
+  z-index: 1;
 }
 
 .status-dot.fresh {

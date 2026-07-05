@@ -130,18 +130,22 @@
         </view>
       </view>
     </view>
+
+    <PrivacyModal ref="privacyModal" />
   </view>
 </template>
 
 <script setup lang="ts">
 import { ref } from 'vue'
 import uniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
+import PrivacyModal from '@/components/PrivacyModal.vue'
 import { createDish } from '@/services/foodieBuddy'
 import { uploadToOSS } from '@/services/oss'
 
 const recipeName = ref('')
 const coverImage = ref('')
 const publishing = ref(false)
+const privacyModal = ref<InstanceType<typeof PrivacyModal>>()
 
 interface Ingredient {
   name: string
@@ -179,19 +183,31 @@ const goBack = () => {
   uni.navigateBack()
 }
 
-const chooseImage = () => {
-  uni.chooseImage({
+const chooseImage = async () => {
+  const agreed = await privacyModal.value?.ensurePrivacyAgreement()
+  if (!agreed) return
+
+  uni.chooseMedia({
     count: 1,
+    mediaType: ['image'],
+    sourceType: ['album', 'camera'],
     success: async (res) => {
+      const tempFilePath = res.tempFiles?.[0]?.tempFilePath
+      if (!tempFilePath) return
       try {
         uni.showLoading({ title: '上传中...' })
-        coverImage.value = await uploadToOSS(res.tempFilePaths[0], 'dishes')
+        coverImage.value = await uploadToOSS(tempFilePath, 'dishes')
         uni.showToast({ title: '封面图上传成功', icon: 'success' })
       } catch (err: any) {
         uni.showToast({ title: err.message || '上传失败', icon: 'none' })
       } finally {
         uni.hideLoading()
       }
+    },
+    fail: (err) => {
+      console.error('chooseMedia fail', err)
+      if (err.errMsg?.includes('cancel')) return
+      uni.showToast({ title: err.errMsg || '选择图片失败', icon: 'none' })
     }
   })
 }
@@ -210,19 +226,31 @@ const removeStep = (index: number) => {
   }
 }
 
-const addStepImage = (index: number) => {
-  uni.chooseImage({
+const addStepImage = async (index: number) => {
+  const agreed = await privacyModal.value?.ensurePrivacyAgreement()
+  if (!agreed) return
+
+  uni.chooseMedia({
     count: 1,
+    mediaType: ['image'],
+    sourceType: ['album', 'camera'],
     success: async (res) => {
+      const tempFilePath = res.tempFiles?.[0]?.tempFilePath
+      if (!tempFilePath) return
       try {
         uni.showLoading({ title: '上传中...' })
-        await uploadToOSS(res.tempFilePaths[0], 'dishes/steps')
+        await uploadToOSS(tempFilePath, 'dishes/steps')
         uni.showToast({ title: '步骤图片上传成功', icon: 'success' })
       } catch (err: any) {
         uni.showToast({ title: err.message || '上传失败', icon: 'none' })
       } finally {
         uni.hideLoading()
       }
+    },
+    fail: (err) => {
+      console.error('chooseMedia fail', err)
+      if (err.errMsg?.includes('cancel')) return
+      uni.showToast({ title: err.errMsg || '选择图片失败', icon: 'none' })
     }
   })
 }
