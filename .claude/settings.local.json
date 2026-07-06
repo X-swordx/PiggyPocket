@@ -114,7 +114,10 @@
       "Bash(git commit *)",
       "Bash(npx jest *)",
       "Bash(git checkout *)",
-      "Bash(git commit -m 'feat: 菜品关联 userId 与饭搭子组共享 *)"
+      "Bash(git commit -m 'feat: 菜品关联 userId 与饭搭子组共享 *)",
+      "Bash(chmod +x deploy/nas/deploy.sh deploy/nas/backup.sh)",
+      "Bash(docker run *)",
+      "Bash(git commit -m 'chore: 配置 TypeORM 迁移与 NAS 部署脚本 *)"
     ],
     "additionalDirectories": [
       "F:\\PiggyPocket\\nest-service\\src\\modules\\order\\dto",

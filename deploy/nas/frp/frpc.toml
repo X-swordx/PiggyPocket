@@ -1,0 +1,29 @@
+# FRP 客户端配置
+# 部署在绿联 NAS 上
+
+serverAddr = "你的云服务器公网IP"
+serverPort = 7000
+
+# 与服务端 token 保持一致
+auth.method = "token"
+auth.token = "请修改为你的强Token"
+
+# 给这个客户端起个名字
+user = "piggy-nas"
+
+# 将 NAS 本地 443 端口映射到云服务器的 8443 端口
+# 云服务器 Nginx 再反向代理 8443 → 公网 443
+[[proxies]]
+name = "piggy-api-https"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 443
+remotePort = 8443
+
+# 可选：如果需要 HTTP 挑战验证（如 Let's Encrypt）
+[[proxies]]
+name = "piggy-api-http"
+type = "tcp"
+localIP = "127.0.0.1"
+localPort = 80
+remotePort = 8080

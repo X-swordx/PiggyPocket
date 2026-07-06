@@ -21,7 +21,7 @@ import { OssModule } from './modules/oss/oss.module';
         password: configService.get('DB_PASSWORD', ''),
         database: configService.get('DB_DATABASE', 'nest_demo'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
-        synchronize: true,
+        synchronize: false,
         logging: true,
         timezone: '+08:00',
       }),
