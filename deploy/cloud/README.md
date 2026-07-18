@@ -122,10 +122,10 @@ cat ~/.ssh/id_ed25519.pub
 ### 4.4 克隆代码
 
 ```bash
-sudo mkdir -p /opt
-cd /opt
-sudo git clone git@github.com:你的用户名/PiggyPocket.git piggy-pocket
-sudo chown -R $(whoami):$(whoami) /opt/piggy-pocket
+sudo mkdir -p /home/admin
+cd /home/admin
+sudo git clone git@github.com:你的用户名/PiggyPocket.git PiggyPocket
+sudo chown -R $(whoami):$(whoami) /home/admin/PiggyPocket
 ```
 
 ### 4.5 后续更新代码
@@ -133,7 +133,7 @@ sudo chown -R $(whoami):$(whoami) /opt/piggy-pocket
 每次本地更新并 push 到 GitHub 后，在服务器上执行：
 
 ```bash
-cd /opt/piggy-pocket
+cd /home/admin/PiggyPocket
 git pull
 docker compose -p piggy-pocket down
 docker compose -p piggy-pocket up -d --build
@@ -153,7 +153,7 @@ docker compose -p piggy-pocket up -d --build
 进入项目目录：
 
 ```bash
-cd /opt/piggy-pocket/deploy/cloud
+cd /home/admin/PiggyPocket/deploy/cloud
 cp .env.example .env
 # 使用 vim/nano 编辑 .env
 ```
@@ -165,8 +165,8 @@ cp .env.example .env
 | 变量 | 说明 |
 |------|------|
 | `DOMAIN` | 微信小程序最终访问的 HTTPS 域名，例如 `api.yourdomain.com` |
-| `DATA_DIR` | 云服务器上的数据持久化目录，例如 `/opt/piggy-pocket/data` |
-| `BACKUP_DIR` | 数据库备份目录，例如 `/opt/piggy-pocket/backup` |
+| `DATA_DIR` | 云服务器上的数据持久化目录，例如 `/home/admin/PiggyPocket/data` |
+| `BACKUP_DIR` | 数据库备份目录，例如 `/home/admin/PiggyPocket/backup` |
 | `MYSQL_ROOT_PASSWORD` / `DB_PASSWORD` | 数据库密码 |
 | `WECHAT_APPID` / `WECHAT_SECRET` | 微信小程序凭证 |
 | `OSS_*` | 阿里云 OSS 配置 |
@@ -174,7 +174,7 @@ cp .env.example .env
 ## 6. 一键部署
 
 ```bash
-cd /opt/piggy-pocket/deploy/cloud
+cd /home/admin/PiggyPocket/deploy/cloud
 chmod +x deploy.sh backup.sh
 ./deploy.sh
 ```
@@ -267,7 +267,7 @@ npm run build:mp-weixin
 手动备份：
 
 ```bash
-cd /opt/piggy-pocket/deploy/cloud
+cd /home/admin/PiggyPocket/deploy/cloud
 ./backup.sh
 ```
 
@@ -276,13 +276,13 @@ cd /opt/piggy-pocket/deploy/cloud
 ```bash
 sudo crontab -e
 # 添加以下行：
-0 3 * * * /opt/piggy-pocket/deploy/cloud/backup.sh
+0 3 * * * /home/admin/PiggyPocket/deploy/cloud/backup.sh
 ```
 
 ## 13. 常用命令
 
 ```bash
-cd /opt/piggy-pocket/deploy/cloud
+cd /home/admin/PiggyPocket/deploy/cloud
 
 # 查看日志
 docker compose -p piggy-pocket logs -f api
