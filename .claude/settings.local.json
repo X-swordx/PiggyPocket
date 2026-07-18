@@ -117,7 +117,19 @@
       "Bash(git commit -m 'feat: 菜品关联 userId 与饭搭子组共享 *)",
       "Bash(chmod +x deploy/nas/deploy.sh deploy/nas/backup.sh)",
       "Bash(docker run *)",
-      "Bash(git commit -m 'chore: 配置 TypeORM 迁移与 NAS 部署脚本 *)"
+      "Bash(git commit -m 'chore: 配置 TypeORM 迁移与 NAS 部署脚本 *)",
+      "Bash(docker compose *)",
+      "Bash(bash -n deploy.sh)",
+      "Bash(bash -n backup.sh)",
+      "Bash(python3 -c \"import tomllib; [tomllib.load\\(open\\(f,'rb'\\)\\) for f in ['frps.toml','frpc.toml']]; print\\('TOML syntax OK'\\)\")",
+      "Bash(python3 -c \"import tomllib; tomllib.load\\(open\\('frps.toml','rb'\\)\\)\")",
+      "Bash(python3 -c \"import tomllib; tomllib.load\\(open\\('frpc.toml','rb'\\)\\)\")",
+      "Bash(python3 -c \"import sys; print\\(sys.version\\)\")",
+      "Bash(python3 -c \"import tomllib; tomllib.load\\(open\\('frps.toml','rb'\\)\\); print\\('frps.toml OK'\\)\")",
+      "Bash(bash -n deploy/nas/deploy.sh)",
+      "Bash(bash -n deploy/nas/backup.sh)",
+      "Bash(bash -n deploy/cloud/deploy.sh)",
+      "Bash(bash -n deploy/cloud/backup.sh)"
     ],
     "additionalDirectories": [
       "F:\\PiggyPocket\\nest-service\\src\\modules\\order\\dto",
