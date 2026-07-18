@@ -90,7 +90,16 @@ docker compose version
 
 推荐直接在云服务器上使用 **Git SSH 拉取**，后续更新代码也最方便。
 
-### 4.1 生成 SSH 密钥
+### 4.1 安装 Git
+
+CentOS 8.2 默认可能没有 Git：
+
+```bash
+sudo yum install -y git
+git --version
+```
+
+### 4.2 生成 SSH 密钥
 
 ```bash
 ssh-keygen -t ed25519 -C "your_email@example.com"
@@ -103,14 +112,14 @@ ssh-keygen -t ed25519 -C "your_email@example.com"
 cat ~/.ssh/id_ed25519.pub
 ```
 
-### 4.2 将公钥添加到 GitHub
+### 4.3 将公钥添加到 GitHub
 
 1. 登录 GitHub → 右上角头像 → **Settings**。
 2. 左侧 **SSH and GPG keys** → **New SSH key**。
 3. Title 随便填（例如 `Aliyun Server`），Key 粘贴刚才的公钥内容。
 4. 点击 **Add SSH key**。
 
-### 4.3 克隆代码
+### 4.4 克隆代码
 
 ```bash
 sudo mkdir -p /opt
@@ -119,7 +128,7 @@ sudo git clone git@github.com:你的用户名/PiggyPocket.git piggy-pocket
 sudo chown -R $(whoami):$(whoami) /opt/piggy-pocket
 ```
 
-### 4.4 后续更新代码
+### 4.5 后续更新代码
 
 每次本地更新并 push 到 GitHub 后，在服务器上执行：
 
@@ -130,7 +139,7 @@ docker compose -p piggy-pocket down
 docker compose -p piggy-pocket up -d --build
 ```
 
-### 4.5 其他方式
+### 4.6 其他方式
 
 | 方式 | 适用场景 |
 |------|---------|
