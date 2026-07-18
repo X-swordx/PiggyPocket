@@ -37,14 +37,14 @@ api.yourdomain.com（阿里云域名）
 
 针对这个 NestJS + MySQL 的小程序后端：
 
-| 配置项 | 建议 |
-|--------|------|
-| CPU | 2 核 |
-| 内存 | 2G ~ 4G |
-| 系统盘 | 40GB ~ 60GB |
-| 带宽 | 3Mbps 起步 |
-| 操作系统 | Ubuntu 22.04 LTS 或 CentOS 7/8 |
-| 地域 | 选择离你用户最近的节点，如华东 1（杭州）、华南 1（深圳） |
+| 配置项   | 建议                                                     |
+| -------- | -------------------------------------------------------- |
+| CPU      | 2 核                                                     |
+| 内存     | 2G ~ 4G                                                  |
+| 系统盘   | 40GB ~ 60GB                                              |
+| 带宽     | 3Mbps 起步                                               |
+| 操作系统 | Ubuntu 22.04 LTS 或 CentOS 7/8                           |
+| 地域     | 选择离你用户最近的节点，如华东 1（杭州）、华南 1（深圳） |
 
 > 提示：小程序图片通常上传到阿里云 OSS，不经过 API，所以服务器带宽压力不大。
 
@@ -85,6 +85,59 @@ docker compose version
 ```
 
 > 提示：CentOS 8 已停止维护，如果安装过程中出现软件源错误，建议将系统替换为 **CentOS Stream 8**、**Rocky Linux 8** 或 **AlmaLinux 8**，命令基本相同。
+
+### 3.1 配置 Docker 镜像加速
+
+国内服务器直接拉 Docker Hub 镜像会超时（`registry-1.docker.io: Client.Timeout exceeded`），必须配置镜像加速器。
+
+1. 登录 [阿里云容器镜像服务](https://cr.console.aliyun.com/) → **镜像工具 → 镜像加速器**，复制你的专属加速器地址（形如 `https://xxxxxxxx.mirror.aliyuncs.com`）。
+
+2. 写入 `/etc/docker/daemon.json`：
+
+   ```bash
+   sudo mkdir -p /etc/docker
+
+   sudo tee /etc/docker/daemon.json <<EOF
+   {
+     "registry-mirrors": [
+       "https://xxxxxxxx.mirror.aliyuncs.com",
+       "https://docker.m.daocloud.io",
+       "https://dockerproxy.com",
+       "https://mirror.baidubce.com"
+     ]
+   }
+   EOF
+   ```
+
+   > 把 `https://xxxxxxxx.mirror.aliyuncs.com` 换成你在阿里云获取到的专属地址。后面几个是公开备用镜像。
+
+3. 重启 Docker：
+
+   ```bash
+   sudo systemctl daemon-reload
+   sudo systemctl restart docker
+   ```
+
+4. 验证：
+
+   ```bash
+   docker info | grep -A5 "Registry Mirrors"
+   docker pull hello-world
+   ```
+
+   能拉下 `hello-world` 即配置成功。
+
+### 3.2 将当前用户加入 docker 组
+
+避免每次都用 `sudo`：
+
+```bash
+sudo usermod -aG docker $USER
+newgrp docker
+docker ps
+```
+
+`newgrp docker` 让当前 shell 立即生效；重新 SSH 登录后自动生效，无需再执行。
 
 ## 4. 上传项目代码到云服务器
 
@@ -141,12 +194,12 @@ docker compose -p piggy-pocket up -d --build
 
 ### 4.6 其他方式
 
-| 方式 | 适用场景 |
-|------|---------|
-| **Git HTTPS + Token** | 不想配置 SSH，可用 GitHub Personal Access Token |
-| **下载 ZIP 上传** | 一次性部署，用 SFTP/宝塔面板上传 |
-| **GitHub Actions 自动部署** | 代码 push 后自动部署到服务器 |
-| **Docker 镜像仓库** | 构建镜像推送到阿里云镜像仓库，服务器只拉镜像 |
+| 方式                        | 适用场景                                        |
+| --------------------------- | ----------------------------------------------- |
+| **Git HTTPS + Token**       | 不想配置 SSH，可用 GitHub Personal Access Token |
+| **下载 ZIP 上传**           | 一次性部署，用 SFTP/宝塔面板上传                |
+| **GitHub Actions 自动部署** | 代码 push 后自动部署到服务器                    |
+| **Docker 镜像仓库**         | 构建镜像推送到阿里云镜像仓库，服务器只拉镜像    |
 
 ## 5. 配置环境变量
 
@@ -162,14 +215,14 @@ cp .env.example .env
 
 重点填写以下项：
 
-| 变量 | 说明 |
-|------|------|
-| `DOMAIN` | 微信小程序最终访问的 HTTPS 域名，例如 `api.yourdomain.com` |
-| `DATA_DIR` | 云服务器上的数据持久化目录，例如 `/home/admin/PiggyPocket/data` |
-| `BACKUP_DIR` | 数据库备份目录，例如 `/home/admin/PiggyPocket/backup` |
-| `MYSQL_ROOT_PASSWORD` / `DB_PASSWORD` | 数据库密码 |
-| `WECHAT_APPID` / `WECHAT_SECRET` | 微信小程序凭证 |
-| `OSS_*` | 阿里云 OSS 配置 |
+| 变量                                  | 说明                                                            |
+| ------------------------------------- | --------------------------------------------------------------- |
+| `DOMAIN`                              | 微信小程序最终访问的 HTTPS 域名，例如 `api.yourdomain.com`      |
+| `DATA_DIR`                            | 云服务器上的数据持久化目录，例如 `/home/admin/PiggyPocket/data` |
+| `BACKUP_DIR`                          | 数据库备份目录，例如 `/home/admin/PiggyPocket/backup`           |
+| `MYSQL_ROOT_PASSWORD` / `DB_PASSWORD` | 数据库密码                                                      |
+| `WECHAT_APPID` / `WECHAT_SECRET`      | 微信小程序凭证                                                  |
+| `OSS_*`                               | 阿里云 OSS 配置                                                 |
 
 ## 6. 一键部署
 
@@ -314,12 +367,15 @@ docker compose -p piggy-pocket exec mysql mysql -uroot -p
 - 小程序上线前，需要在网站底部展示备案号并链接到 [工信部](https://beian.miit.gov.cn/)。
 - 如果涉及用户个人信息收集，需在微信小程序后台完善隐私协议。
 
-## 15. 故障排查
+## 16. 故障排查
 
-| 现象 | 可能原因 | 排查方法 |
-|------|----------|----------|
-| 公网无法访问 | 域名未解析 / 安全组未放行 80/443 | `ping api.yourdomain.com`；检查安全组 |
-| NPM 返回 502 | API 容器未启动 | `docker compose -p piggy-pocket logs api` |
-| SSL 证书申请失败 | 域名未解析 / 80 端口未放行 | 检查解析和安全组 |
-| 小程序提示域名不合法 | 未在微信后台配置 | 检查微信公众平台服务器域名 |
-| 数据库连接失败 | MySQL 未就绪 / 密码错误 | `docker compose -p piggy-pocket logs mysql` |
+| 现象                 | 可能原因                         | 排查方法                                    |
+| -------------------- | -------------------------------- | ------------------------------------------- |
+| 拉镜像超时（`registry-1.docker.io ... Client.Timeout`） | 国内直连 Docker Hub 被墙        | 参考 [3.1 配置 Docker 镜像加速](#31-配置-docker-镜像加速) |
+| `permission denied ... docker.sock` | 当前用户不在 docker 组          | 参考 [3.2 将当前用户加入 docker 组](#32-将当前用户加入-docker-组) |
+| `.env: line N: xxx: command not found` | `.env` 中值含空格未加引号       | 编辑 `.env` 去掉占位符空格或用引号包起来   |
+| 公网无法访问         | 域名未解析 / 安全组未放行 80/443 | `ping api.yourdomain.com`；检查安全组       |
+| NPM 返回 502         | API 容器未启动                   | `docker compose -p piggy-pocket logs api`   |
+| SSL 证书申请失败     | 域名未解析 / 80 端口未放行       | 检查解析和安全组                            |
+| 小程序提示域名不合法 | 未在微信后台配置                 | 检查微信公众平台服务器域名                  |
+| 数据库连接失败       | MySQL 未就绪 / 密码错误          | `docker compose -p piggy-pocket logs mysql` |
