@@ -168,6 +168,8 @@ import {
 } from '@/services/foodieBuddy'
 import { uploadToOSS } from '@/services/oss'
 
+const DRAFT_STORAGE_KEY = 'recipe-upload-draft'
+
 const recipeName = ref('')
 const coverImage = ref('')
 const publishing = ref(false)
@@ -196,7 +198,10 @@ const loadUserAndGroups = async () => {
   }
 }
 
-onMounted(loadUserAndGroups)
+onMounted(() => {
+  loadUserAndGroups()
+  restoreDraft()
+})
 
 const onGroupChange = (e: { detail: { value: number } }) => {
   selectedGroupIndex.value = e.detail.value
@@ -319,7 +324,35 @@ const addTag = () => {
 }
 
 const saveDraft = () => {
-  uni.showToast({ title: '草稿已保存', icon: 'success' })
+  const draft = {
+    recipeName: recipeName.value,
+    coverImage: coverImage.value,
+    ingredients: ingredients.value,
+    steps: steps.value,
+    tags: tags.value,
+    savedAt: Date.now()
+  }
+  try {
+    uni.setStorageSync(DRAFT_STORAGE_KEY, draft)
+    uni.showToast({ title: '草稿已保存', icon: 'success' })
+  } catch (err: any) {
+    uni.showToast({ title: err.message || '草稿保存失败', icon: 'none' })
+  }
+}
+
+const restoreDraft = () => {
+  try {
+    const draft = uni.getStorageSync(DRAFT_STORAGE_KEY)
+    if (!draft) return
+    if (typeof draft.recipeName === 'string') recipeName.value = draft.recipeName
+    if (typeof draft.coverImage === 'string') coverImage.value = draft.coverImage
+    if (Array.isArray(draft.ingredients) && draft.ingredients.length) ingredients.value = draft.ingredients
+    if (Array.isArray(draft.steps) && draft.steps.length) steps.value = draft.steps
+    if (Array.isArray(draft.tags) && draft.tags.length) tags.value = draft.tags
+    uni.showToast({ title: '已恢复上次草稿', icon: 'none' })
+  } catch (err) {
+    console.error('restoreDraft fail', err)
+  }
 }
 
 const getActiveTags = () => tags.value.filter((tag) => tag.active).map((tag) => tag.name)
@@ -381,6 +414,7 @@ const publishRecipe = async () => {
       groupId: group.id
     })
     uni.showToast({ title: '菜谱发布成功', icon: 'success' })
+    uni.removeStorageSync(DRAFT_STORAGE_KEY)
     setTimeout(() => uni.navigateBack(), 800)
   } catch (err: any) {
     uni.showToast({ title: err.message || '发布失败', icon: 'none' })

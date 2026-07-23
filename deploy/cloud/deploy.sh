@@ -43,7 +43,7 @@ if [ -z "$DOMAIN" ] || [ "$DOMAIN" = "api.yourdomain.com" ]; then
   exit 1
 fi
 
-if [ -z "$WECHAT_APPID" ] || [ "$WECHAT_APPID" = "wx your appid" ]; then
+if [ -z "$WECHAT_APPID" ] || [ "$WECHAT_APPID" = "wxYourAppId" ]; then
   log_error "请先在 .env 中配置 WECHAT_APPID 和 WECHAT_SECRET"
   exit 1
 fi

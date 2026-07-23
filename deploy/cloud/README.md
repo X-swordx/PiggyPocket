@@ -242,7 +242,7 @@ chmod +x deploy.sh backup.sh
 
 ## 7. 配置 Nginx Proxy Manager
 
-1. 访问 `http://<服务器IP>:81`，使用默认账号登录：
+1.   ，使用默认账号登录：
    - 邮箱：`admin@example.com`
    - 密码：`changeme`
 2. 首次登录后请立即修改管理员密码。
@@ -369,13 +369,13 @@ docker compose -p piggy-pocket exec mysql mysql -uroot -p
 
 ## 16. 故障排查
 
-| 现象                 | 可能原因                         | 排查方法                                    |
-| -------------------- | -------------------------------- | ------------------------------------------- |
-| 拉镜像超时（`registry-1.docker.io ... Client.Timeout`） | 国内直连 Docker Hub 被墙        | 参考 [3.1 配置 Docker 镜像加速](#31-配置-docker-镜像加速) |
-| `permission denied ... docker.sock` | 当前用户不在 docker 组          | 参考 [3.2 将当前用户加入 docker 组](#32-将当前用户加入-docker-组) |
-| `.env: line N: xxx: command not found` | `.env` 中值含空格未加引号       | 编辑 `.env` 去掉占位符空格或用引号包起来   |
-| 公网无法访问         | 域名未解析 / 安全组未放行 80/443 | `ping api.yourdomain.com`；检查安全组       |
-| NPM 返回 502         | API 容器未启动                   | `docker compose -p piggy-pocket logs api`   |
-| SSL 证书申请失败     | 域名未解析 / 80 端口未放行       | 检查解析和安全组                            |
-| 小程序提示域名不合法 | 未在微信后台配置                 | 检查微信公众平台服务器域名                  |
-| 数据库连接失败       | MySQL 未就绪 / 密码错误          | `docker compose -p piggy-pocket logs mysql` |
+| 现象                                                    | 可能原因                         | 排查方法                                                          |
+| ------------------------------------------------------- | -------------------------------- | ----------------------------------------------------------------- |
+| 拉镜像超时（`registry-1.docker.io ... Client.Timeout`） | 国内直连 Docker Hub 被墙         | 参考 [3.1 配置 Docker 镜像加速](#31-配置-docker-镜像加速)         |
+| `permission denied ... docker.sock`                     | 当前用户不在 docker 组           | 参考 [3.2 将当前用户加入 docker 组](#32-将当前用户加入-docker-组) |
+| `.env: line N: xxx: command not found`                  | `.env` 中值含空格未加引号        | 编辑 `.env` 去掉占位符空格或用引号包起来                          |
+| 公网无法访问                                            | 域名未解析 / 安全组未放行 80/443 | `ping api.yourdomain.com`；检查安全组                             |
+| NPM 返回 502                                            | API 容器未启动                   | `docker compose -p piggy-pocket logs api`                         |
+| SSL 证书申请失败                                        | 域名未解析 / 80 端口未放行       | 检查解析和安全组                                                  |
+| 小程序提示域名不合法                                    | 未在微信后台配置                 | 检查微信公众平台服务器域名                                        |
+| 数据库连接失败                                          | MySQL 未就绪 / 密码错误          | `docker compose -p piggy-pocket logs mysql`                       |

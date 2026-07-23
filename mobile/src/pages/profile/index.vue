@@ -12,7 +12,8 @@
     </view>
 
     <scroll-view scroll-y class="content">
-      <!-- Profile Header Card -->
+      <view class="content-inner">
+        <!-- Profile Header Card -->
       <view class="profile-card">
         <view class="profile-header">
           <view class="avatar-section">
@@ -84,8 +85,11 @@
         </view>
       </view>
 
-      <!-- Spacer for Tab Bar -->
-      <view style="height: 100px;"></view>
+      <!-- 备案信息 -->
+      <view class="beian" @click="openBeian">
+        <text>粤ICP备2026061943号-2</text>
+      </view>
+      </view>
     </scroll-view>
 
     <!-- Tab Bar -->
@@ -283,6 +287,15 @@ const goToFulfilledWishes = () => {
   uni.navigateTo({ url: '/pages/fulfilled-wishes/index' })
 }
 
+const openBeian = () => {
+  uni.setClipboardData({
+    data: 'https://beian.miit.gov.cn/',
+    success: () => {
+      uni.showToast({ title: '工信部网址已复制，请在浏览器打开', icon: 'none' })
+    }
+  })
+}
+
 onShow(loadProfile)
 
 const goToFoodieBuddy = () => {
@@ -306,6 +319,8 @@ const handleTabChange = (index: number) => {
 .container {
   min-height: 100vh;
   background: #F8F5F6;
+  display: flex;
+  flex-direction: column;
 }
 
 .header {
@@ -345,7 +360,16 @@ const handleTabChange = (index: number) => {
 }
 
 .content {
+  flex: 1;
+  height: 0;
   padding-bottom: 24px;
+}
+
+.content-inner {
+  min-height: 100%;
+  box-sizing: border-box;
+  display: flex;
+  flex-direction: column;
 }
 
 .profile-card {
@@ -657,5 +681,16 @@ const handleTabChange = (index: number) => {
   font-size: 16px;
   font-weight: 700;
   color: #ffc2cc;
+}
+
+.beian {
+  margin-top: auto;
+  padding: 24px 16px 112px;
+  text-align: center;
+}
+
+.beian text {
+  font-size: 12px;
+  color: #999;
 }
 </style>
