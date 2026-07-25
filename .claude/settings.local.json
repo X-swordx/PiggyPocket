@@ -124,7 +124,8 @@
       "Bash(curl -sS -o /dev/null -w \"HTTP %{http_code} in %{time_total}s\\\\n\" --max-time 10 -x socks5h://127.0.0.1:10808 https://github.com)",
       "Bash(git stash *)",
       "Bash(git commit -m 'docs: 云服务器部署路径改为 /home/admin/PiggyPocket *)",
-      "Bash(git commit -m 'docs: 补充 Docker 镜像加速与 docker 组权限配置 *)"
+      "Bash(git commit -m 'docs: 补充 Docker 镜像加速与 docker 组权限配置 *)",
+      "Bash(git commit -m 'feat: 我的页添加ICP备案信息，菜谱上传支持草稿本地保存 *)"
     ],
     "additionalDirectories": [
       "F:\\PiggyPocket\\nest-service\\src\\modules\\order\\dto",

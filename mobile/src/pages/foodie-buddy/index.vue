@@ -106,20 +106,33 @@ const loadGroup = async (groupId?: number) => {
   currentUser.value = user
 
   if (groupId) {
+    let joined = false
     try {
       await addDiningGroupMember(groupId, {
         openid: user.openid,
         nickname: user.nickname || user.name
       })
+      joined = true
     } catch (err: any) {
       if (!String(err.message || '').includes('已在组内')) {
         uni.showToast({ title: err.message || '加入饭搭子失败', icon: 'none' })
       }
     }
     currentGroup.value = await getDiningGroup(groupId)
+    if (joined && currentGroup.value) {
+      const host = currentGroup.value.creator?.nickname || currentGroup.value.creator?.name || currentGroup.value.name
+      uni.showToast({ title: `已加入${host}的饭搭子`, icon: 'none' })
+    }
+    // 加入过邀请群后，本次会话不再重复处理，避免下次 onShow 反复弹 toast
+    inviteGroupId.value = null
   } else {
     const groups = await getMyDiningGroups(user.id)
-    currentGroup.value = groups[0] || null
+    if (groups.length === 0) {
+      // 没有群时自动建一个默认群，保证分享链接一定带 groupId
+      currentGroup.value = await createDiningGroup({ name: '我的饭搭子', creatorId: user.id })
+    } else {
+      currentGroup.value = groups[0]
+    }
   }
 
   if (currentGroup.value) {
@@ -140,14 +153,6 @@ const refresh = async () => {
   } finally {
     loading.value = false
   }
-}
-
-const createGroup = async () => {
-  if (!currentUser.value) {
-    currentUser.value = await getCurrentUser()
-  }
-  await createDiningGroup({ name: '我的饭搭子', creatorId: currentUser.value.id })
-  await refresh()
 }
 
 const unlinkBuddy = (member: DiningGroupMember) => {
@@ -176,9 +181,7 @@ const goBack = () => {
 const showMore = () => {
   if (currentGroup.value) {
     uni.showToast({ title: currentGroup.value.name, icon: 'none' })
-    return
   }
-  createGroup().catch((err: any) => uni.showToast({ title: err.message || '创建失败', icon: 'none' }))
 }
 
 onLoad((options: any) => {
@@ -190,7 +193,7 @@ onShow(refresh)
 onShareAppMessage(() => ({
   title: '邀请你成为我的饭搭子',
   path: currentGroup.value ? `/pages/foodie-buddy/index?groupId=${currentGroup.value.id}` : '/pages/foodie-buddy/index',
-  imageUrl: '../../static/logo.png'
+  imageUrl: '/static/logo.png'
 }))
 </script>
 

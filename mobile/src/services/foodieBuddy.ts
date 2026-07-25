@@ -242,6 +242,16 @@ export const getOrders = (query?: {
   })
 }
 
+export const getGroupOrders = (
+  groupId: number,
+  query?: { page?: number; pageSize?: number }
+) => {
+  return request<PageResult<FoodieOrder>>({
+    url: `/foodie-buddy/orders/group/${groupId}`,
+    query
+  })
+}
+
 export const updateOrderStatus = (id: number, status: FoodieOrder['status']) => {
   return request<FoodieOrder>({
     url: `/foodie-buddy/orders/${id}/status`,

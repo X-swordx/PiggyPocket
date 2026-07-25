@@ -118,7 +118,7 @@
       <!-- Original Dish Detail Mode -->
       <view v-else class="dish-detail">
         <!-- Hero Image -->
-        <view class="hero-section" @click="editing && chooseCover()">
+        <view class="hero-section" @click="onHeroTap">
           <view class="hero-image">
             <image v-if="dish.image" class="hero-bg-image" :src="dish.image" mode="aspectFill" />
             <view v-else class="hero-fallback-bg"
@@ -381,6 +381,19 @@ const chooseCover = async () => {
       uni.showToast({ title: err.errMsg || '选择图片失败', icon: 'none' })
     }
   })
+}
+
+const onHeroTap = () => {
+  if (editing.value) {
+    chooseCover()
+    return
+  }
+  if (dish.value.image) {
+    uni.previewImage({
+      urls: [dish.value.image],
+      current: dish.value.image
+    })
+  }
 }
 
 const addIngredient = () => {

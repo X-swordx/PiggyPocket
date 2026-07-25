@@ -12,8 +12,7 @@
     </view>
 
     <scroll-view scroll-y class="content">
-      <view class="content-inner">
-        <!-- Profile Header Card -->
+      <!-- Profile Header Card -->
       <view class="profile-card">
         <view class="profile-header">
           <view class="avatar-section">
@@ -84,12 +83,6 @@
           </view>
         </view>
       </view>
-
-      <!-- 备案信息 -->
-      <view class="beian" @click="openBeian">
-        <text>粤ICP备2026061943号-2</text>
-      </view>
-      </view>
     </scroll-view>
 
     <!-- Tab Bar -->
@@ -102,7 +95,7 @@ import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import TabBar from '@/components/TabBar.vue'
 import uniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
-import { getCurrentUser, getDiningGroup, getMyDiningGroups, getOrders, refreshCurrentUser, updateOrderStatus, type FoodieOrder } from '@/services/foodieBuddy'
+import { getCurrentUser, getDiningGroup, getMyDiningGroups, getGroupOrders, getOrders, refreshCurrentUser, updateOrderStatus, type FoodieOrder } from '@/services/foodieBuddy'
 import { uploadToOSS } from '@/services/oss'
 import { getCompletedCount } from '@/services/wishlist'
 
@@ -189,12 +182,15 @@ const loadProfile = async () => {
 
     const groups = await getMyDiningGroups(user.id)
     let buddyCount = 0
-    if (groups[0]) {
-      const group = await getDiningGroup(groups[0].id)
+    const groupId = groups[0]?.id
+    if (groupId) {
+      const group = await getDiningGroup(groupId)
       buddyCount = (group.members || []).filter((member) => member.userId !== user.id).length
     }
 
-    const orders = await getOrders({ userId: user.id, page: 1, pageSize: 50 })
+    const groupOrders = groupId
+      ? await getGroupOrders(groupId, { page: 1, pageSize: 50 })
+      : { list: [] as FoodieOrder[] }
     const completedOrders = await getOrders({ userId: user.id, status: 'completed', page: 1, pageSize: 1 })
     const fulfilledCount = await getCompletedCount()
 
@@ -203,7 +199,7 @@ const loadProfile = async () => {
       recipes: completedOrders.total,
       fulfilled: fulfilledCount
     }
-    todayOrders.value = orders.list.filter((order) => isToday(order.createdAt)).map(mapOrder)
+    todayOrders.value = groupOrders.list.filter((order) => isToday(order.createdAt)).map(mapOrder)
   } catch (err: any) {
     uni.showToast({ title: err.message || '资料加载失败', icon: 'none' })
   }
@@ -257,7 +253,7 @@ const saveWechatProfile = async () => {
 }
 
 const goToSettings = () => {
-  uni.showToast({ title: '设置功能开发中', icon: 'none' })
+  uni.navigateTo({ url: '/pages/about/index' })
 }
 
 const goToDishDetail = (order: Order) => {
@@ -285,15 +281,6 @@ const goToHistoryMenu = () => {
 
 const goToFulfilledWishes = () => {
   uni.navigateTo({ url: '/pages/fulfilled-wishes/index' })
-}
-
-const openBeian = () => {
-  uni.setClipboardData({
-    data: 'https://beian.miit.gov.cn/',
-    success: () => {
-      uni.showToast({ title: '工信部网址已复制，请在浏览器打开', icon: 'none' })
-    }
-  })
 }
 
 onShow(loadProfile)
@@ -361,15 +348,7 @@ const handleTabChange = (index: number) => {
 
 .content {
   flex: 1;
-  height: 0;
-  padding-bottom: 24px;
-}
-
-.content-inner {
-  min-height: 100%;
-  box-sizing: border-box;
-  display: flex;
-  flex-direction: column;
+  padding-bottom: calc(88px + env(safe-area-inset-bottom));
 }
 
 .profile-card {
@@ -681,16 +660,5 @@ const handleTabChange = (index: number) => {
   font-size: 16px;
   font-weight: 700;
   color: #ffc2cc;
-}
-
-.beian {
-  margin-top: auto;
-  padding: 24px 16px 112px;
-  text-align: center;
-}
-
-.beian text {
-  font-size: 12px;
-  color: #999;
 }
 </style>
