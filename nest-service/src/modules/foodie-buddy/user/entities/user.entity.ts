@@ -1,6 +1,7 @@
 import {
   Entity,
   Column,
+  Index,
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
@@ -31,6 +32,11 @@ export class User {
   @ApiProperty({ description: '微信头像URL' })
   @Column({ type: 'varchar', length: 255, nullable: true, comment: '微信头像URL' })
   avatar: string;
+
+  @ApiProperty({ description: '状态：1=启用 0=禁用' })
+  @Index()
+  @Column({ type: 'tinyint', default: 1, comment: '状态：1=启用 0=禁用' })
+  status: number;
 
   @ApiProperty({ description: '创建时间' })
   @CreateDateColumn({ type: 'datetime', comment: '创建时间' })

@@ -103,15 +103,21 @@ docker run --rm \
   node:20-alpine \
   sh -c "npm ci && npm run migration:run"
 
-# 启动 API 和 Nginx Proxy Manager
-log_info "启动 API 与 Nginx Proxy Manager..."
-$COMPOSE_CMD -f "$SCRIPT_DIR/docker-compose.yml" up -d api npm
+# 启动 API、admin 后台与 Nginx Proxy Manager
+log_info "启动 API、admin 后台与 Nginx Proxy Manager..."
+$COMPOSE_CMD -f "$SCRIPT_DIR/docker-compose.yml" up -d api admin npm
 
 log_info "部署完成！"
 log_info "Nginx Proxy Manager 管理界面：http://<服务器IP>:81"
 log_info "默认账号：admin@example.com / changeme"
 log_info "请在 NPM 中添加 Proxy Host："
-log_info "  Domain Names: $DOMAIN"
-log_info "  Forward Hostname/IP: api"
-log_info "  Forward Port: 3000"
-log_info "  Scheme: http"
+log_info "  小程序 API:"
+log_info "    Domain Names: $DOMAIN"
+log_info "    Forward Hostname/IP: api"
+log_info "    Forward Port: 3000"
+log_info "    Scheme: http"
+log_info "  后台管理:"
+log_info "    Domain Names: admin.$DOMAIN"
+log_info "    Forward Hostname/IP: admin"
+log_info "    Forward Port: 80"
+log_info "    Scheme: http"

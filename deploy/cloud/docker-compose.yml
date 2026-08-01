@@ -55,6 +55,8 @@ services:
       DB_DATABASE: ${DB_DATABASE}
       WECHAT_APPID: ${WECHAT_APPID}
       WECHAT_SECRET: ${WECHAT_SECRET}
+      ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET}
+      ADMIN_JWT_EXPIRES_IN: ${ADMIN_JWT_EXPIRES_IN}
       OSS_ENDPOINT: ${OSS_ENDPOINT}
       OSS_REGION: ${OSS_REGION}
       OSS_BUCKET: ${OSS_BUCKET}
@@ -69,6 +71,21 @@ services:
       resources:
         limits:
           memory: 512M
+
+  admin:
+    build:
+      context: ../../admin
+      dockerfile: Dockerfile
+    container_name: piggy_admin
+    restart: always
+    networks:
+      - piggy-network
+    depends_on:
+      - api
+    deploy:
+      resources:
+        limits:
+          memory: 128M
 
   npm:
     image: jc21/nginx-proxy-manager:latest
@@ -85,6 +102,7 @@ services:
       - piggy-network
     depends_on:
       - api
+      - admin
 
 networks:
   piggy-network:

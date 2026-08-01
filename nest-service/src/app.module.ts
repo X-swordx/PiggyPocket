@@ -5,6 +5,7 @@ import { FoodieBuddyModule } from './modules/foodie-buddy/foodie-buddy.module';
 import { WishModule } from './modules/wish/wish.module';
 import { ExpiryModule } from './modules/expiry/expiry.module';
 import { OssModule } from './modules/oss/oss.module';
+import { AdminModule } from './modules/admin/admin.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { OssModule } from './modules/oss/oss.module';
     WishModule,
     ExpiryModule,
     OssModule,
+    AdminModule,
   ],
 })
 export class AppModule {}

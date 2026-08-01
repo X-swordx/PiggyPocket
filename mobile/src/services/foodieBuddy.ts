@@ -138,9 +138,17 @@ export const wechatLogin = (data: { code: string; nickname?: string; avatar?: st
 
 export const refreshCurrentUser = async (profile?: WechatProfile) => {
   const { code } = await login()
-  const user = await wechatLogin({ code, ...profile })
-  uni.setStorageSync(CURRENT_USER_KEY, user)
-  return user
+  try {
+    const user = await wechatLogin({ code, ...profile })
+    uni.setStorageSync(CURRENT_USER_KEY, user)
+    return user
+  } catch (err) {
+    // 账号被后台禁用等情况：清掉本地缓存，避免用旧身份继续访问
+    if (err instanceof Error && /禁用/.test(err.message)) {
+      uni.removeStorageSync(CURRENT_USER_KEY)
+    }
+    throw err
+  }
 }
 
 // 开发兜底：微信开发者工具未登录时 wx.login 返回 mock code，无法走真实登录。

@@ -1,4 +1,9 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+  ForbiddenException,
+} from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -56,6 +61,11 @@ export class UserService {
       where: { openid: session.openid },
     });
     if (existing) {
+      // 后台可将用户置为禁用（status=0），此时拒绝登录
+      if (existing.status !== 1) {
+        throw new ForbiddenException('账号已被禁用，请联系管理员');
+      }
+
       const nickname = wechatLoginDto.nickname;
       const avatar = wechatLoginDto.avatar;
       const shouldUpdate =

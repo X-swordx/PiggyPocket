@@ -222,6 +222,7 @@ cp .env.example .env
 | `BACKUP_DIR`                          | 数据库备份目录，例如 `/home/admin/PiggyPocket/backup`           |
 | `MYSQL_ROOT_PASSWORD` / `DB_PASSWORD` | 数据库密码                                                      |
 | `WECHAT_APPID` / `WECHAT_SECRET`      | 微信小程序凭证                                                  |
+| `ADMIN_JWT_SECRET` / `ADMIN_JWT_EXPIRES_IN` | 后台管理员 JWT 密钥与有效期（建议设置长随机字符串）        |
 | `OSS_*`                               | 阿里云 OSS 配置                                                 |
 
 ## 6. 一键部署
@@ -238,15 +239,15 @@ chmod +x deploy.sh backup.sh
 2. 创建数据与备份目录。
 3. 启动 MySQL 并等待健康检查。
 4. 使用临时 Node 容器执行 TypeORM 数据库迁移。
-5. 启动 NestJS API 与 Nginx Proxy Manager。
+5. 启动 NestJS API、admin 后台与 Nginx Proxy Manager。
 
 ## 7. 配置 Nginx Proxy Manager
 
-1.   ，使用默认账号登录：
+1. 打开 `http://<服务器IP>:81`，使用默认账号登录：
    - 邮箱：`admin@example.com`
    - 密码：`changeme`
 2. 首次登录后请立即修改管理员密码。
-3. 添加一个 **Proxy Host**：
+3. 添加小程序 API 的 **Proxy Host**：
    - **Domain Names**：`api.yourdomain.com`
    - **Forward Hostname / IP**：`api`
    - **Forward Port**：`3000`
@@ -256,16 +257,25 @@ chmod +x deploy.sh backup.sh
    - 选择 **Request a new SSL Certificate**（Let's Encrypt）。
    - 勾选同意条款，开启 **Force SSL**。
    - 保存。
+5. 再添加后台管理的 **Proxy Host**：
+   - **Domain Names**：`admin.yourdomain.com`
+   - **Forward Hostname / IP**：`admin`
+   - **Forward Port**：`80`
+   - **Scheme**：`http`
+   - 同样申请 SSL 并开启 **Force SSL**。
 
 > 如果你使用阿里云免费 SSL 证书，选择 **Custom** 并上传证书文件。
 
 ## 8. 阿里云域名解析
 
 1. 登录阿里云控制台 → 域名解析。
-2. 找到你的域名，添加一条 A 记录：
+2. 找到你的域名，添加两条 A 记录：
    - **主机记录**：`api`
-   - **记录类型**：`A`
-   - **记录值**：你的云服务器公网 IP
+     - **记录类型**：`A`
+     - **记录值**：你的云服务器公网 IP
+   - **主机记录**：`admin`
+     - **记录类型**：`A`
+     - **记录值**：你的云服务器公网 IP
 3. 等待解析生效（通常几分钟到几小时）。
 
 ## 9. 微信小程序配置
@@ -313,7 +323,13 @@ npm run build:mp-weixin
    ```
    应返回 Swagger 文档或 API 响应。
 
-3. **微信小程序真机调试**：确认接口请求成功。
+3. **后台管理访问**：
+   ```bash
+   curl -I https://admin.yourdomain.com
+   ```
+   应返回 200；浏览器打开后能用 `superadmin / admin123456` 登录。
+
+4. **微信小程序真机调试**：确认接口请求成功。
 
 ## 12. 数据库备份
 
@@ -339,11 +355,13 @@ cd /home/admin/PiggyPocket/deploy/cloud
 
 # 查看日志
 docker compose -p piggy-pocket logs -f api
+docker compose -p piggy-pocket logs -f admin
 docker compose -p piggy-pocket logs -f mysql
 docker compose -p piggy-pocket logs -f npm
 
-# 重启 API
+# 重启服务
 docker compose -p piggy-pocket restart api
+docker compose -p piggy-pocket restart admin
 
 # 更新代码后重新构建
 docker compose -p piggy-pocket down
@@ -353,7 +371,45 @@ docker compose -p piggy-pocket up -d --build
 docker compose -p piggy-pocket exec mysql mysql -uroot -p
 ```
 
-## 14. 安全建议
+## 14. 后台管理系统（admin）
+
+后台是与小程序共用同一台服务器的静态站点，使用 nginx 提供，`/api/*` 反代到 `api:3000`。
+
+### 14.1 首次部署
+
+> 前置：admin 镜像构建阶段基于 `node:22-alpine`，国内直连 Docker Hub 常超时。
+> 若 `docker build` 报 `failed to resolve source metadata for docker.io/library/node`，
+> 先按 [3.1 配置 Docker 镜像加速](#31-配置-docker-镜像加速) 配好加速再重试。
+
+1. `deploy.sh` 已自动启动 admin 容器；若单独构建：`docker compose -p piggy-pocket up -d --build admin`。
+2. 数据库需先跑 admin 相关 migration（含默认超管账号）：
+
+   ```bash
+   docker compose -p piggy-pocket exec api npm run migration:run
+   ```
+
+   默认账号：`superadmin / admin123456`（**上线后立即改密码**）。
+3. 在 NPM（Nginx Proxy Manager）中新增站点，例如 `admin.yourdomain.com`：
+   - Forward Hostname/IP：`admin`
+   - Forward Port：`80`
+   - Scheme：`http`
+   - 打开 SSL、Force SSL。
+4. 本地浏览器访问 `https://admin.yourdomain.com`，用 `superadmin / admin123456` 登录验证。
+
+> admin 容器内 nginx 已经把 `/api/*` 反代到 `api:3000`，所以前端只需要访问 `https://admin.yourdomain.com/api/*`，无需额外配置 CORS。
+
+### 14.2 环境变量
+
+后台 nest-service 端建议在 `.env` 中显式设置 JWT 密钥，避免使用默认值：
+
+```env
+ADMIN_JWT_SECRET=<32 字符以上随机字符串>
+ADMIN_JWT_EXPIRES_IN=2h
+```
+
+修改后重启 api：`docker compose -p piggy-pocket restart api`。
+
+## 15. 安全建议
 
 - 云服务器安全组只放行必要的端口：`22`（SSH）、`80`、`443`、`81`（NPM 管理界面，建议限制 IP）。
 - 修改 SSH 默认端口，使用密钥登录，关闭密码登录。
@@ -361,13 +417,13 @@ docker compose -p piggy-pocket exec mysql mysql -uroot -p
 - MySQL 3306 仅绑定 `127.0.0.1`，避免暴露到公网。
 - 定期更新系统补丁和 Docker 镜像。
 
-## 15. 备案与合规
+## 16. 备案与合规
 
 - 域名必须完成 ICP 备案才能解析到中国大陆服务器。
 - 小程序上线前，需要在网站底部展示备案号并链接到 [工信部](https://beian.miit.gov.cn/)。
 - 如果涉及用户个人信息收集，需在微信小程序后台完善隐私协议。
 
-## 16. 故障排查
+## 17. 故障排查
 
 | 现象                                                    | 可能原因                         | 排查方法                                                          |
 | ------------------------------------------------------- | -------------------------------- | ----------------------------------------------------------------- |
@@ -375,7 +431,7 @@ docker compose -p piggy-pocket exec mysql mysql -uroot -p
 | `permission denied ... docker.sock`                     | 当前用户不在 docker 组           | 参考 [3.2 将当前用户加入 docker 组](#32-将当前用户加入-docker-组) |
 | `.env: line N: xxx: command not found`                  | `.env` 中值含空格未加引号        | 编辑 `.env` 去掉占位符空格或用引号包起来                          |
 | 公网无法访问                                            | 域名未解析 / 安全组未放行 80/443 | `ping api.yourdomain.com`；检查安全组                             |
-| NPM 返回 502                                            | API 容器未启动                   | `docker compose -p piggy-pocket logs api`                         |
+| NPM 返回 502                                            | 目标容器未启动                   | API 502 看 `logs api`；admin 502 看 `logs admin`                  |
 | SSL 证书申请失败                                        | 域名未解析 / 80 端口未放行       | 检查解析和安全组                                                  |
 | 小程序提示域名不合法                                    | 未在微信后台配置                 | 检查微信公众平台服务器域名                                        |
 | 数据库连接失败                                          | MySQL 未就绪 / 密码错误          | `docker compose -p piggy-pocket logs mysql`                       |
