@@ -18,7 +18,8 @@
       <view class="order-list">
         <view v-if="orderItems.length === 0" style="padding: 24px; text-align: center; color: #777;">暂无已选菜品</view>
         <view v-for="(item, index) in orderItems" :key="item.dishId" class="order-item">
-          <view class="item-image" :style="{ background: item.bgColor }">
+          <view class="item-image" :style="item.image ? {} : { background: item.bgColor }">
+            <image v-if="item.image" class="item-img" :src="item.image" mode="aspectFill" />
           </view>
           <view class="item-info">
             <text class="item-name">{{ item.name }}</text>

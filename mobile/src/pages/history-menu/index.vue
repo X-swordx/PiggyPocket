@@ -18,7 +18,7 @@
         </view>
         <view class="orders-list">
           <view v-for="order in group.orders" :key="order.id" class="order-item" @click="goToDishDetail(order)">
-            <view class="order-icon" :style="order.bgColor ? { background: order.bgColor } : {}">
+            <view class="order-icon" :style="order.image ? {} : (order.bgColor ? { background: order.bgColor } : {})">
               <image v-if="order.image" class="order-image" :src="order.image" mode="aspectFill" />
             </view>
             <view class="order-info">

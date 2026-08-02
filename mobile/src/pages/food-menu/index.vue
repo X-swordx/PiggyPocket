@@ -45,7 +45,7 @@
         <view v-else-if="dishes.length === 0" style="padding: 24px; text-align: center; color: #777;">暂无菜品，去上传第一道菜谱吧</view>
         <view v-else class="dishes">
           <view v-for="(dish, index) in dishes" :key="dish.id" class="dish-card" @click="goToDetail(dish)">
-            <view class="dish-image" :style="{ backgroundColor: dish.bgColor }">
+            <view class="dish-image" :style="dish.image ? {} : { backgroundColor: dish.bgColor }">
               <image v-if="dish.image" class="dish-img" :src="dish.image" mode="aspectFill" />
             </view>
             <view class="dish-info">

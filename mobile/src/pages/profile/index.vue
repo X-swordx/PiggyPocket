@@ -66,9 +66,9 @@
         </view>
         <view class="orders-list">
           <view v-if="todayOrders.length === 0" style="padding: 16px; color: #777; text-align: center;">今天还没有订单</view>
-          <view v-for="order in todayOrders" :key="order.id" class="order-item"
+          <view v-for="order in todayOrders" :key="`${order.id}-${order.itemId}`" class="order-item"
             :class="{ completed: order.status === 'completed' }" @click="goToDishDetail(order)">
-            <view class="order-icon" :style="order.bgColor ? { background: order.bgColor } : {}">
+            <view class="order-icon" :style="order.image ? {} : (order.bgColor ? { background: order.bgColor } : {})">
               <image v-if="order.image" class="order-image" :src="order.image" mode="aspectFill" />
             </view>
             <view class="order-info">
@@ -114,6 +114,7 @@ const stats = ref({
 
 interface Order {
   id: number
+  itemId?: number
   dishId?: number
   name: string
   remark: string,
@@ -144,18 +145,18 @@ const formatTime = (dateText: string) => {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
 }
 
-const mapOrder = (order: FoodieOrder): Order => {
-  const firstItem = order.items?.[0]
-  return {
+const mapOrderItems = (order: FoodieOrder): Order[] => {
+  return (order.items || []).map((item) => ({
     id: order.id,
-    dishId: firstItem?.dishId,
-    name: firstItem?.dish?.name || order.orderNo,
-    remark: firstItem?.remark || '',
-    quantity: firstItem?.quantity || 1,
+    itemId: item.id,
+    dishId: item.dishId,
+    name: item.dish?.name || order.orderNo,
+    remark: item.remark || '',
+    quantity: item.quantity || 1,
     status: order.status,
-    image: firstItem?.dish?.image || '',
-    bgColor: firstItem?.dish?.bgColor || ''
-  }
+    image: item.dish?.image || '',
+    bgColor: item.dish?.bgColor || ''
+  }))
 }
 
 const loadProfile = async () => {
@@ -188,18 +189,26 @@ const loadProfile = async () => {
       buddyCount = (group.members || []).filter((member) => member.userId !== user.id).length
     }
 
-    const groupOrders = groupId
-      ? await getGroupOrders(groupId, { page: 1, pageSize: 50 })
-      : { list: [] as FoodieOrder[] }
-    const completedOrders = await getOrders({ userId: user.id, status: 'completed', page: 1, pageSize: 1 })
-    const fulfilledCount = await getCompletedCount()
+    const [groupOrders, myOrders, completedOrders, fulfilledCount] = await Promise.all([
+      groupId
+        ? getGroupOrders(groupId, { page: 1, pageSize: 50 })
+        : Promise.resolve({ list: [] as FoodieOrder[] }),
+      getOrders({ userId: user.id, page: 1, pageSize: 50 }),
+      getOrders({ userId: user.id, status: 'completed', page: 1, pageSize: 1 }),
+      getCompletedCount()
+    ])
 
     stats.value = {
       orders: buddyCount,
       recipes: completedOrders.total,
       fulfilled: fulfilledCount
     }
-    todayOrders.value = groupOrders.list.filter((order) => isToday(order.createdAt)).map(mapOrder)
+
+    const allOrders = [...groupOrders.list, ...myOrders.list]
+    const uniqueOrders = Array.from(new Map(allOrders.map((order) => [order.id, order])).values())
+    todayOrders.value = uniqueOrders
+      .filter((order) => isToday(order.createdAt))
+      .flatMap(mapOrderItems)
   } catch (err: any) {
     uni.showToast({ title: err.message || '资料加载失败', icon: 'none' })
   }
