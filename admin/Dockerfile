@@ -3,9 +3,8 @@
 # ================================
 FROM node:22-alpine AS builder
 
-# fantastic-admin 强制 pnpm；git 供 simple-git-hooks 的 postinstall 使用
-RUN apk add --no-cache git \
- && corepack enable \
+# fantastic-admin 强制 pnpm
+RUN corepack enable \
  && corepack prepare pnpm@11.13.1 --activate
 
 WORKDIR /app
@@ -17,13 +16,11 @@ COPY scripts ./scripts
 COPY packages ./packages
 COPY apps ./apps
 
-# 容器里没有 .git，根 package.json 的 postinstall(simple-git-hooks) 会失败；
-# 用 --config.confirmModulesPurge=false 保持非交互，并让 simple-git-hooks 失败不阻断。
-# 依赖自身的 build script（esbuild 等，见 pnpm-workspace.yaml allowBuilds）必须保留，
-# 因此不能用 --ignore-scripts。
-RUN git init -q . \
- && pnpm install --frozen-lockfile \
- && rm -rf .git
+# 跳过 simple-git-hooks 安装钩子，避免容器内无 .git 时 postinstall 失败
+ENV SKIP_INSTALL_SIMPLE_GIT_HOOKS=true
+ENV CI=true
+
+RUN pnpm install --frozen-lockfile --config.confirmModulesPurge=false
 
 # 构建 core-element-plus，产物在 apps/core-element-plus/dist
 RUN pnpm --filter @fantastic-admin/core-element-plus run build
