@@ -128,7 +128,12 @@
       "Bash(git commit -m 'feat: 我的页添加ICP备案信息，菜谱上传支持草稿本地保存 *)",
       "Read(//d/d:/piggy-pocket/**)",
       "Bash(git commit -m 'fix\\(mobile\\): 今日订单展示个人订单、展开多菜品、图片使用上传图；chore\\(nest\\): 本地种子脚本 *)",
-      "Bash(git commit -m 'fix\\(admin/docker\\): 跳过 simple-git-hooks 安装，避免构建失败 *)"
+      "Bash(git commit -m 'fix\\(admin/docker\\): 跳过 simple-git-hooks 安装，避免构建失败 *)",
+      "Bash(git commit -m 'fix\\(admin\\): 补充 fake_modules 占位目录，避免构建报错 *)",
+      "Bash(node -e ' *)",
+      "Bash(node node_modules/typeorm/cli.js migration:show -d dist/data-source.js)",
+      "Bash(nslookup admin.piggy-pocket.xyz)",
+      "Bash(nslookup api.piggy-pocket.xyz)"
     ],
     "additionalDirectories": [
       "F:\\PiggyPocket\\nest-service\\src\\modules\\order\\dto",

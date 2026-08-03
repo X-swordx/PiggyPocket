@@ -385,7 +385,7 @@ docker compose -p piggy-pocket exec mysql mysql -uroot -p
 2. 数据库需先跑 admin 相关 migration（含默认超管账号）：
 
    ```bash
-   docker compose -p piggy-pocket exec api npm run migration:run
+   docker compose -p piggy-pocket exec api npm run migration:run:prod
    ```
 
    默认账号：`superadmin / admin123456`（**上线后立即改密码**）。
