@@ -32,6 +32,7 @@ const query = reactive<Required<Pick<OrderListQuery, 'page' | 'pageSize'>> & Ord
 })
 
 const dateRange = ref<[string, string] | null>(null)
+const cookDateRange = ref<[string, string] | null>(null)
 
 async function fetchData() {
   loading.value = true
@@ -44,6 +45,8 @@ async function fetchData() {
       userId: query.userId,
       startDate: dateRange.value?.[0],
       endDate: dateRange.value?.[1],
+      cookStartDate: cookDateRange.value?.[0],
+      cookEndDate: cookDateRange.value?.[1],
     })
     list.value = res.list
     total.value = res.total
@@ -63,6 +66,7 @@ function onReset() {
   query.status = undefined
   query.userId = undefined
   dateRange.value = null
+  cookDateRange.value = null
   onSearch()
 }
 
@@ -120,8 +124,16 @@ onMounted(fetchData)
       <ElDatePicker
         v-model="dateRange"
         type="daterange"
-        start-placeholder="开始日期"
-        end-placeholder="结束日期"
+        start-placeholder="创建开始日期"
+        end-placeholder="创建结束日期"
+        value-format="YYYY-MM-DD"
+        style="width: 260px"
+      />
+      <ElDatePicker
+        v-model="cookDateRange"
+        type="daterange"
+        start-placeholder="做菜开始日期"
+        end-placeholder="做菜结束日期"
         value-format="YYYY-MM-DD"
         style="width: 260px"
       />
@@ -161,6 +173,11 @@ onMounted(fetchData)
       </ElTableColumn>
       <ElTableColumn label="菜品数" prop="itemCount" width="80" />
       <ElTableColumn label="备注" prop="remark" min-width="140" show-overflow-tooltip />
+      <ElTableColumn label="做菜日期" width="120">
+        <template #default="{ row }">
+          {{ row.cookDate ?? '-' }}
+        </template>
+      </ElTableColumn>
       <ElTableColumn label="创建时间" width="170">
         <template #default="{ row }">
           {{ new Date(row.createdAt).toLocaleString() }}

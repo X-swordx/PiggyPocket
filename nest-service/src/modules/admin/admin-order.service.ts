@@ -30,9 +30,22 @@ export class AdminOrderService {
       groupId?: number;
       startDate?: string;
       endDate?: string;
+      cookStartDate?: string;
+      cookEndDate?: string;
     },
   ) {
-    const { page, pageSize, userId, keyword, status, groupId, startDate, endDate } = query;
+    const {
+      page,
+      pageSize,
+      userId,
+      keyword,
+      status,
+      groupId,
+      startDate,
+      endDate,
+      cookStartDate,
+      cookEndDate,
+    } = query;
     const skip = (page - 1) * pageSize;
 
     const where: any = {};
@@ -43,13 +56,16 @@ export class AdminOrderService {
     if (startDate && endDate) {
       where.createdAt = Between(new Date(startDate), new Date(`${endDate}T23:59:59`));
     }
+    if (cookStartDate && cookEndDate) {
+      where.cookDate = Between(cookStartDate, cookEndDate);
+    }
 
     const [rows, total] = await this.orderRepo.findAndCount({
       where,
       skip,
       take: pageSize,
       relations: ['items', 'items.dish'],
-      order: { createdAt: 'DESC' },
+      order: { cookDate: 'DESC', createdAt: 'DESC' },
     });
 
     const users = await this.loadUserMap(rows.map((r) => r.userId));

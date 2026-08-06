@@ -26,6 +26,11 @@ export class CreateOrderDto {
   @IsString()
   remark?: string;
 
+  @ApiPropertyOptional({ description: '做菜日期，如 2026-08-05' })
+  @IsOptional()
+  @IsString()
+  cookDate?: string;
+
   @ApiProperty({ description: '订单项列表', type: [CreateOrderItemDto] })
   @IsArray()
   @ValidateNested({ each: true })

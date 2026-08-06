@@ -52,6 +52,7 @@ interface HistoryOrder {
   image?: string
   bgColor?: string
   createdAt: string
+  cookDate?: string
 }
 
 interface DateGroup {
@@ -80,7 +81,8 @@ const mapOrder = (order: FoodieOrder): HistoryOrder => {
     quantity: firstItem?.quantity || 1,
     image: firstItem?.dish?.image || '',
     bgColor: firstItem?.dish?.bgColor || '',
-    createdAt: order.createdAt
+    createdAt: order.createdAt,
+    cookDate: order.cookDate
   }
 }
 
@@ -91,15 +93,19 @@ const loadHistory = async () => {
     const orders = res.list.map(mapOrder)
     const map = new Map<string, HistoryOrder[]>()
     orders.forEach((o) => {
-      const date = formatDate(o.createdAt)
+      // 老订单没有 cookDate，回退用创建日期分组
+      const date = o.cookDate || formatDate(o.createdAt)
       if (!map.has(date)) map.set(date, [])
       map.get(date)!.push(o)
     })
-    groups.value = Array.from(map.entries()).map(([date, list]) => ({
-      date,
-      label: date,
-      orders: list
-    }))
+    // 做菜日期降序：最近做的排在上面
+    groups.value = Array.from(map.entries())
+      .sort(([a], [b]) => b.localeCompare(a))
+      .map(([date, list]) => ({
+        date,
+        label: date,
+        orders: list
+      }))
   } catch (err: any) {
     uni.showToast({ title: err.message || '加载失败', icon: 'none' })
   }

@@ -1,5 +1,6 @@
 {
   "permissions": {
+    "defaultMode": "bypassPermissions",
     "allow": [
       "Bash(npx:*)",
       "Bash(npm install:*)",
@@ -133,11 +134,57 @@
       "Bash(node -e ' *)",
       "Bash(node node_modules/typeorm/cli.js migration:show -d dist/data-source.js)",
       "Bash(nslookup admin.piggy-pocket.xyz)",
-      "Bash(nslookup api.piggy-pocket.xyz)"
+      "Bash(nslookup api.piggy-pocket.xyz)",
+      "Bash(curl -sS -o /dev/null -w \"http_code=%{http_code}\\\\nssl_verify=%{ssl_verify_result}\\\\nscheme=%{scheme}\\\\nredirect=%{redirect_url}\\\\n\" https://admin.piggy-pocket.xyz/)",
+      "Bash(curl -skS -o /dev/null -w \"http_code=%{http_code}\\\\nssl_verify=%{ssl_verify_result}\\\\n\" https://admin.piggy-pocket.xyz/)",
+      "Bash(openssl s_client -connect admin.piggy-pocket.xyz:443 -servername admin.piggy-pocket.xyz)",
+      "Bash(curl -sS -o /dev/null -w \"api http=%{http_code}\\\\n\" https://api.piggy-pocket.xyz/)",
+      "Bash(curl -sSI -o - -w \"\\\\nhttp_code=%{http_code}\\\\n\" http://admin.piggy-pocket.xyz/)",
+      "Bash(openssl s_client -connect api.piggy-pocket.xyz:443 -servername api.piggy-pocket.xyz)",
+      "Bash(certutil -store -user root)",
+      "Bash(certutil -store root)",
+      "Bash(certutil -store -enterprise root)",
+      "Bash(openssl s_client -connect admin.piggy-pocket.xyz:443 -servername admin.piggy-pocket.xyz -showcerts)",
+      "Bash(openssl s_client -connect admin.piggy-pocket.xyz:443 -servername admin.piggy-pocket.xyz -quiet)",
+      "Bash(powershell -NoProfile -Command 'Get-ChildItem Cert:\\\\LocalMachine\\\\Root, Cert:\\\\CurrentUser\\\\Root | Where-Object { $_.Subject -match '\\\\''ISRG|Root YE'\\\\'' } | Select-Object Subject, NotAfter, Thumbprint | Format-List')",
+      "Bash(cd /tmp)",
+      "Bash(powershell -NoProfile -Command \"\\(Get-Item Cert:\\\\LocalMachine\\\\Root\\\\CABD2A79A1076A31F21D253635CB039D4329A5E8\\)\")",
+      "Bash(powershell -NoProfile -Command '$c=Get-Item Cert:\\\\LocalMachine\\\\Root\\\\CABD2A79A1076A31F21D253635CB039D4329A5E8; [System.IO.File]::WriteAllText\\('\\\\''C:/tmp/x1.pem'\\\\'', '\\\\''-----BEGIN CERTIFICATE-----'\\\\'' + [Environment]::NewLine + [Convert]::ToBase64String\\($c.RawData, '\\\\''InsertLineBreaks'\\\\''\\) + [Environment]::NewLine + '\\\\''-----END CERTIFICATE-----'\\\\''\\)')",
+      "Bash(openssl verify *)",
+      "Bash(powershell -NoProfile -Command '$c=Get-Item Cert:\\\\LocalMachine\\\\Root\\\\CABD2A79A1076A31F21D253635CB039D4329A5E8; $b=[Convert]::ToBase64String\\($c.RawData,'\\\\''InsertLineBreaks'\\\\''\\); Set-Content -Path '\\\\''x1.pem'\\\\'' -Value \"-----BEGIN CERTIFICATE-----`n$b`n-----END CERTIFICATE-----\" -Encoding ascii; Get-Location')",
+      "Bash(echo \"exit=$?\")",
+      "Bash(powershell -NoProfile -Command 'try { $r=Invoke-WebRequest -Uri '\\\\''https://admin.piggy-pocket.xyz/'\\\\'' -UseBasicParsing -TimeoutSec 20; '\\\\''OK status='\\\\'' + $r.StatusCode } catch { '\\\\''ERR: '\\\\'' + $_.Exception.Message }')",
+      "Read(//c/Program Files/Google/Chrome/Application/**)",
+      "Read(//c/Program Files \\\\\\(x86\\\\\\)/Google/Chrome/Application/**)",
+      "Read(//c/Program Files \\\\\\(x86\\\\\\)/Microsoft/Edge/Application/**)",
+      "Bash(\"C:/Program Files/Google/Chrome/Application/chrome.exe\" --remote-debugging-port=9222 --user-data-dir=\"C:/tmp/chrome-probe\" --no-first-run --headless=new about:blank)",
+      "Bash(curl -s http://127.0.0.1:9222/json/version)",
+      "mcp__chrome-devtools__list_network_requests",
+      "Bash(curl -sSI https://admin.piggy-pocket.xyz/)",
+      "Bash(powershell -NoProfile -Command 'Get-ChildItem Cert:\\\\LocalMachine\\\\Root, Cert:\\\\CurrentUser\\\\Root | Where-Object { $_.Subject -match '\\\\''ISRG|Root YE'\\\\'' } | Select-Object -Unique Subject | Format-List')",
+      "Bash(openssl s_client -connect 8.138.163.42:443)",
+      "Bash(openssl s_client -connect 8.138.163.42:443 -servername admin.piggy-pocket.xyz)",
+      "Bash(openssl s_client -connect admin.piggy-pocket.xyz:443 -servername admin.piggy-pocket.xyz -tls1_2)",
+      "Bash(openssl x509 *)",
+      "Bash(openssl s_client -connect piggy-pocket.xyz:443 -servername piggy-pocket.xyz)",
+      "Bash(taskkill //F //IM chrome.exe //FI \"WINDOWTITLE eq *\")",
+      "Bash(powershell -NoProfile -Command 'Get-Process chrome -ErrorAction SilentlyContinue | Where-Object { $_.Path -like '\\\\''*Chrome*'\\\\'' } | Where-Object { $_.CommandLine -like '\\\\''*chrome-probe*'\\\\'' } | Stop-Process -Force')",
+      "Bash(rm -rf /tmp/chrome-probe /tmp/cert*.pem /tmp/chain.pem /tmp/x1.pem)",
+      "Bash(pnpm build *)",
+      "Bash(grep -E \"^\\(tsc|nest|jest\\)$\")",
+      "Bash(./node_modules/.bin/tsc --noEmit -p tsconfig.json)",
+      "Bash(grep -E \"^\\(vue-tsc|tsc\\)$\")",
+      "Bash(./node_modules/.bin/vue-tsc --noEmit -p tsconfig.json)",
+      "Bash(cp src/pages/profile/index.vue /tmp/profile.bak && printf '\\\\n<script lang=\"ts\">const x: number = \"boom\"</script>\\\\n' >> src/pages/profile/index.vue && ./node_modules/.bin/vue-tsc --noEmit -p tsconfig.json 2>&1 | grep -c profile; cp /tmp/profile.bak src/pages/profile/index.vue && echo restored)",
+      "Bash(./node_modules/.bin/vue-tsc --noEmit)",
+      "Bash(./node_modules/.bin/vue-tsc --noEmit -p tsconfig.app.json)",
+      "Bash(sed -i 's/const loading = ref\\(false\\)/const loading: number = ref\\(false\\)/' src/views/piggy/OrderList.vue)",
+      "Bash(./node_modules/.bin/eslint apps/core-element-plus/src/views/piggy/OrderList.vue apps/core-element-plus/src/views/piggy/OrderDetail.vue apps/core-element-plus/src/api/modules/piggy.ts)"
     ],
     "additionalDirectories": [
       "F:\\PiggyPocket\\nest-service\\src\\modules\\order\\dto",
-      "F:\\PiggyPocket\\nest-service\\src\\modules\\order"
+      "F:\\PiggyPocket\\nest-service\\src\\modules\\order",
+      "\\tmp"
     ]
   }
 }

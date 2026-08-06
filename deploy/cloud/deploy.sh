@@ -4,7 +4,6 @@ set -e
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_NAME="piggy-pocket"
-BACKEND_DIR="$(cd "$SCRIPT_DIR/../../nest-service" && pwd)"
 
 # 颜色输出
 RED='\033[0;31m'
@@ -89,21 +88,8 @@ for i in {1..30}; do
   sleep 2
 done
 
-# 运行数据库迁移
-log_info "执行数据库迁移..."
-docker run --rm \
-  --network "${PROJECT_NAME}_piggy-network" \
-  -v "$BACKEND_DIR:/app" \
-  -w /app \
-  -e DB_HOST=mysql \
-  -e DB_PORT=3306 \
-  -e DB_USERNAME="$DB_USERNAME" \
-  -e DB_PASSWORD="$DB_PASSWORD" \
-  -e DB_DATABASE="$DB_DATABASE" \
-  node:20-alpine \
-  sh -c "npm ci && npm run migration:run"
-
 # 启动 API、admin 后台与 Nginx Proxy Manager
+# API 容器启动时会自动执行数据库迁移（见 nest-service/Dockerfile）
 log_info "启动 API、admin 后台与 Nginx Proxy Manager..."
 $COMPOSE_CMD -f "$SCRIPT_DIR/docker-compose.yml" up -d api admin npm
 

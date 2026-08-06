@@ -39,6 +39,10 @@ export class Order {
   @Column({ type: 'text', nullable: true, comment: '订单备注' })
   remark: string;
 
+  @ApiProperty({ description: '做菜日期，如 2026-08-05' })
+  @Column({ type: 'date', nullable: true, comment: '做菜日期' })
+  cookDate?: string;
+
   @ApiProperty({ description: '创建时间' })
   @CreateDateColumn({ type: 'datetime', comment: '创建时间' })
   createdAt: Date;

@@ -57,28 +57,31 @@
         </view>
       </view>
 
-      <!-- Today's Orders Section -->
+      <!-- Piggy Orders Section -->
       <view class="orders-section">
         <view class="section-header">
           <uni-icons type="restaurant" size="24" color="#ffc2cc" />
-          <text>今日订单</text>
+          <text>猪猪订单</text>
           <view></view>
         </view>
-        <view class="orders-list">
-          <view v-if="todayOrders.length === 0" style="padding: 16px; color: #777; text-align: center;">今天还没有订单</view>
-          <view v-for="order in todayOrders" :key="`${order.id}-${order.itemId}`" class="order-item"
-            :class="{ completed: order.status === 'completed' }" @click="goToDishDetail(order)">
-            <view class="order-icon" :style="order.image ? {} : (order.bgColor ? { background: order.bgColor } : {})">
-              <image v-if="order.image" class="order-image" :src="order.image" mode="aspectFill" />
-            </view>
-            <view class="order-info">
-              <text class="order-name">{{ order.name }} x{{ order.quantity }}</text>
-              <text class="order-time">{{ order.remark }}</text>
-            </view>
-            <view class="order-action" :class="{ done: order.status === 'completed' }"
-              @click.stop="markCompleted(order)">
-              <uni-icons v-if="order.status === 'completed'" type="checkmark-filled" size="14" color="#fff" />
-              <text>已完成</text>
+        <view v-if="orderGroups.length === 0" style="padding: 16px; color: #777; text-align: center;">还没有待做的订单</view>
+        <view v-for="group in orderGroups" :key="group.date" class="date-group">
+          <view class="date-header">
+            <text>{{ group.label }}</text>
+          </view>
+          <view class="orders-list">
+            <view v-for="order in group.orders" :key="`${order.id}-${order.itemId}`" class="order-item"
+              @click="goToDishDetail(order)">
+              <view class="order-icon" :style="order.image ? {} : (order.bgColor ? { background: order.bgColor } : {})">
+                <image v-if="order.image" class="order-image" :src="order.image" mode="aspectFill" />
+              </view>
+              <view class="order-info">
+                <text class="order-name">{{ order.name }} x{{ order.quantity }}</text>
+                <text class="order-time">{{ order.remark }}</text>
+              </view>
+              <view class="order-action" @click.stop="markCompleted(order)">
+                <text>已完成</text>
+              </view>
             </view>
           </view>
         </view>
@@ -124,7 +127,13 @@ interface Order {
   bgColor?: string
 }
 
-const todayOrders = ref<Order[]>([])
+interface OrderDateGroup {
+  date: string
+  label: string
+  orders: Order[]
+}
+
+const orderGroups = ref<OrderDateGroup[]>([])
 const showProfileEditor = ref(false)
 const profileForm = ref({
   nickname: '',
@@ -132,13 +141,17 @@ const profileForm = ref({
 })
 let hasPromptedWechatProfile = false
 
-const isToday = (dateText: string) => {
-  const date = new Date(dateText)
-  const today = new Date()
-  return date.getFullYear() === today.getFullYear()
-    && date.getMonth() === today.getMonth()
-    && date.getDate() === today.getDate()
+const formatDate = (date: string | Date) => {
+  const d = new Date(date)
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${d.getFullYear()}-${m}-${day}`
 }
+
+// 老订单没有 cookDate，回退用创建日期分组
+const cookDateOf = (order: FoodieOrder) => order.cookDate || formatDate(order.createdAt)
+
+const dateLabel = (date: string) => (date === formatDate(new Date()) ? '今天' : date)
 
 const formatTime = (dateText: string) => {
   const date = new Date(dateText)
@@ -206,9 +219,18 @@ const loadProfile = async () => {
 
     const allOrders = [...groupOrders.list, ...myOrders.list]
     const uniqueOrders = Array.from(new Map(allOrders.map((order) => [order.id, order])).values())
-    todayOrders.value = uniqueOrders
-      .filter((order) => isToday(order.createdAt))
-      .flatMap(mapOrderItems)
+    const pending = uniqueOrders.filter((order) => order.status !== 'completed')
+
+    const map = new Map<string, Order[]>()
+    pending.forEach((order) => {
+      const date = cookDateOf(order)
+      if (!map.has(date)) map.set(date, [])
+      map.get(date)!.push(...mapOrderItems(order))
+    })
+    // 做菜日期升序：快到的做菜日排在上面
+    orderGroups.value = Array.from(map.entries())
+      .sort(([a], [b]) => a.localeCompare(b))
+      .map(([date, orders]) => ({ date, label: dateLabel(date), orders }))
   } catch (err: any) {
     uni.showToast({ title: err.message || '资料加载失败', icon: 'none' })
   }
@@ -276,9 +298,9 @@ const markCompleted = async (order: Order) => {
   if (order.status === 'completed') return
   try {
     await updateOrderStatus(order.id, 'completed')
-    order.status = 'completed'
-    stats.value.recipes += 1
     uni.showToast({ title: '已标记完成', icon: 'success' })
+    // 猪猪订单只展示未完成订单，重新拉取让该单移入历史菜单
+    await loadProfile()
   } catch (err: any) {
     uni.showToast({ title: err.message || '操作失败', icon: 'none' })
   }
@@ -585,6 +607,20 @@ const handleTabChange = (index: number) => {
   font-weight: 500;
 }
 
+.date-group {
+  margin-bottom: 16px;
+}
+
+.date-header {
+  margin-bottom: 12px;
+}
+
+.date-header text {
+  font-size: 14px;
+  font-weight: 600;
+  color: #777;
+}
+
 .orders-list {
   display: flex;
   flex-direction: column;
@@ -608,14 +644,6 @@ const handleTabChange = (index: number) => {
   transform: scale(0.995);
 }
 
-.order-item.completed {
-  opacity: 0.65;
-}
-
-.order-item.completed .order-icon {
-  filter: grayscale(0.6);
-}
-
 .order-action {
   flex-shrink: 0;
   display: flex;
@@ -627,11 +655,6 @@ const handleTabChange = (index: number) => {
   color: white;
   font-size: 12px;
   font-weight: 600;
-}
-
-.order-action.done {
-  background: #e5e7eb;
-  color: #9ca3af;
 }
 
 .order-icon {

@@ -239,6 +239,7 @@ export interface AdminOrder {
   groupId: number | null
   status: OrderStatus
   remark?: string
+  cookDate?: string | null
   items: AdminOrderItem[]
   itemCount: number
   userNickname: string | null
@@ -256,6 +257,8 @@ export interface OrderListQuery {
   groupId?: number
   startDate?: string
   endDate?: string
+  cookStartDate?: string
+  cookEndDate?: string
 }
 
 export const listOrders = (query: OrderListQuery) =>

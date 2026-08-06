@@ -56,7 +56,7 @@ export class OrderService {
       skip,
       take: pageSize,
       relations: ['items', 'items.dish', 'user'],
-      order: { createdAt: 'DESC' },
+      order: { cookDate: 'DESC', createdAt: 'DESC' },
     });
 
     return {
@@ -76,7 +76,7 @@ export class OrderService {
       skip,
       take: pageSize,
       relations: ['items', 'items.dish', 'user'],
-      order: { createdAt: 'DESC' },
+      order: { cookDate: 'DESC', createdAt: 'DESC' },
     });
 
     return {

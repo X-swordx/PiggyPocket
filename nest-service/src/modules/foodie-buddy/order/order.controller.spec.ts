@@ -20,6 +20,7 @@ describe('OrderController', () => {
     groupId: 1,
     status: 'pending',
     remark: '少辣',
+    cookDate: '2026-08-05',
     createdAt: new Date(),
     updatedAt: new Date(),
     items: [],

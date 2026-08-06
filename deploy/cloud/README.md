@@ -192,6 +192,10 @@ docker compose -p piggy-pocket down
 docker compose -p piggy-pocket up -d --build
 ```
 
+> API 容器启动时会自动执行数据库迁移，**无需手动跑 migration**。
+> 如果 api 起不来，先看日志确认是不是迁移失败：
+> `docker compose -p piggy-pocket logs api`
+
 ### 4.6 其他方式
 
 | 方式                        | 适用场景                                        |
@@ -238,8 +242,10 @@ chmod +x deploy.sh backup.sh
 1. 检查 `.env` 配置。
 2. 创建数据与备份目录。
 3. 启动 MySQL 并等待健康检查。
-4. 使用临时 Node 容器执行 TypeORM 数据库迁移。
-5. 启动 NestJS API、admin 后台与 Nginx Proxy Manager。
+4. 启动 NestJS API、admin 后台与 Nginx Proxy Manager。
+
+> API 容器**启动时会自动执行数据库迁移**（见 `nest-service/Dockerfile` 的 `CMD`），
+> 迁移失败则不启动服务，避免用旧表结构运行。所以无需手动跑 migration。
 
 ## 7. 配置 Nginx Proxy Manager
 
@@ -367,6 +373,10 @@ docker compose -p piggy-pocket restart admin
 docker compose -p piggy-pocket down
 docker compose -p piggy-pocket up -d --build
 
+# 数据库迁移（正常由 api 容器启动时自动执行，以下为手动排查用）
+docker compose -p piggy-pocket exec api npm run migration:show:prod
+docker compose -p piggy-pocket exec api npm run migration:run:prod
+
 # 进入 MySQL
 docker compose -p piggy-pocket exec mysql mysql -uroot -p
 ```
@@ -382,12 +392,7 @@ docker compose -p piggy-pocket exec mysql mysql -uroot -p
 > 先按 [3.1 配置 Docker 镜像加速](#31-配置-docker-镜像加速) 配好加速再重试。
 
 1. `deploy.sh` 已自动启动 admin 容器；若单独构建：`docker compose -p piggy-pocket up -d --build admin`。
-2. 数据库需先跑 admin 相关 migration（含默认超管账号）：
-
-   ```bash
-   docker compose -p piggy-pocket exec api npm run migration:run:prod
-   ```
-
+2. admin 相关 migration（含默认超管账号）在 api 容器启动时已自动执行。
    默认账号：`superadmin / admin123456`（**上线后立即改密码**）。
 3. 在 NPM（Nginx Proxy Manager）中新增站点，例如 `admin.yourdomain.com`：
    - Forward Hostname/IP：`admin`
@@ -409,7 +414,33 @@ ADMIN_JWT_EXPIRES_IN=2h
 
 修改后重启 api：`docker compose -p piggy-pocket restart api`。
 
-## 15. 安全建议
+## 15. 数据库变更记录
+
+`synchronize: false`，所有表结构变更都通过 `nest-service/src/migrations/` 下的 migration 文件管理。
+**api 容器启动时会自动执行 `migration:run:prod`**（见 `nest-service/Dockerfile` 的 `CMD`），
+迁移是幂等的，容器每次重启都会跳过已执行的部分；迁移失败则服务不启动。
+
+| Migration                     | 变更内容                                                      |
+| ----------------------------- | ------------------------------------------------------------- |
+| `AddOrderCookDate`            | `orders` 表新增 `cookDate`（做菜日期，date，可空）+ 索引      |
+
+### AddOrderCookDate（做菜日期）
+
+美食菜单模块新增「下单时选择做菜日期」，猪猪订单与历史菜单按做菜日期分组展示。
+
+字段可空，历史订单保持 `NULL`，小程序端展示时回退用 `createdAt` 的日期分组，**无需数据回填**。
+
+验证字段已生效：
+
+```bash
+docker compose -p piggy-pocket exec mysql \
+  mysql -u"$DB_USERNAME" -p"$DB_PASSWORD" "$DB_DATABASE" \
+  -e "SHOW COLUMNS FROM orders LIKE 'cookDate';"
+```
+
+应输出一行 `cookDate | date | YES`。
+
+## 16. 安全建议
 
 - 云服务器安全组只放行必要的端口：`22`（SSH）、`80`、`443`、`81`（NPM 管理界面，建议限制 IP）。
 - 修改 SSH 默认端口，使用密钥登录，关闭密码登录。
@@ -417,13 +448,13 @@ ADMIN_JWT_EXPIRES_IN=2h
 - MySQL 3306 仅绑定 `127.0.0.1`，避免暴露到公网。
 - 定期更新系统补丁和 Docker 镜像。
 
-## 16. 备案与合规
+## 17. 备案与合规
 
 - 域名必须完成 ICP 备案才能解析到中国大陆服务器。
 - 小程序上线前，需要在网站底部展示备案号并链接到 [工信部](https://beian.miit.gov.cn/)。
 - 如果涉及用户个人信息收集，需在微信小程序后台完善隐私协议。
 
-## 17. 故障排查
+## 18. 故障排查
 
 | 现象                                                    | 可能原因                         | 排查方法                                                          |
 | ------------------------------------------------------- | -------------------------------- | ----------------------------------------------------------------- |
@@ -434,4 +465,5 @@ ADMIN_JWT_EXPIRES_IN=2h
 | NPM 返回 502                                            | 目标容器未启动                   | API 502 看 `logs api`；admin 502 看 `logs admin`                  |
 | SSL 证书申请失败                                        | 域名未解析 / 80 端口未放行       | 检查解析和安全组                                                  |
 | 小程序提示域名不合法                                    | 未在微信后台配置                 | 检查微信公众平台服务器域名                                        |
+| api 容器反复重启 / 起不来                               | 启动时数据库迁移失败             | `docker compose -p piggy-pocket logs api` 看迁移报错              |
 | 数据库连接失败                                          | MySQL 未就绪 / 密码错误          | `docker compose -p piggy-pocket logs mysql`                       |

@@ -120,7 +120,10 @@ async function onRevert(target: OrderStatus) {
           <ElDescriptionsItem label="分组">
             {{ order.groupName ?? (order.groupId ? `#${order.groupId}` : '-') }}
           </ElDescriptionsItem>
-          <ElDescriptionsItem label="创建时间" :span="2">
+          <ElDescriptionsItem label="做菜日期">
+            {{ order.cookDate ?? '-' }}
+          </ElDescriptionsItem>
+          <ElDescriptionsItem label="创建时间">
             {{ new Date(order.createdAt).toLocaleString() }}
           </ElDescriptionsItem>
         </ElDescriptions>

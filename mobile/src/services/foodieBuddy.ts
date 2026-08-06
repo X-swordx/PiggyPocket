@@ -60,6 +60,7 @@ export interface FoodieOrder {
   groupId?: number
   status: 'pending' | 'confirming' | 'cooking' | 'completed'
   remark?: string
+  cookDate?: string
   items: FoodieOrderItem[]
   user?: FoodieUser
   createdAt: string
@@ -229,6 +230,7 @@ export const createOrder = (data: {
   userId: number
   groupId?: number
   remark?: string
+  cookDate?: string
   items: Array<{ dishId: number; quantity: number; remark?: string }>
 }) => {
   return request<FoodieOrder>({

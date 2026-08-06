@@ -13,6 +13,18 @@
     <!-- Order Items -->
     <scroll-view scroll-y class="content">
       <view class="section-header">
+        <text>做菜日期</text>
+      </view>
+      <view class="cook-date">
+        <picker mode="date" :value="cookDate" @change="onCookDateChange" class="picker-wrapper">
+          <view class="picker-display">
+            <uni-icons type="calendar" size="20" color="#ffc2cc" />
+            <text>{{ cookDate }}</text>
+          </view>
+        </picker>
+      </view>
+
+      <view class="section-header">
         <text>已选菜品</text>
       </view>
       <view class="order-list">
@@ -81,6 +93,15 @@ interface OrderItem {
 const orderItems = ref<OrderItem[]>([])
 const submitting = ref(false)
 
+const todayString = () => {
+  const d = new Date()
+  const m = String(d.getMonth() + 1).padStart(2, '0')
+  const day = String(d.getDate()).padStart(2, '0')
+  return `${d.getFullYear()}-${m}-${day}`
+}
+
+const cookDate = ref(todayString())
+
 const totalItems = computed(() => orderItems.value.reduce((sum, item) => sum + item.quantity, 0))
 
 onLoad(() => {
@@ -97,6 +118,10 @@ onLoad(() => {
 
 const goBack = () => {
   uni.navigateBack()
+}
+
+const onCookDateChange = (event: any) => {
+  cookDate.value = event.detail.value
 }
 
 const decreaseQty = (index: number) => {
@@ -125,6 +150,7 @@ const confirmOrder = async () => {
     await createOrder({
       userId: user.id,
       groupId: groups[0]?.id,
+      cookDate: cookDate.value,
       items: orderItems.value.map((item) => ({
         dishId: item.dishId,
         quantity: item.quantity,
@@ -197,6 +223,33 @@ const confirmOrder = async () => {
   display: flex;
   flex-direction: column;
   gap: 12px;
+}
+
+.cook-date {
+  padding: 0 16px;
+}
+
+.picker-wrapper {
+  display: block;
+  width: 100%;
+}
+
+.picker-display {
+  width: 100%;
+  padding: 16px;
+  min-height: 56px;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: white;
+  border: 1px solid rgba(255, 194, 204, 0.2);
+  border-radius: 12px;
+  box-sizing: border-box;
+}
+
+.picker-display text {
+  font-size: 16px;
+  color: #111;
 }
 
 .order-item {

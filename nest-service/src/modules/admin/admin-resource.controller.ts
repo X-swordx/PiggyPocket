@@ -77,6 +77,14 @@ class OrderQueryDto extends AdminListQueryDto {
   @IsOptional()
   @IsString()
   endDate?: string;
+
+  @IsOptional()
+  @IsString()
+  cookStartDate?: string;
+
+  @IsOptional()
+  @IsString()
+  cookEndDate?: string;
 }
 
 class OrderStatusDto {

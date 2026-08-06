@@ -22,6 +22,7 @@ describe('OrderService', () => {
     groupId: 1,
     status: 'pending',
     remark: '少辣',
+    cookDate: '2026-08-05',
     createdAt: new Date(),
     updatedAt: new Date(),
     items: [],
@@ -116,7 +117,7 @@ describe('OrderService', () => {
         skip: 0,
         take: 10,
         relations: ['items', 'items.dish', 'user'],
-        order: { createdAt: 'DESC' },
+        order: { cookDate: 'DESC', createdAt: 'DESC' },
       });
       expect(result).toEqual({
         list: mockOrders,
@@ -141,7 +142,7 @@ describe('OrderService', () => {
         skip: 0,
         take: 10,
         relations: ['items', 'items.dish', 'user'],
-        order: { createdAt: 'DESC' },
+        order: { cookDate: 'DESC', createdAt: 'DESC' },
       });
       expect(result).toEqual({
         list: mockOrders,
@@ -168,7 +169,7 @@ describe('OrderService', () => {
         skip: 0,
         take: 10,
         relations: ['items', 'items.dish', 'user'],
-        order: { createdAt: 'DESC' },
+        order: { cookDate: 'DESC', createdAt: 'DESC' },
       });
       expect(result).toEqual({
         list: mockOrders,
