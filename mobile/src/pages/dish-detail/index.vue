@@ -213,11 +213,11 @@
         </view>
 
         <!-- Bottom spacer -->
-        <view class="spacer-dish"></view>
+        <view class="spacer-dish" v-if="!readonly"></view>
       </view>
 
       <!-- Edit / Save bottom bar for dish mode -->
-      <view class="bottom-bar" v-if="!isFoodExpiry">
+      <view class="bottom-bar" v-if="!isFoodExpiry && !readonly">
         <template v-if="!editing">
           <view class="delete-btn-bar" @click="handleDeleteDish">
             <uni-icons type="trash" size="20" color="#ba1a1a" />
@@ -311,6 +311,9 @@ const food = ref<FoodItem>({
 })
 
 const isFoodExpiry = computed(() => !!food.value.name)
+
+// 从历史菜单进入时只读回看，不允许删改
+const readonly = ref(false)
 
 // --- Edit mode ---
 const editing = ref(false)
@@ -492,6 +495,7 @@ const loadExpiryFood = async (id: number) => {
 }
 
 onLoad((options: any) => {
+  readonly.value = options?.readonly === '1'
   if (options?.mode === 'expiry' && options?.id) {
     loadExpiryFood(Number(options.id))
     return

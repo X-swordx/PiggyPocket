@@ -17,17 +17,25 @@
           <text>{{ group.label }}</text>
         </view>
         <view class="orders-list">
-          <view v-for="order in group.orders" :key="order.id" class="order-item" @click="goToDishDetail(order)">
-            <view class="order-icon" :style="order.image ? {} : (order.bgColor ? { background: order.bgColor } : {})">
-              <image v-if="order.image" class="order-image" :src="order.image" mode="aspectFill" />
+          <view v-for="order in group.orders" :key="order.id" class="order-card">
+            <view class="order-card-header">
+              <text class="order-meta">共 {{ order.dishes.length }} 个菜</text>
+              <view class="order-action done">
+                <uni-icons type="checkmark-filled" size="14" color="#fff" />
+                <text>已完成</text>
+              </view>
             </view>
-            <view class="order-info">
-              <text class="order-name">{{ order.name }} x{{ order.quantity }}</text>
-              <text class="order-time">{{ order.remark || '已完成' }}</text>
-            </view>
-            <view class="order-action done">
-              <uni-icons type="checkmark-filled" size="14" color="#fff" />
-              <text>已完成</text>
+            <view class="order-dishes">
+              <view v-for="dish in order.dishes" :key="dish.itemId" class="dish-row"
+                @click="goToDishDetail(dish)">
+                <view class="order-icon" :style="dish.image ? {} : (dish.bgColor ? { background: dish.bgColor } : {})">
+                  <image v-if="dish.image" class="order-image" :src="dish.image" mode="aspectFill" />
+                </view>
+                <view class="order-info">
+                  <text class="order-name">{{ dish.name }} x{{ dish.quantity }}</text>
+                  <text class="order-time">{{ dish.remark }}</text>
+                </view>
+              </view>
             </view>
           </view>
         </view>
@@ -43,16 +51,21 @@ import { onShow } from '@dcloudio/uni-app'
 import uniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
 import { getCurrentUser, getOrders, type FoodieOrder } from '@/services/foodieBuddy'
 
-interface HistoryOrder {
-  id: number
+interface HistoryDish {
+  itemId?: number
   dishId?: number
   name: string
   remark: string
   quantity: number
   image?: string
   bgColor?: string
+}
+
+interface HistoryOrder {
+  id: number
   createdAt: string
   cookDate?: string
+  dishes: HistoryDish[]
 }
 
 interface DateGroup {
@@ -72,17 +85,19 @@ const formatDate = (dateText: string) => {
 }
 
 const mapOrder = (order: FoodieOrder): HistoryOrder => {
-  const firstItem = order.items?.[0]
   return {
     id: order.id,
-    dishId: firstItem?.dishId,
-    name: firstItem?.dish?.name || order.orderNo,
-    remark: firstItem?.remark || '',
-    quantity: firstItem?.quantity || 1,
-    image: firstItem?.dish?.image || '',
-    bgColor: firstItem?.dish?.bgColor || '',
     createdAt: order.createdAt,
-    cookDate: order.cookDate
+    cookDate: order.cookDate,
+    dishes: (order.items || []).map((item) => ({
+      itemId: item.id,
+      dishId: item.dishId,
+      name: item.dish?.name || order.orderNo,
+      remark: item.remark || '',
+      quantity: item.quantity || 1,
+      image: item.dish?.image || '',
+      bgColor: item.dish?.bgColor || ''
+    }))
   }
 }
 
@@ -115,10 +130,10 @@ const goBack = () => {
   uni.navigateBack()
 }
 
-const goToDishDetail = (order: HistoryOrder) => {
-  if (!order.dishId) return
+const goToDishDetail = (dish: HistoryDish) => {
+  if (!dish.dishId) return
   uni.navigateTo({
-    url: `/pages/dish-detail/index?id=${order.dishId}`
+    url: `/pages/dish-detail/index?id=${dish.dishId}&readonly=1`
   })
 }
 
@@ -184,16 +199,38 @@ onShow(loadHistory)
   gap: 12px;
 }
 
-.order-item {
+.order-card {
   background: white;
   padding: 16px;
   border-radius: 12px;
-  display: flex;
-  align-items: center;
-  gap: 16px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   border: 1px solid rgba(255, 194, 204, 0.05);
   opacity: 0.85;
+}
+
+.order-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.order-meta {
+  font-size: 12px;
+  color: #777;
+}
+
+.order-dishes {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dish-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
 }
 
 .order-icon {

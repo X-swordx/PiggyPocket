@@ -70,17 +70,24 @@
             <text>{{ group.label }}</text>
           </view>
           <view class="orders-list">
-            <view v-for="order in group.orders" :key="`${order.id}-${order.itemId}`" class="order-item"
-              @click="goToDishDetail(order)">
-              <view class="order-icon" :style="order.image ? {} : (order.bgColor ? { background: order.bgColor } : {})">
-                <image v-if="order.image" class="order-image" :src="order.image" mode="aspectFill" />
+            <view v-for="order in group.orders" :key="order.id" class="order-card">
+              <view class="order-card-header">
+                <text class="order-meta">共 {{ order.dishes.length }} 个菜 · {{ formatTime(order.createdAt) }} 下单</text>
+                <view class="order-action" @click="markCompleted(order)">
+                  <text>已完成</text>
+                </view>
               </view>
-              <view class="order-info">
-                <text class="order-name">{{ order.name }} x{{ order.quantity }}</text>
-                <text class="order-time">{{ order.remark }}</text>
-              </view>
-              <view class="order-action" @click.stop="markCompleted(order)">
-                <text>已完成</text>
+              <view class="order-dishes">
+                <view v-for="dish in order.dishes" :key="dish.itemId" class="dish-row"
+                  @click="goToDishDetail(dish)">
+                  <view class="order-icon" :style="dish.image ? {} : (dish.bgColor ? { background: dish.bgColor } : {})">
+                    <image v-if="dish.image" class="order-image" :src="dish.image" mode="aspectFill" />
+                  </view>
+                  <view class="order-info">
+                    <text class="order-name">{{ dish.name }} x{{ dish.quantity }}</text>
+                    <text class="order-time">{{ dish.remark }}</text>
+                  </view>
+                </view>
               </view>
             </view>
           </view>
@@ -115,16 +122,21 @@ const stats = ref({
   fulfilled: 0
 })
 
-interface Order {
-  id: number
+interface OrderDish {
   itemId?: number
   dishId?: number
   name: string
-  remark: string,
-  quantity: number,
-  status: FoodieOrder['status']
+  remark: string
+  quantity: number
   image?: string
   bgColor?: string
+}
+
+interface Order {
+  id: number
+  createdAt: string
+  status: FoodieOrder['status']
+  dishes: OrderDish[]
 }
 
 interface OrderDateGroup {
@@ -158,18 +170,21 @@ const formatTime = (dateText: string) => {
   return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
 }
 
-const mapOrderItems = (order: FoodieOrder): Order[] => {
-  return (order.items || []).map((item) => ({
+const mapOrder = (order: FoodieOrder): Order => {
+  return {
     id: order.id,
-    itemId: item.id,
-    dishId: item.dishId,
-    name: item.dish?.name || order.orderNo,
-    remark: item.remark || '',
-    quantity: item.quantity || 1,
+    createdAt: order.createdAt,
     status: order.status,
-    image: item.dish?.image || '',
-    bgColor: item.dish?.bgColor || ''
-  }))
+    dishes: (order.items || []).map((item) => ({
+      itemId: item.id,
+      dishId: item.dishId,
+      name: item.dish?.name || order.orderNo,
+      remark: item.remark || '',
+      quantity: item.quantity || 1,
+      image: item.dish?.image || '',
+      bgColor: item.dish?.bgColor || ''
+    }))
+  }
 }
 
 const loadProfile = async () => {
@@ -225,7 +240,7 @@ const loadProfile = async () => {
     pending.forEach((order) => {
       const date = cookDateOf(order)
       if (!map.has(date)) map.set(date, [])
-      map.get(date)!.push(...mapOrderItems(order))
+      map.get(date)!.push(mapOrder(order))
     })
     // 做菜日期升序：快到的做菜日排在上面
     orderGroups.value = Array.from(map.entries())
@@ -287,10 +302,10 @@ const goToSettings = () => {
   uni.navigateTo({ url: '/pages/about/index' })
 }
 
-const goToDishDetail = (order: Order) => {
-  if (!order.dishId) return
+const goToDishDetail = (dish: OrderDish) => {
+  if (!dish.dishId) return
   uni.navigateTo({
-    url: `/pages/dish-detail/index?id=${order.dishId}`
+    url: `/pages/dish-detail/index?id=${dish.dishId}`
   })
 }
 
@@ -627,21 +642,42 @@ const handleTabChange = (index: number) => {
   gap: 12px;
 }
 
-.order-item {
+.order-card {
   background: white;
   padding: 16px;
   border-radius: 12px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+  border: 1px solid rgba(255, 194, 204, 0.05);
+}
+
+.order-card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.order-meta {
+  font-size: 12px;
+  color: #777;
+}
+
+.order-dishes {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.dish-row {
   display: flex;
   align-items: center;
   gap: 16px;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(255, 194, 204, 0.05);
   transition: background-color 0.2s;
 }
 
-.order-item:active {
+.dish-row:active {
   background: rgba(255, 194, 204, 0.05);
-  transform: scale(0.995);
 }
 
 .order-action {
