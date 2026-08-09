@@ -508,3 +508,35 @@ export const saveRolePermissions = (role: AdminRole, permissions: string[]) =>
   unwrap<{ role: AdminRole, permissions: string[] }>(
     api.put('admin/role-permissions', { role, permissions }),
   )
+
+// ============================ 消息通知 ============================
+
+export interface AdminMessage {
+  id: number
+  title: string
+  content: string
+  icon: string
+  bgColor: string
+  sort: number
+  enabled: number
+  createdAt: string
+  updatedAt: string
+}
+
+export const listMessages = (query: { page?: number, pageSize?: number, keyword?: string }) =>
+  unwrap<PageResult<AdminMessage>>(api.get('admin/messages', { params: query }))
+
+export const getMessage = (id: number) =>
+  unwrap<AdminMessage>(api.get(`admin/messages/${id}`))
+
+export const createMessage = (data: Partial<AdminMessage>) =>
+  unwrap<AdminMessage>(api.post('admin/messages', data))
+
+export const updateMessage = (id: number, data: Partial<AdminMessage>) =>
+  unwrap<AdminMessage>(api.put(`admin/messages/${id}`, data))
+
+export const setMessageEnabled = (id: number, enabled: number) =>
+  unwrap<AdminMessage>(api.put(`admin/messages/${id}/enabled`, { enabled }))
+
+export const removeMessage = (id: number) =>
+  unwrap<{ success: boolean }>(api.delete(`admin/messages/${id}`))

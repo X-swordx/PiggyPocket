@@ -49,6 +49,10 @@ function SystemRole() {
   return import('@/views/piggy/SystemRole.vue')
 }
 
+function SystemMessage() {
+  return import('@/views/piggy/MessageList.vue')
+}
+
 const dashboard: RouteRecordMainRaw = {
   meta: {
     title: '数据概览',
@@ -292,6 +296,15 @@ const system: RouteRecordMainRaw = {
           component: SystemRole,
           meta: {
             title: '角色权限',
+            auth: '*',
+          },
+        },
+        {
+          path: 'message',
+          name: 'systemMessage',
+          component: SystemMessage,
+          meta: {
+            title: '消息通知',
             auth: '*',
           },
         },

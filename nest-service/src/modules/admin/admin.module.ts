@@ -31,6 +31,9 @@ import { Order } from '../foodie-buddy/order/entities/order.entity';
 import { OrderItem } from '../foodie-buddy/order/entities/order-item.entity';
 import { DiningGroup } from '../foodie-buddy/dining-group/entities/dining-group.entity';
 import { DiningGroupMember } from '../foodie-buddy/dining-group/entities/dining-group-member.entity';
+import { Message } from '../foodie-buddy/message/entities/message.entity';
+import { MessageRead } from '../foodie-buddy/message/entities/message-read.entity';
+import { AdminMessageService } from './admin-message.service';
 import { OssModule } from '../oss/oss.module';
 
 @Module({
@@ -48,6 +51,8 @@ import { OssModule } from '../oss/oss.module';
       OrderItem,
       DiningGroup,
       DiningGroupMember,
+      Message,
+      MessageRead,
     ]),
     OssModule,
     JwtModule.registerAsync({
@@ -77,6 +82,7 @@ import { OssModule } from '../oss/oss.module';
     AdminOperationLogService,
     AdminDashboardService,
     AdminRolePermissionService,
+    AdminMessageService,
   ],
   exports: [AdminAuthService, AdminAuthGuard],
 })

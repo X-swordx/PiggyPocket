@@ -5,6 +5,7 @@
       <view class="header-right">
         <view class="icon-btn" @click="openNotificationDrawer">
           <uni-icons type="notification" size="24" color="#333" />
+          <view v-if="hasUnread" class="red-dot"></view>
         </view>
       </view>
       <view class="header-center">
@@ -101,17 +102,20 @@
           </view>
         </view>
         <scroll-view scroll-y class="drawer-content">
-          <view v-for="(item, index) in notifications" :key="index" class="notification-item">
+          <view v-for="item in notifications" :key="item.id" class="notification-item">
             <view class="notification-icon" :style="{ backgroundColor: item.bgColor }">
               <uni-icons :type="item.icon" size="20" color="#fff" />
             </view>
             <view class="notification-info">
               <view class="notification-title-row">
                 <text class="notification-title">{{ item.title }}</text>
-                <text class="notification-time">{{ item.time }}</text>
+                <text class="notification-time">{{ relativeTime(item.createdAt) }}</text>
               </view>
               <text class="notification-content">{{ item.content }}</text>
             </view>
+          </view>
+          <view v-if="!notifications.length" class="notification-empty">
+            <text>暂无消息</text>
           </view>
         </scroll-view>
         <view class="drawer-footer">
@@ -130,9 +134,10 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
-import { onShareAppMessage } from '@dcloudio/uni-app'
+import { onShareAppMessage, onShow } from '@dcloudio/uni-app'
 import TabBar from '@/components/TabBar.vue'
 import uniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
+import { getMessages, markMessagesAsRead, type Message } from '@/services/notification'
 
 const handleTabChange = (index: number) => {
   if (index === 0) {
@@ -157,42 +162,51 @@ onShareAppMessage(() => ({
 }))
 
 // Notification Drawer
-interface Notification {
-  title: string
-  content: string
-  time: string
-  icon: string
-  bgColor: string
+const showNotificationDrawer = ref(false)
+const notifications = ref<Message[]>([])
+const hasUnread = ref(false)
+// 「清空全部」只清本地展示，标记后本次会话不再拉取，重新进入页面会恢复
+const localCleared = ref(false)
+
+const loadMessages = async () => {
+  if (localCleared.value) return
+  try {
+    const list = await getMessages()
+    notifications.value = list
+    hasUnread.value = list.some((item) => !item.isRead)
+  } catch (err) {
+    console.error('加载消息失败', err)
+  }
 }
 
-const showNotificationDrawer = ref(false)
+const relativeTime = (iso: string) => {
+  const diff = Date.now() - new Date(iso.replace(' ', 'T')).getTime()
+  const minutes = Math.floor(diff / 60000)
+  if (minutes < 1) return '刚刚'
+  if (minutes < 60) return `${minutes}分钟前`
+  const hours = Math.floor(minutes / 60)
+  if (hours < 24) return `${hours}小时前`
+  const days = Math.floor(hours / 24)
+  if (days === 1) return '昨天'
+  if (days < 7) return `${days}天前`
+  return iso.slice(0, 10)
+}
 
-const notifications = ref<Notification[]>([
-  {
-    title: '临期提醒',
-    content: '您有3件食品即将过期，请及时处理',
-    time: '10分钟前',
-    icon: 'clock',
-    bgColor: '#fb923c'
-  },
-  {
-    title: '心愿进度',
-    content: '本月已完成3个心愿，继续加油！',
-    time: '1小时前',
-    icon: 'star-filled',
-    bgColor: '#ec4899'
-  },
-  {
-    title: '系统公告',
-    content: '新版猪猪生活本已上线，快来体验新功能',
-    time: '昨天',
-    icon: 'sound-filled',
-    bgColor: '#ffc2cc'
-  }
-])
+onShow(() => {
+  localCleared.value = false
+  loadMessages()
+})
 
-const openNotificationDrawer = () => {
+const openNotificationDrawer = async () => {
   showNotificationDrawer.value = true
+  if (!hasUnread.value) return
+  try {
+    await markMessagesAsRead()
+    hasUnread.value = false
+    notifications.value = notifications.value.map((item) => ({ ...item, isRead: true }))
+  } catch (err) {
+    console.error('标记已读失败', err)
+  }
 }
 
 const closeNotificationDrawer = () => {
@@ -201,6 +215,8 @@ const closeNotificationDrawer = () => {
 
 const clearAllNotifications = () => {
   notifications.value = []
+  hasUnread.value = false
+  localCleared.value = true
   uni.showToast({ title: '已清空全部消息', icon: 'success' })
   closeNotificationDrawer()
 }
@@ -250,6 +266,18 @@ const clearAllNotifications = () => {
   display: flex;
   align-items: center;
   justify-content: center;
+  position: relative;
+}
+
+.red-dot {
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  background: #ef4444;
+  border: 1px solid #F8F5F6;
 }
 
 .content {
@@ -495,6 +523,13 @@ const clearAllNotifications = () => {
   font-size: 13px;
   color: #6b7280;
   line-height: 1.5;
+}
+
+.notification-empty {
+  padding: 48px 0;
+  text-align: center;
+  font-size: 14px;
+  color: #9ca3af;
 }
 
 .drawer-footer {

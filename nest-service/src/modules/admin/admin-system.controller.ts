@@ -22,8 +22,11 @@ import { AdminAccountService } from './admin-account.service';
 import { AdminOperationLogService } from './admin-operation-log.service';
 import { AdminDashboardService } from './admin-dashboard.service';
 import { AdminRolePermissionService } from './admin-role-permission.service';
+import { AdminMessageService } from './admin-message.service';
 import { AdminListQueryDto } from './dto/admin-list-query.dto';
 import { AdminRole } from './entities/admin-user.entity';
+import { CreateMessageDto } from '../foodie-buddy/message/dto/create-message.dto';
+import { UpdateMessageDto } from '../foodie-buddy/message/dto/update-message.dto';
 
 class CreateAdminDto {
   @IsString()
@@ -64,6 +67,12 @@ class StatusDto {
   status: 0 | 1;
 }
 
+class MessageEnabledDto {
+  @IsIn([0, 1])
+  @Type(() => Number)
+  enabled: 0 | 1;
+}
+
 class RolePermissionDto {
   @IsIn(['operator', 'viewer'])
   role: AdminRole;
@@ -89,6 +98,7 @@ export class AdminSystemController {
     private readonly opLog: AdminOperationLogService,
     private readonly dashboard: AdminDashboardService,
     private readonly rolePermission: AdminRolePermissionService,
+    private readonly messageService: AdminMessageService,
   ) {}
 
   // ============ 角色权限配置 ============
@@ -174,6 +184,52 @@ export class AdminSystemController {
   @Delete('admins/:id')
   removeAdmin(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
     return this.accountService.remove(this.ctx(req), id);
+  }
+
+  // ============ 消息通知配置 ============
+
+  @Get('messages')
+  @ApiOperation({ summary: '消息通知列表' })
+  listMessages(@Query() query: AdminListQueryDto) {
+    return this.messageService.findAll(query);
+  }
+
+  @Get('messages/:id')
+  @ApiOperation({ summary: '获取单条消息' })
+  getMessage(@Param('id', ParseIntPipe) id: number) {
+    return this.messageService.findOne(id);
+  }
+
+  @Post('messages')
+  @ApiOperation({ summary: '新增消息' })
+  createMessage(@Req() req: any, @Body() dto: CreateMessageDto) {
+    return this.messageService.create(this.ctx(req), dto);
+  }
+
+  @Put('messages/:id')
+  @ApiOperation({ summary: '编辑消息' })
+  updateMessage(
+    @Req() req: any,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdateMessageDto,
+  ) {
+    return this.messageService.update(this.ctx(req), id, dto);
+  }
+
+  @Put('messages/:id/enabled')
+  @ApiOperation({ summary: '启停消息' })
+  setMessageEnabled(
+    @Req() req: any,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: MessageEnabledDto,
+  ) {
+    return this.messageService.setEnabled(this.ctx(req), id, dto.enabled);
+  }
+
+  @Delete('messages/:id')
+  @ApiOperation({ summary: '删除消息' })
+  removeMessage(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
+    return this.messageService.remove(this.ctx(req), id);
   }
 
   // ============ 操作日志 ============

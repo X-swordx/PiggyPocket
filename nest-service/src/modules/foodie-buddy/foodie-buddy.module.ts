@@ -23,6 +23,10 @@ import { OrderController } from './order/order.controller';
 import { OrderService } from './order/order.service';
 import { Order } from './order/entities/order.entity';
 import { OrderItem } from './order/entities/order-item.entity';
+import { Message } from './message/entities/message.entity';
+import { MessageRead } from './message/entities/message-read.entity';
+import { MessageController } from './message/message.controller';
+import { MessageService } from './message/message.service';
 
 @Module({
   imports: [
@@ -34,6 +38,8 @@ import { OrderItem } from './order/entities/order-item.entity';
       DiningGroupMember,
       Order,
       OrderItem,
+      Message,
+      MessageRead,
     ]),
   ],
   controllers: [
@@ -41,12 +47,14 @@ import { OrderItem } from './order/entities/order-item.entity';
     DishController,
     DiningGroupController,
     OrderController,
+    MessageController,
   ],
   providers: [
     UserService,
     DishService,
     DiningGroupService,
     OrderService,
+    MessageService,
   ],
 })
 export class FoodieBuddyModule {}
