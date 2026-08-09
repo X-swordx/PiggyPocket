@@ -1,6 +1,6 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, NotFoundException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { OrderService } from './order.service';
 import { Order } from './entities/order.entity';
@@ -243,6 +243,47 @@ describe('OrderService', () => {
       });
       expect(orderRepository.save).toHaveBeenCalled();
       expect(result.status).toBe(status);
+    });
+  });
+
+  describe('updateRating', () => {
+    const completedOrder = { ...mockOrder, status: 'completed' as OrderStatus };
+
+    it('应该为已完成订单保存评价星级', async () => {
+      mockOrderRepository.findOne.mockResolvedValue(completedOrder);
+      mockOrderRepository.save.mockImplementation((order) => Promise.resolve(order));
+
+      const result = await service.updateRating(1, 1, 5);
+
+      expect(orderRepository.findOne).toHaveBeenCalledWith({
+        where: { id: 1 },
+        relations: ['items', 'items.dish', 'user'],
+      });
+      expect(orderRepository.save).toHaveBeenCalled();
+      expect(result.rating).toBe(5);
+      expect(result.ratedAt).toBeDefined();
+    });
+
+    it('订单不存在时应抛出 NotFoundException', async () => {
+      mockOrderRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.updateRating(999, 1, 5)).rejects.toThrow(NotFoundException);
+    });
+
+    it('非已完成订单不能评价', async () => {
+      mockOrderRepository.findOne.mockResolvedValue(mockOrder);
+
+      await expect(service.updateRating(1, 1, 5)).rejects.toThrow(
+        new BadRequestException('只能评价已完成的订单'),
+      );
+    });
+
+    it('只能评价自己的订单', async () => {
+      mockOrderRepository.findOne.mockResolvedValue(completedOrder);
+
+      await expect(service.updateRating(1, 2, 5)).rejects.toThrow(
+        new ForbiddenException('只能评价自己的订单'),
+      );
     });
   });
 

@@ -2,7 +2,7 @@
 import { reactive, ref, onMounted } from 'vue'
 import {
   ElButton, ElInput, ElSelect, ElOption, ElTable, ElTableColumn,
-  ElPagination, ElTag, ElPopconfirm, ElMessage, ElDatePicker,
+  ElPagination, ElTag, ElPopconfirm, ElMessage, ElDatePicker, ElRate,
 } from 'element-plus'
 import {
   listOrders, removeOrder,
@@ -181,6 +181,12 @@ onMounted(fetchData)
       <ElTableColumn label="创建时间" width="170">
         <template #default="{ row }">
           {{ new Date(row.createdAt).toLocaleString() }}
+        </template>
+      </ElTableColumn>
+      <ElTableColumn label="评价" width="140">
+        <template #default="{ row }">
+          <ElRate v-if="row.rating" :model-value="row.rating" disabled />
+          <span v-else class="text-sm text-muted-foreground">-</span>
         </template>
       </ElTableColumn>
       <ElTableColumn label="操作" width="150" fixed="right">

@@ -14,6 +14,7 @@ import { AdminSystemController } from './admin-system.controller';
 import { AdminExpiryFoodService } from './admin-expiry-food.service';
 import { AdminWishService } from './admin-wish.service';
 import { AdminDishService } from './admin-dish.service';
+import { AdminDishCategoryService } from './admin-dish-category.service';
 import { AdminUserService } from './admin-user.service';
 import { AdminOrderService } from './admin-order.service';
 import { AdminDiningGroupService } from './admin-dining-group.service';
@@ -24,6 +25,7 @@ import { AdminRolePermissionService } from './admin-role-permission.service';
 import { ExpiryFood } from '../expiry/entities/expiry-food.entity';
 import { Wish } from '../wish/entities/wish.entity';
 import { Dish } from '../foodie-buddy/dish/entities/dish.entity';
+import { DishCategory } from '../foodie-buddy/dish/entities/dish-category.entity';
 import { User } from '../foodie-buddy/user/entities/user.entity';
 import { Order } from '../foodie-buddy/order/entities/order.entity';
 import { OrderItem } from '../foodie-buddy/order/entities/order-item.entity';
@@ -40,6 +42,7 @@ import { OssModule } from '../oss/oss.module';
       ExpiryFood,
       Wish,
       Dish,
+      DishCategory,
       User,
       Order,
       OrderItem,
@@ -66,6 +69,7 @@ import { OssModule } from '../oss/oss.module';
     AdminExpiryFoodService,
     AdminWishService,
     AdminDishService,
+    AdminDishCategoryService,
     AdminUserService,
     AdminOrderService,
     AdminDiningGroupService,

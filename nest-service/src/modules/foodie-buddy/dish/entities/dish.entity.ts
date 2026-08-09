@@ -4,8 +4,12 @@ import {
   PrimaryGeneratedColumn,
   CreateDateColumn,
   UpdateDateColumn,
+  Index,
+  ManyToOne,
+  JoinColumn,
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
+import { DishCategory } from './dish-category.entity';
 
 @Entity('dishes')
 export class Dish {
@@ -21,9 +25,15 @@ export class Dish {
   @Column({ type: 'text', nullable: true, comment: '描述' })
   description: string;
 
-  @ApiProperty({ description: '分类：热菜/凉菜/主食/饮品' })
-  @Column({ type: 'varchar', length: 50, nullable: true, comment: '分类：热菜/凉菜/主食/饮品' })
-  category: string;
+  @ApiProperty({ description: '所属菜品分类ID', required: false })
+  @Index()
+  @Column({ type: 'int', nullable: true, comment: '所属菜品分类ID' })
+  categoryId: number | null;
+
+  @ApiProperty({ description: '所属菜品分类', required: false })
+  @ManyToOne(() => DishCategory, { nullable: true, onDelete: 'SET NULL' })
+  @JoinColumn({ name: 'categoryId' })
+  categoryRef?: DishCategory | null;
 
   @ApiProperty({ description: '图片URL' })
   @Column({ type: 'varchar', length: 255, nullable: true, comment: '图片URL' })
@@ -48,10 +58,6 @@ export class Dish {
   @ApiProperty({ description: '烹饪步骤' })
   @Column({ type: 'simple-json', nullable: true, comment: '烹饪步骤' })
   steps?: string[];
-
-  @ApiProperty({ description: '标签' })
-  @Column({ type: 'simple-json', nullable: true, comment: '标签' })
-  tags?: string[];
 
   @ApiProperty({ description: '背景色' })
   @Column({ type: 'varchar', length: 20, nullable: true, comment: '背景色' })

@@ -1,15 +1,14 @@
 <script setup lang="ts">
-import { ref, watch, reactive } from 'vue'
+import { ref, watch, reactive, onMounted } from 'vue'
 import {
   ElDrawer, ElForm, ElFormItem, ElInput, ElInputNumber, ElSelect,
   ElOption, ElButton, ElMessage, ElRadioGroup, ElRadioButton,
-  ElTag, type FormInstance,
+  type FormInstance,
 } from 'element-plus'
 import {
-  getDish, createDish, updateDish,
-  type DishIngredient,
+  getDish, createDish, updateDish, listDishCategories,
+  type DishIngredient, type DishCategory,
 } from '@/api/modules/piggy'
-import { DISH_CATEGORY_OPTIONS } from './options'
 import UserSelect from './components/UserSelect.vue'
 import GroupSelect from './components/GroupSelect.vue'
 import ImageUpload from './components/ImageUpload.vue'
@@ -33,14 +32,13 @@ interface DishForm {
   groupId?: number
   name: string
   description: string
-  category?: string
+  categoryId?: number
   image: string
   status: number
   calories?: number
   cookingTime: string
   ingredients: DishIngredient[]
   steps: string[]
-  tags: string[]
   bgColor: string
 }
 
@@ -49,14 +47,13 @@ const form = reactive<DishForm>({
   groupId: undefined,
   name: '',
   description: '',
-  category: undefined,
+  categoryId: undefined,
   image: '',
   status: 1,
   calories: undefined,
   cookingTime: '',
   ingredients: [],
   steps: [],
-  tags: [],
   bgColor: '',
 })
 
@@ -64,9 +61,15 @@ const rules = {
   userId: [{ required: true, message: '请选择创建人', trigger: 'change' }],
   groupId: [{ required: true, message: '请选择所属分组', trigger: 'change' }],
   name: [{ required: true, message: '请输入菜品名称', trigger: 'blur' }],
+  categoryId: [{ required: true, message: '请选择菜品分类', trigger: 'change' }],
 }
 
-const tagInput = ref('')
+const categories = ref<DishCategory[]>([])
+
+onMounted(async () => {
+  const res = await listDishCategories()
+  categories.value = res.list
+})
 
 watch(
   () => [props.visible, props.id] as const,
@@ -80,14 +83,13 @@ watch(
         groupId: dish.groupId ?? undefined,
         name: dish.name,
         description: dish.description ?? '',
-        category: dish.category,
+        categoryId: dish.categoryId ?? undefined,
         image: dish.image ?? '',
         status: dish.status,
         calories: dish.calories,
         cookingTime: dish.cookingTime ?? '',
         ingredients: dish.ingredients ? [...dish.ingredients] : [],
         steps: dish.steps ? [...dish.steps] : [],
-        tags: dish.tags ? [...dish.tags] : [],
         bgColor: dish.bgColor ?? '',
       })
       initialUserNickname.value = dish.userNickname
@@ -101,17 +103,15 @@ function reset() {
   form.groupId = undefined
   form.name = ''
   form.description = ''
-  form.category = undefined
+  form.categoryId = undefined
   form.image = ''
   form.status = 1
   form.calories = undefined
   form.cookingTime = ''
   form.ingredients = []
   form.steps = []
-  form.tags = []
   form.bgColor = ''
   initialUserNickname.value = null
-  tagInput.value = ''
 }
 
 // ============ 食材 ============
@@ -135,17 +135,6 @@ function moveStep(idx: number, delta: -1 | 1) {
   const t = form.steps[idx]
   form.steps[idx] = form.steps[target]
   form.steps[target] = t
-}
-
-// ============ 标签 ============
-function addTag() {
-  const v = tagInput.value.trim()
-  if (!v) return
-  if (!form.tags.includes(v)) form.tags.push(v)
-  tagInput.value = ''
-}
-function removeTag(t: string) {
-  form.tags = form.tags.filter((x) => x !== t)
 }
 
 async function onSubmit() {
@@ -208,13 +197,13 @@ async function onSubmit() {
         <ElFormItem label="名称" prop="name">
           <ElInput v-model="form.name" maxlength="100" show-word-limit />
         </ElFormItem>
-        <ElFormItem label="分类">
-          <ElSelect v-model="form.category" clearable class="w-full">
+        <ElFormItem label="分类" prop="categoryId">
+          <ElSelect v-model="form.categoryId" class="w-full">
             <ElOption
-              v-for="opt in DISH_CATEGORY_OPTIONS"
-              :key="opt.value"
-              :label="opt.label"
-              :value="opt.value"
+              v-for="opt in categories.filter((c) => c.enabled === 1 || c.id === form.categoryId)"
+              :key="opt.id"
+              :label="opt.enabled === 1 ? opt.name : `${opt.name}（停用）`"
+              :value="opt.id"
             />
           </ElSelect>
         </ElFormItem>
@@ -301,32 +290,6 @@ async function onSubmit() {
         </div>
       </ElFormItem>
 
-      <!-- 标签 -->
-      <ElFormItem label="标签">
-        <div class="w-full">
-          <div class="flex flex-wrap gap-2 mb-2">
-            <ElTag
-              v-for="t in form.tags"
-              :key="t"
-              closable
-              @close="removeTag(t)"
-            >
-              {{ t }}
-            </ElTag>
-          </div>
-          <div class="flex gap-2">
-            <ElInput
-              v-model="tagInput"
-              placeholder="输入后回车添加"
-              style="width: 240px"
-              @keyup.enter="addTag"
-            />
-            <ElButton @click="addTag">
-              添加
-            </ElButton>
-          </div>
-        </div>
-      </ElFormItem>
     </ElForm>
 
     <template #footer>

@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ForbiddenException,
   Injectable,
   NotFoundException,
@@ -6,6 +7,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Repository } from 'typeorm';
 import { Dish } from './entities/dish.entity';
+import { DishCategory } from './entities/dish-category.entity';
 import { CreateDishDto } from './dto/create-dish.dto';
 import { UpdateDishDto } from './dto/update-dish.dto';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
@@ -16,15 +18,26 @@ export class DishService {
   constructor(
     @InjectRepository(Dish)
     private readonly dishRepository: Repository<Dish>,
+    @InjectRepository(DishCategory)
+    private readonly categoryRepository: Repository<DishCategory>,
     @InjectRepository(DiningGroupMember)
     private readonly memberRepository: Repository<DiningGroupMember>,
   ) {}
+
+  /** 小程序端只看得到启用中的分类。 */
+  async findCategories() {
+    return await this.categoryRepository.find({
+      where: { enabled: 1 },
+      order: { sort: 'ASC', id: 'ASC' },
+    });
+  }
 
   async create(createDishDto: CreateDishDto) {
     await this.ensureGroupMembership(
       createDishDto.userId,
       createDishDto.groupId,
     );
+    await this.ensureCategoryUsable(createDishDto.categoryId);
     const dish = this.dishRepository.create(createDishDto);
     return await this.dishRepository.save(dish);
   }
@@ -32,7 +45,7 @@ export class DishService {
   async findAll(
     paginationDto: PaginationDto,
     userId: number,
-    category?: string,
+    categoryId?: number,
   ) {
     const { page, pageSize } = paginationDto;
     const skip = (page - 1) * pageSize;
@@ -48,8 +61,8 @@ export class DishService {
     }
 
     const where: any = { groupId: In(groupIds) };
-    if (category) {
-      where.category = category;
+    if (categoryId) {
+      where.categoryId = categoryId;
     }
 
     const [list, total] = await this.dishRepository.findAndCount({
@@ -81,6 +94,9 @@ export class DishService {
     if (updateDishDto.groupId && updateDishDto.groupId !== dish.groupId) {
       throw new ForbiddenException('禁止修改菜品所属饭搭子组');
     }
+    if (updateDishDto.categoryId) {
+      await this.ensureCategoryUsable(updateDishDto.categoryId);
+    }
     Object.assign(dish, updateDishDto);
     return await this.dishRepository.save(dish);
   }
@@ -102,6 +118,18 @@ export class DishService {
     });
     if (!member) {
       throw new ForbiddenException('用户不在该饭搭子组内，无权操作');
+    }
+  }
+
+  private async ensureCategoryUsable(categoryId: number) {
+    const category = await this.categoryRepository.findOne({
+      where: { id: categoryId },
+    });
+    if (!category) {
+      throw new BadRequestException(`菜品分类 ID ${categoryId} 不存在`);
+    }
+    if (category.enabled !== 1) {
+      throw new BadRequestException(`菜品分类「${category.name}」已停用`);
     }
   }
 }

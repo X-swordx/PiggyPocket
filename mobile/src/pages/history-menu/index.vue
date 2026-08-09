@@ -20,9 +20,23 @@
           <view v-for="order in group.orders" :key="order.id" class="order-card">
             <view class="order-card-header">
               <text class="order-meta">共 {{ order.dishes.length }} 个菜</text>
-              <view class="order-action done">
-                <uni-icons type="checkmark-filled" size="14" color="#fff" />
-                <text>已完成</text>
+              <view class="order-rating-row">
+                <view v-if="order.rating" class="stars-display">
+                  <uni-icons
+                    v-for="n in 5"
+                    :key="n"
+                    :type="n <= order.rating ? 'star-filled' : 'star'"
+                    size="14"
+                    color="#f59e0b"
+                  />
+                </view>
+                <view v-else class="order-action rate" @click="openRating(order)">
+                  <text>去评价</text>
+                </view>
+                <view class="order-action done">
+                  <uni-icons type="checkmark-filled" size="14" color="#fff" />
+                  <text>已完成</text>
+                </view>
               </view>
             </view>
             <view class="order-dishes">
@@ -42,6 +56,37 @@
       </view>
       <view style="height: 100px;"></view>
     </scroll-view>
+
+    <!-- Rating Modal -->
+    <view v-if="ratingOrder" class="rating-mask" @click="cancelRating">
+      <view class="rating-sheet" @click.stop="">
+        <view class="rating-title">
+          <text>订单评价</text>
+        </view>
+        <view class="rating-stars">
+          <uni-icons
+            v-for="n in 5"
+            :key="n"
+            :type="n <= ratingValue ? 'star-filled' : 'star'"
+            size="36"
+            color="#f59e0b"
+            @click="setRating(n)"
+          />
+        </view>
+        <view class="rating-actions">
+          <view class="rating-btn cancel" @click="cancelRating">
+            <text>取消</text>
+          </view>
+          <view
+            class="rating-btn confirm"
+            :class="{ disabled: ratingValue < 1 || submittingRating }"
+            @click="confirmRating"
+          >
+            <text>{{ submittingRating ? '提交中...' : '确认' }}</text>
+          </view>
+        </view>
+      </view>
+    </view>
   </view>
 </template>
 
@@ -49,7 +94,7 @@
 import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import uniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
-import { getCurrentUser, getOrders, type FoodieOrder } from '@/services/foodieBuddy'
+import { getCurrentUser, getOrders, updateOrderRating, type FoodieOrder } from '@/services/foodieBuddy'
 
 interface HistoryDish {
   itemId?: number
@@ -65,6 +110,7 @@ interface HistoryOrder {
   id: number
   createdAt: string
   cookDate?: string
+  rating?: number
   dishes: HistoryDish[]
 }
 
@@ -89,6 +135,7 @@ const mapOrder = (order: FoodieOrder): HistoryOrder => {
     id: order.id,
     createdAt: order.createdAt,
     cookDate: order.cookDate,
+    rating: order.rating,
     dishes: (order.items || []).map((item) => ({
       itemId: item.id,
       dishId: item.dishId,
@@ -128,6 +175,41 @@ const loadHistory = async () => {
 
 const goBack = () => {
   uni.navigateBack()
+}
+
+const ratingOrder = ref<HistoryOrder | null>(null)
+const ratingValue = ref(0)
+const submittingRating = ref(false)
+
+const openRating = (order: HistoryOrder) => {
+  ratingOrder.value = order
+  ratingValue.value = order.rating || 0
+}
+
+const setRating = (n: number) => {
+  ratingValue.value = n
+}
+
+const cancelRating = () => {
+  ratingOrder.value = null
+  ratingValue.value = 0
+}
+
+const confirmRating = async () => {
+  if (!ratingOrder.value || ratingValue.value < 1) return
+  submittingRating.value = true
+  try {
+    const user = await getCurrentUser()
+    await updateOrderRating(ratingOrder.value.id, user.id, ratingValue.value)
+    uni.showToast({ title: '评价已提交', icon: 'success' })
+    ratingOrder.value = null
+    ratingValue.value = 0
+    await loadHistory()
+  } catch (err: any) {
+    uni.showToast({ title: err.message || '评价失败', icon: 'none' })
+  } finally {
+    submittingRating.value = false
+  }
 }
 
 const goToDishDetail = (dish: HistoryDish) => {
@@ -275,5 +357,95 @@ onShow(loadHistory)
   color: #9ca3af;
   font-size: 12px;
   font-weight: 600;
+}
+
+.order-action.done {
+  background: #e5e7eb;
+  color: #9ca3af;
+}
+
+.order-rating-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.stars-display {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.order-action.rate {
+  background: #ffc2cc;
+  color: white;
+}
+
+.rating-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.4);
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  z-index: 200;
+}
+
+.rating-sheet {
+  width: 100%;
+  background: white;
+  border-radius: 20px 20px 0 0;
+  padding: 24px 16px calc(24px + env(safe-area-inset-bottom));
+}
+
+.rating-title {
+  text-align: center;
+  margin-bottom: 24px;
+}
+
+.rating-title text {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111;
+}
+
+.rating-stars {
+  display: flex;
+  justify-content: center;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+.rating-actions {
+  display: flex;
+  gap: 12px;
+}
+
+.rating-btn {
+  flex: 1;
+  height: 48px;
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  font-weight: 600;
+}
+
+.rating-btn.cancel {
+  background: #f3f4f6;
+  color: #6b7280;
+}
+
+.rating-btn.confirm {
+  background: #ffc2cc;
+  color: white;
+}
+
+.rating-btn.confirm.disabled {
+  opacity: 0.5;
 }
 </style>

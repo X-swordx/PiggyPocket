@@ -43,13 +43,6 @@ export const WISH_TAG_CLASS_OPTIONS = [
   { label: '成长 (Grow)', value: 'grow' },
 ]
 
-export const DISH_CATEGORY_OPTIONS = [
-  { label: '热菜', value: '热菜' },
-  { label: '凉菜', value: '凉菜' },
-  { label: '主食', value: '主食' },
-  { label: '饮品', value: '饮品' },
-]
-
 export const DISH_STATUS_OPTIONS = [
   { label: '上架', value: 1 },
   { label: '下架', value: 0 },

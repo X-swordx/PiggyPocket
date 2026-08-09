@@ -2,13 +2,13 @@
 import { reactive, ref, onMounted } from 'vue'
 import {
   ElButton, ElInput, ElSelect, ElOption, ElTable, ElTableColumn,
-  ElPagination, ElImage, ElTag, ElPopconfirm, ElMessage, ElSwitch,
+  ElPagination, ElImage, ElPopconfirm, ElMessage, ElSwitch,
 } from 'element-plus'
 import {
-  listDishes, removeDish, setDishStatus,
-  type AdminDish, type DishListQuery,
+  listDishes, removeDish, setDishStatus, listDishCategories,
+  type AdminDish, type DishListQuery, type DishCategory,
 } from '@/api/modules/piggy'
-import { DISH_CATEGORY_OPTIONS, DISH_STATUS_OPTIONS, labelOf } from './options'
+import { DISH_STATUS_OPTIONS } from './options'
 import UserSelect from './components/UserSelect.vue'
 import DishEditor from './DishEditor.vue'
 import { usePiggyAuth } from './usePiggyAuth'
@@ -20,12 +20,13 @@ const { canEdit } = usePiggyAuth('admin.dish:edit')
 const loading = ref(false)
 const list = ref<AdminDish[]>([])
 const total = ref(0)
+const categories = ref<DishCategory[]>([])
 
 const query = reactive<Required<Pick<DishListQuery, 'page' | 'pageSize'>> & DishListQuery>({
   page: 1,
   pageSize: 20,
   keyword: '',
-  category: undefined,
+  categoryId: undefined,
   status: undefined,
   userId: undefined,
 })
@@ -37,7 +38,7 @@ async function fetchData() {
       page: query.page,
       pageSize: query.pageSize,
       keyword: query.keyword || undefined,
-      category: query.category,
+      categoryId: query.categoryId,
       status: query.status,
       userId: query.userId,
     })
@@ -49,6 +50,11 @@ async function fetchData() {
   }
 }
 
+async function fetchCategories() {
+  const res = await listDishCategories()
+  categories.value = res.list
+}
+
 function onSearch() {
   query.page = 1
   fetchData()
@@ -56,7 +62,7 @@ function onSearch() {
 
 function onReset() {
   query.keyword = ''
-  query.category = undefined
+  query.categoryId = undefined
   query.status = undefined
   query.userId = undefined
   onSearch()
@@ -98,7 +104,10 @@ async function onToggleStatus(row: AdminDish, val: number) {
   }
 }
 
-onMounted(fetchData)
+onMounted(() => {
+  fetchCategories()
+  fetchData()
+})
 </script>
 
 <template>
@@ -112,16 +121,16 @@ onMounted(fetchData)
         @keyup.enter="onSearch"
       />
       <ElSelect
-        v-model="query.category"
+        v-model="query.categoryId"
         placeholder="分类"
         clearable
         style="width: 140px"
       >
         <ElOption
-          v-for="opt in DISH_CATEGORY_OPTIONS"
-          :key="opt.value"
-          :label="opt.label"
-          :value="opt.value"
+          v-for="opt in categories"
+          :key="opt.id"
+          :label="opt.enabled === 1 ? opt.name : `${opt.name}（停用）`"
+          :value="opt.id"
         />
       </ElSelect>
       <ElSelect
@@ -175,9 +184,9 @@ onMounted(fetchData)
         </template>
       </ElTableColumn>
       <ElTableColumn label="名称" prop="name" min-width="140" show-overflow-tooltip />
-      <ElTableColumn label="分类" width="80">
+      <ElTableColumn label="分类" width="90">
         <template #default="{ row }">
-          {{ labelOf(DISH_CATEGORY_OPTIONS, row.category) }}
+          {{ row.categoryName ?? '-' }}
         </template>
       </ElTableColumn>
       <ElTableColumn label="创建人" width="90" show-overflow-tooltip>
@@ -191,21 +200,6 @@ onMounted(fetchData)
         </template>
       </ElTableColumn>
       <ElTableColumn label="热量" prop="calories" width="70" />
-      <ElTableColumn label="标签" min-width="160">
-        <template #default="{ row }">
-          <div class="flex flex-wrap gap-1">
-            <ElTag
-              v-for="t in (row.tags ?? [])"
-              :key="t"
-              size="small"
-              effect="light"
-            >
-              {{ t }}
-            </ElTag>
-            <span v-if="!row.tags?.length" class="text-xs text-muted-foreground">-</span>
-          </div>
-        </template>
-      </ElTableColumn>
       <ElTableColumn label="状态" width="150">
         <template #default="{ row }">
           <ElSwitch

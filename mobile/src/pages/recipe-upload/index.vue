@@ -96,21 +96,21 @@
         </view>
       </view>
 
-      <!-- Categories / Tags -->
-      <view class="tags-section">
-        <text class="section-title">分类标签</text>
-        <view class="tags-list">
+      <!-- Dish Category (required) -->
+      <view class="category-section" v-if="categoriesLoaded">
+        <text class="section-title">菜品分类</text>
+        <view class="category-list">
           <view
-            v-for="(tag, index) in tags"
-            :key="index"
+            v-for="cat in categories"
+            :key="cat.id"
             class="tag"
-            :class="{ active: tag.active }"
-            @click="toggleTag(index)"
+            :class="{ active: selectedCategoryId === cat.id }"
+            @click="selectedCategoryId = cat.id"
           >
-            <text>{{ tag.name }}</text>
+            <text>{{ cat.name }}</text>
           </view>
-          <view class="add-tag-btn" @click="addTag()">
-            <uni-icons type="plus" size="16" color="#ffc2cc" />
+          <view v-if="categories.length === 0" class="category-empty">
+            <text>暂无可选分类，请联系管理员配置</text>
           </view>
         </view>
       </view>
@@ -162,8 +162,10 @@ import PrivacyModal from '@/components/PrivacyModal.vue'
 import {
   createDish,
   getCurrentUser,
+  getDishCategories,
   getMyDiningGroups,
   type DiningGroup,
+  type DishCategory,
   type FoodieUser
 } from '@/services/foodieBuddy'
 import { uploadToOSS } from '@/services/oss'
@@ -179,6 +181,20 @@ const currentUser = ref<FoodieUser | null>(null)
 const groups = ref<DiningGroup[]>([])
 const groupsLoaded = ref(false)
 const selectedGroupIndex = ref(0)
+
+const categories = ref<DishCategory[]>([])
+const categoriesLoaded = ref(false)
+const selectedCategoryId = ref<number | null>(null)
+
+const loadCategories = async () => {
+  try {
+    categories.value = await getDishCategories()
+  } catch (err: any) {
+    uni.showToast({ title: err.message || '加载菜品分类失败', icon: 'none' })
+  } finally {
+    categoriesLoaded.value = true
+  }
+}
 
 const groupNames = computed(() =>
   groups.value.map((g) => g.name || `饭搭子 ${g.id}`)
@@ -200,6 +216,7 @@ const loadUserAndGroups = async () => {
 
 onMounted(() => {
   loadUserAndGroups()
+  loadCategories()
   restoreDraft()
 })
 
@@ -216,11 +233,6 @@ interface Step {
   text: string
 }
 
-interface Tag {
-  name: string
-  active: boolean
-}
-
 const ingredients = ref<Ingredient[]>([
   { name: '', amount: '' },
   { name: '', amount: '' }
@@ -228,15 +240,6 @@ const ingredients = ref<Ingredient[]>([
 
 const steps = ref<Step[]>([
   { text: '' }
-])
-
-const tags = ref<Tag[]>([
-  { name: '早餐', active: true },
-  { name: '午餐', active: false },
-  { name: '晚餐', active: false },
-  { name: '健康轻食', active: false },
-  { name: '甜点', active: false },
-  { name: '新手必做', active: false }
 ])
 
 const goBack = () => {
@@ -315,21 +318,13 @@ const addStepImage = async (index: number) => {
   })
 }
 
-const toggleTag = (index: number) => {
-  tags.value[index].active = !tags.value[index].active
-}
-
-const addTag = () => {
-  uni.showToast({ title: '添加标签功能开发中', icon: 'none' })
-}
-
 const saveDraft = () => {
   const draft = {
     recipeName: recipeName.value,
     coverImage: coverImage.value,
     ingredients: ingredients.value,
     steps: steps.value,
-    tags: tags.value,
+    categoryId: selectedCategoryId.value,
     savedAt: Date.now()
   }
   try {
@@ -348,19 +343,11 @@ const restoreDraft = () => {
     if (typeof draft.coverImage === 'string') coverImage.value = draft.coverImage
     if (Array.isArray(draft.ingredients) && draft.ingredients.length) ingredients.value = draft.ingredients
     if (Array.isArray(draft.steps) && draft.steps.length) steps.value = draft.steps
-    if (Array.isArray(draft.tags) && draft.tags.length) tags.value = draft.tags
+    if (typeof draft.categoryId === 'number') selectedCategoryId.value = draft.categoryId
     uni.showToast({ title: '已恢复上次草稿', icon: 'none' })
   } catch (err) {
     console.error('restoreDraft fail', err)
   }
-}
-
-const getActiveTags = () => tags.value.filter((tag) => tag.active).map((tag) => tag.name)
-
-const getCategory = (activeTags: string[]) => {
-  if (activeTags.includes('健康轻食')) return '凉菜'
-  if (activeTags.includes('甜点')) return '饮品'
-  return '主食'
 }
 
 const buildDescription = (validIngredients: Ingredient[], validSteps: Step[]) => {
@@ -384,6 +371,11 @@ const publishRecipe = async () => {
     return
   }
 
+  if (!selectedCategoryId.value) {
+    uni.showToast({ title: '请选择菜品分类', icon: 'none' })
+    return
+  }
+
   if (groups.value.length === 0) {
     uni.showToast({ title: '请先创建或加入饭搭子组', icon: 'none' })
     return
@@ -391,7 +383,6 @@ const publishRecipe = async () => {
 
   const validIngredients = ingredients.value.filter((item) => item.name.trim() || item.amount.trim())
   const validSteps = steps.value.filter((item) => item.text.trim())
-  const activeTags = getActiveTags()
   const group = groups.value[selectedGroupIndex.value]
 
   publishing.value = true
@@ -399,7 +390,7 @@ const publishRecipe = async () => {
     await createDish({
       name,
       description: buildDescription(validIngredients, validSteps),
-      category: getCategory(activeTags),
+      categoryId: selectedCategoryId.value,
       image: coverImage.value,
       status: 1,
       cookingTime: validSteps.length ? `${validSteps.length * 5} 分钟` : undefined,
@@ -408,7 +399,6 @@ const publishRecipe = async () => {
         amount: item.amount.trim()
       })),
       steps: validSteps.map((item) => item.text.trim()),
-      tags: activeTags,
       bgColor: '#f0b7a4',
       userId: currentUser.value.id,
       groupId: group.id
@@ -545,7 +535,7 @@ const publishRecipe = async () => {
   font-size: 16px;
 }
 
-.ingredients-section, .steps-section, .tags-section, .group-section {
+.ingredients-section, .steps-section, .category-section, .group-section {
   padding: 16px;
 }
 
@@ -708,7 +698,7 @@ const publishRecipe = async () => {
   color: #ffc2cc;
 }
 
-.tags-list {
+.category-list {
   margin-top: 12px;
   display: flex;
   flex-wrap: wrap;
@@ -729,10 +719,9 @@ const publishRecipe = async () => {
   color: white;
 }
 
-.add-tag-btn {
-  padding: 8px;
-  background: rgba(255, 194, 204, 0.1);
-  border-radius: 50%;
+.category-empty {
+  font-size: 12px;
+  color: #777;
 }
 
 .bottom-bar {

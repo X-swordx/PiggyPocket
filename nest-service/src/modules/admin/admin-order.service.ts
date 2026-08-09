@@ -64,7 +64,7 @@ export class AdminOrderService {
       where,
       skip,
       take: pageSize,
-      relations: ['items', 'items.dish'],
+      relations: ['items', 'items.dish', 'items.dish.categoryRef'],
       order: { cookDate: 'DESC', createdAt: 'DESC' },
     });
 
@@ -87,7 +87,7 @@ export class AdminOrderService {
   async findOne(id: number) {
     const order = await this.orderRepo.findOne({
       where: { id },
-      relations: ['items', 'items.dish'],
+      relations: ['items', 'items.dish', 'items.dish.categoryRef'],
     });
     if (!order) throw new NotFoundException(`订单 ID ${id} 不存在`);
     const user = await this.userRepo.findOne({ where: { id: order.userId } });

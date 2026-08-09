@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { BadRequestException, ForbiddenException, Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { Order } from './entities/order.entity';
@@ -107,6 +107,19 @@ export class OrderService {
   async updateStatus(id: number, status: OrderStatus) {
     const order = await this.findOne(id);
     order.status = status;
+    return await this.orderRepository.save(order);
+  }
+
+  async updateRating(id: number, userId: number, rating: number) {
+    const order = await this.findOne(id);
+    if (order.userId !== userId) {
+      throw new ForbiddenException('只能评价自己的订单');
+    }
+    if (order.status !== 'completed') {
+      throw new BadRequestException('只能评价已完成的订单');
+    }
+    order.rating = rating;
+    order.ratedAt = new Date();
     return await this.orderRepository.save(order);
   }
 

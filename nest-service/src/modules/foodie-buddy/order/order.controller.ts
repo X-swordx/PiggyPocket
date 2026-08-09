@@ -15,6 +15,7 @@ import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { UpdateOrderStatusDto } from './dto/update-order-status.dto';
 import { CreateOrderItemDto } from './dto/create-order-item.dto';
+import { UpdateOrderRatingDto } from './dto/update-order-rating.dto';
 import { PaginationDto } from '../../../common/dto/pagination.dto';
 import { ParseOrderStatusPipe, OrderStatus } from '../../../common/pipes/parse-order-status.pipe';
 
@@ -72,6 +73,16 @@ export class OrderController {
     @Body() updateOrderStatusDto: UpdateOrderStatusDto,
   ) {
     return this.orderService.updateStatus(id, updateOrderStatusDto.status as OrderStatus);
+  }
+
+  @Put(':id/rating')
+  @ApiOperation({ summary: '评价订单' })
+  updateRating(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('userId') userId: string,
+    @Body() dto: UpdateOrderRatingDto,
+  ) {
+    return this.orderService.updateRating(id, Number(userId), dto.rating);
   }
 
   @Delete(':id')

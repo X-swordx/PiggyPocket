@@ -22,6 +22,7 @@ import { AdminListQueryDto } from './dto/admin-list-query.dto';
 import { AdminExpiryFoodService } from './admin-expiry-food.service';
 import { AdminWishService } from './admin-wish.service';
 import { AdminDishService } from './admin-dish.service';
+import { AdminDishCategoryService } from './admin-dish-category.service';
 import { AdminUserService } from './admin-user.service';
 import { AdminOrderService, OrderStatus } from './admin-order.service';
 import { AdminDiningGroupService } from './admin-dining-group.service';
@@ -50,7 +51,8 @@ class WishQueryDto extends AdminListQueryDto {
 
 class DishQueryDto extends AdminListQueryDto {
   @IsOptional()
-  category?: string;
+  @Type(() => Number)
+  categoryId?: number;
 
   @IsOptional()
   @Type(() => Number)
@@ -59,6 +61,37 @@ class DishQueryDto extends AdminListQueryDto {
   @IsOptional()
   @Type(() => Number)
   groupId?: number;
+}
+
+class DishCategoryCreateDto {
+  @IsString()
+  name: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  sort?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsIn([0, 1])
+  enabled?: number;
+}
+
+class DishCategoryUpdateDto {
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  sort?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsIn([0, 1])
+  enabled?: number;
 }
 
 class OrderQueryDto extends AdminListQueryDto {
@@ -147,6 +180,7 @@ export class AdminResourceController {
     private readonly expiryService: AdminExpiryFoodService,
     private readonly wishService: AdminWishService,
     private readonly dishService: AdminDishService,
+    private readonly dishCategoryService: AdminDishCategoryService,
     private readonly userService: AdminUserService,
     private readonly orderService: AdminOrderService,
     private readonly groupService: AdminDiningGroupService,
@@ -336,6 +370,41 @@ export class AdminResourceController {
   @Delete('dishes/:id')
   removeDish(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
     return this.dishService.remove(this.ctx(req), id);
+  }
+
+  // ================== 菜品分类 ==================
+
+  @Get('dish-categories')
+  listDishCategories() {
+    return this.dishCategoryService.findAll();
+  }
+
+  @Post('dish-categories')
+  createDishCategory(@Req() req: any, @Body() dto: DishCategoryCreateDto) {
+    return this.dishCategoryService.create(this.ctx(req), dto);
+  }
+
+  @Put('dish-categories/:id')
+  updateDishCategory(
+    @Req() req: any,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: DishCategoryUpdateDto,
+  ) {
+    return this.dishCategoryService.update(this.ctx(req), id, dto);
+  }
+
+  @Put('dish-categories/:id/enabled')
+  setDishCategoryEnabled(
+    @Req() req: any,
+    @Param('id', ParseIntPipe) id: number,
+    @Body('enabled') enabled: number,
+  ) {
+    return this.dishCategoryService.setEnabled(this.ctx(req), id, enabled);
+  }
+
+  @Delete('dish-categories/:id')
+  removeDishCategory(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
+    return this.dishCategoryService.remove(this.ctx(req), id);
   }
 
   // ================== 订单 ==================

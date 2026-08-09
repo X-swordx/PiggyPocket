@@ -1,6 +1,5 @@
 {
   "permissions": {
-    "defaultMode": "bypassPermissions",
     "allow": [
       "Bash(npx:*)",
       "Bash(npm install:*)",
@@ -179,8 +178,13 @@
       "Bash(./node_modules/.bin/vue-tsc --noEmit)",
       "Bash(./node_modules/.bin/vue-tsc --noEmit -p tsconfig.app.json)",
       "Bash(sed -i 's/const loading = ref\\(false\\)/const loading: number = ref\\(false\\)/' src/views/piggy/OrderList.vue)",
-      "Bash(./node_modules/.bin/eslint apps/core-element-plus/src/views/piggy/OrderList.vue apps/core-element-plus/src/views/piggy/OrderDetail.vue apps/core-element-plus/src/api/modules/piggy.ts)"
+      "Bash(./node_modules/.bin/eslint apps/core-element-plus/src/views/piggy/OrderList.vue apps/core-element-plus/src/views/piggy/OrderDetail.vue apps/core-element-plus/src/api/modules/piggy.ts)",
+      "Bash(npx tsc *)",
+      "Bash(echo \"--- exit $? ---\")",
+      "Bash(npx jest *)",
+      "Bash(npx vue-tsc *)"
     ],
+    "defaultMode": "bypassPermissions",
     "additionalDirectories": [
       "F:\\PiggyPocket\\nest-service\\src\\modules\\order\\dto",
       "F:\\PiggyPocket\\nest-service\\src\\modules\\order",

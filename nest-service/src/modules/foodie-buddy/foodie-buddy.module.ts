@@ -10,6 +10,7 @@ import { User } from './user/entities/user.entity';
 import { DishController } from './dish/dish.controller';
 import { DishService } from './dish/dish.service';
 import { Dish } from './dish/entities/dish.entity';
+import { DishCategory } from './dish/entities/dish-category.entity';
 
 // Dining Group
 import { DiningGroupController } from './dining-group/dining-group.controller';
@@ -28,6 +29,7 @@ import { OrderItem } from './order/entities/order-item.entity';
     TypeOrmModule.forFeature([
       User,
       Dish,
+      DishCategory,
       DiningGroup,
       DiningGroupMember,
       Order,

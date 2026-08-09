@@ -40,6 +40,21 @@
             <text>{{ dishes.length }} 道菜可选</text>
           </view>
         </view>
+
+        <!-- Category Filter -->
+        <scroll-view scroll-x class="filters">
+          <view class="filters-inner">
+            <view
+              v-for="cat in categoryTabs"
+              :key="cat.id ?? 'all'"
+              class="filter-chip"
+              :class="{ active: activeCategoryId === cat.id }"
+              @click="selectCategory(cat.id)"
+            >
+              <text>{{ cat.name }}</text>
+            </view>
+          </view>
+        </scroll-view>
         <view v-if="loading" style="padding: 24px; text-align: center; color: #777;">加载中...</view>
         <view v-else-if="error" style="padding: 24px; text-align: center; color: #ba1a1a;">{{ error }}</view>
         <view v-else-if="dishes.length === 0" style="padding: 24px; text-align: center; color: #777;">暂无菜品，去上传第一道菜谱吧</view>
@@ -101,8 +116,10 @@ import TabBar from '@/components/TabBar.vue'
 import uniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
 import {
   getDishes,
+  getDishCategories,
   getCurrentUser,
   SELECTED_DISHES_KEY,
+  type DishCategory,
   type FoodieDish
 } from '@/services/foodieBuddy'
 
@@ -121,14 +138,26 @@ const dishes = ref<Dish[]>([])
 const loading = ref(false)
 const error = ref('')
 
-const selectedCount = computed(() => dishes.value.filter(d => d.selected).length)
+const categories = ref<DishCategory[]>([])
+const activeCategoryId = ref<number | null>(null)
+
+// null = 全部
+const categoryTabs = computed(() => [
+  { id: null as number | null, name: '全部' },
+  ...categories.value.map((c) => ({ id: c.id as number | null, name: c.name }))
+])
+
+// 切换分类会重新请求列表，用 id → Dish 记住已选项，避免跨分类丢失选择
+const selectedMap = ref<Record<number, Dish>>({})
+
+const selectedCount = computed(() => Object.keys(selectedMap.value).length)
 
 const mapDish = (dish: FoodieDish, index: number): Dish => ({
   id: dish.id,
   name: dish.name,
   calories: dish.calories ? String(dish.calories) : '--',
   time: dish.cookingTime || '未知',
-  selected: false,
+  selected: !!selectedMap.value[dish.id],
   bgColor: dish.bgColor || colors[index % colors.length],
   image: dish.image
 })
@@ -138,7 +167,12 @@ const loadDishes = async () => {
   error.value = ''
   try {
     const user = await getCurrentUser()
-    const result = await getDishes({ userId: user.id, page: 1, pageSize: 100 })
+    const result = await getDishes({
+      userId: user.id,
+      page: 1,
+      pageSize: 100,
+      categoryId: activeCategoryId.value ?? undefined
+    })
     dishes.value = result.list.map(mapDish)
   } catch (err: any) {
     error.value = err.message || '菜品加载失败'
@@ -147,7 +181,26 @@ const loadDishes = async () => {
   }
 }
 
-onShow(loadDishes)
+const loadCategories = async () => {
+  try {
+    categories.value = await getDishCategories()
+  } catch (err) {
+    // 分类加载失败不阻断菜单展示，仅少了筛选入口
+    console.error('loadDishCategories fail', err)
+  }
+}
+
+const selectCategory = (id: number | null) => {
+  if (activeCategoryId.value === id) return
+  activeCategoryId.value = id
+  loadDishes()
+}
+
+onShow(() => {
+  selectedMap.value = {}
+  loadCategories()
+  loadDishes()
+})
 
 const goBack = () => {
   uni.navigateBack()
@@ -158,12 +211,19 @@ const goToUpload = () => {
 }
 
 const toggleDish = (index: number) => {
-  dishes.value[index].selected = !dishes.value[index].selected
+  const dish = dishes.value[index]
+  dish.selected = !dish.selected
+  if (dish.selected) {
+    selectedMap.value = { ...selectedMap.value, [dish.id]: dish }
+  } else {
+    const next = { ...selectedMap.value }
+    delete next[dish.id]
+    selectedMap.value = next
+  }
 }
 
 const goToOrder = () => {
-  const selectedDishes = dishes.value.filter((dish) => dish.selected)
-  uni.setStorageSync(SELECTED_DISHES_KEY, selectedDishes)
+  uni.setStorageSync(SELECTED_DISHES_KEY, Object.values(selectedMap.value))
   uni.navigateTo({ url: '/pages/order/index' })
 }
 
@@ -314,6 +374,37 @@ const handleTabChange = (index: number) => {
   display: flex;
   flex-direction: column;
   gap: 16px;
+}
+
+.filters {
+  white-space: nowrap;
+  margin-bottom: 16px;
+}
+
+.filters-inner {
+  display: inline-flex;
+  gap: 12px;
+}
+
+.filter-chip {
+  flex-shrink: 0;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 999px;
+  padding: 0 20px;
+  background: rgba(255, 194, 204, 0.1);
+}
+
+.filter-chip text {
+  font-size: 14px;
+  font-weight: 500;
+  color: #333;
+}
+
+.filter-chip.active {
+  background: #ffc2cc;
 }
 
 .dish-card {

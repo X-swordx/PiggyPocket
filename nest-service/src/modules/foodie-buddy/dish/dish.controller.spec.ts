@@ -16,7 +16,7 @@ describe('DishController', () => {
     id: 1,
     name: '宫保鸡丁',
     description: '经典川菜',
-    category: '热菜',
+    categoryId: 5,
     image: 'http://example.com/dish.jpg',
     status: 1,
     userId,
@@ -29,6 +29,7 @@ describe('DishController', () => {
     create: jest.fn(),
     findAll: jest.fn(),
     findOne: jest.fn(),
+    findCategories: jest.fn(),
     update: jest.fn(),
     remove: jest.fn(),
   };
@@ -59,7 +60,7 @@ describe('DishController', () => {
       const createDishDto: CreateDishDto = {
         name: '宫保鸡丁',
         description: '经典川菜',
-        category: '热菜',
+        categoryId: 5,
         status: 1,
         userId,
         groupId: 10,
@@ -96,9 +97,8 @@ describe('DishController', () => {
       expect(result).toEqual(expectedResult);
     });
 
-    it('应该按分类筛选菜品', async () => {
+    it('应该按分类ID筛选菜品', async () => {
       const paginationDto: PaginationDto = { page: 1, pageSize: 10 };
-      const category = '热菜';
       const expectedResult = {
         list: [mockDish],
         total: 1,
@@ -108,13 +108,9 @@ describe('DishController', () => {
 
       mockDishService.findAll.mockResolvedValue(expectedResult);
 
-      const result = await controller.findAll(paginationDto, userId, category);
+      const result = await controller.findAll(paginationDto, userId, '5');
 
-      expect(service.findAll).toHaveBeenCalledWith(
-        paginationDto,
-        userId,
-        category,
-      );
+      expect(service.findAll).toHaveBeenCalledWith(paginationDto, userId, 5);
       expect(result).toEqual(expectedResult);
     });
   });

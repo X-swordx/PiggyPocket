@@ -170,14 +170,14 @@ export interface AdminDish {
   id: number
   name: string
   description?: string
-  category?: string
+  categoryId?: number | null
+  categoryName?: string | null
   image?: string
   status: number
   calories?: number
   cookingTime?: string
   ingredients?: DishIngredient[]
   steps?: string[]
-  tags?: string[]
   bgColor?: string
   userId: number
   groupId: number | null
@@ -191,7 +191,7 @@ export interface DishListQuery {
   pageSize?: number
   userId?: number
   keyword?: string
-  category?: string
+  categoryId?: number
   status?: number
   groupId?: number
 }
@@ -214,6 +214,32 @@ export const setDishStatus = (id: number, status: number) =>
 export const removeDish = (id: number) =>
   unwrap<{ success: boolean }>(api.delete(`admin/dishes/${id}`))
 
+// ============================ 菜品分类 ============================
+
+export interface DishCategory {
+  id: number
+  name: string
+  sort: number
+  enabled: number
+  createdAt: string
+  updatedAt: string
+}
+
+export const listDishCategories = () =>
+  unwrap<{ list: DishCategory[], total: number }>(api.get('admin/dish-categories'))
+
+export const createDishCategory = (data: { name: string, sort?: number, enabled?: number }) =>
+  unwrap<DishCategory>(api.post('admin/dish-categories', data))
+
+export const updateDishCategory = (id: number, data: { name?: string, sort?: number, enabled?: number }) =>
+  unwrap<DishCategory>(api.put(`admin/dish-categories/${id}`, data))
+
+export const setDishCategoryEnabled = (id: number, enabled: number) =>
+  unwrap<DishCategory>(api.put(`admin/dish-categories/${id}/enabled`, { enabled }))
+
+export const removeDishCategory = (id: number) =>
+  unwrap<{ success: boolean }>(api.delete(`admin/dish-categories/${id}`))
+
 // ============================ 订单 ============================
 
 export type OrderStatus = 'pending' | 'confirming' | 'cooking' | 'completed'
@@ -228,7 +254,7 @@ export interface AdminOrderItem {
     id: number
     name: string
     image?: string
-    category?: string
+    categoryRef?: { id: number, name: string } | null
   }
 }
 
@@ -240,6 +266,8 @@ export interface AdminOrder {
   status: OrderStatus
   remark?: string
   cookDate?: string | null
+  rating?: number | null
+  ratedAt?: string | null
   items: AdminOrderItem[]
   itemCount: number
   userNickname: string | null

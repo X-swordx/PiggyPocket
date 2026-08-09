@@ -4,11 +4,24 @@ import { User } from './modules/foodie-buddy/user/entities/user.entity';
 import { DiningGroup } from './modules/foodie-buddy/dining-group/entities/dining-group.entity';
 import { DiningGroupMember } from './modules/foodie-buddy/dining-group/entities/dining-group-member.entity';
 import { Dish } from './modules/foodie-buddy/dish/entities/dish.entity';
+import { DishCategory } from './modules/foodie-buddy/dish/entities/dish-category.entity';
+
+/** 与 AddDishCategories migration 保持一致，仅作本地兜底。 */
+const CATEGORY_SEEDS: Array<[string, number]> = [
+  ['肉类', 1],
+  ['炖汤', 2],
+  ['时蔬', 3],
+  ['快手菜', 4],
+  ['主食', 5],
+  ['热菜', 90],
+  ['凉菜', 91],
+  ['饮品', 92],
+];
 
 const DISH_SEEDS = [
   {
     name: '宫保鸡丁',
-    category: '热菜',
+    categoryName: '热菜',
     calories: 320,
     cookingTime: '25 分钟',
     bgColor: '#f0b7a4',
@@ -22,7 +35,7 @@ const DISH_SEEDS = [
   },
   {
     name: '西红柿炒蛋',
-    category: '热菜',
+    categoryName: '热菜',
     calories: 180,
     cookingTime: '15 分钟',
     bgColor: '#f5cac3',
@@ -35,7 +48,7 @@ const DISH_SEEDS = [
   },
   {
     name: '麻婆豆腐',
-    category: '热菜',
+    categoryName: '热菜',
     calories: 260,
     cookingTime: '20 分钟',
     bgColor: '#e67e22',
@@ -49,7 +62,7 @@ const DISH_SEEDS = [
   },
   {
     name: '蒜蓉西兰花',
-    category: '凉菜',
+    categoryName: '凉菜',
     calories: 90,
     cookingTime: '10 分钟',
     bgColor: '#a8d5ba',
@@ -61,7 +74,7 @@ const DISH_SEEDS = [
   },
   {
     name: '红烧肉',
-    category: '热菜',
+    categoryName: '热菜',
     calories: 450,
     cookingTime: '60 分钟',
     bgColor: '#8aa6cb',
@@ -82,6 +95,18 @@ async function seed() {
   const groupRepo = dataSource.getRepository(DiningGroup);
   const memberRepo = dataSource.getRepository(DiningGroupMember);
   const dishRepo = dataSource.getRepository(Dish);
+  const categoryRepo = dataSource.getRepository(DishCategory);
+
+  // 分类由 migration 建好，这里只做兜底（本地库未跑 migration 时）
+  const categoryCount = await categoryRepo.count();
+  if (categoryCount === 0) {
+    await categoryRepo.save(
+      CATEGORY_SEEDS.map(([name, sort]) => categoryRepo.create({ name, sort })),
+    );
+  }
+  const categories = await categoryRepo.find();
+  const categoryIdOf = (name: string) =>
+    categories.find((c) => c.name === name)?.id ?? null;
 
   let user = await userRepo.findOne({ where: { openid: 'dev' } });
   if (!user) {
@@ -123,13 +148,13 @@ async function seed() {
 
   const dishCount = await dishRepo.count({ where: { userId: user.id } });
   if (dishCount === 0) {
-    const dishes = DISH_SEEDS.map((dish, index) =>
+    const dishes = DISH_SEEDS.map(({ categoryName, ...dish }) =>
       dishRepo.create({
         ...dish,
+        categoryId: categoryIdOf(categoryName),
         userId: user.id,
         groupId: group.id,
         status: 1,
-        tags: [dish.category, index % 2 === 0 ? '快手菜' : '家常菜'],
       }),
     );
     await dishRepo.save(dishes);

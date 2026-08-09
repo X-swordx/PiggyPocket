@@ -29,13 +29,24 @@ export class DishController {
   @Get()
   @ApiOperation({ summary: '获取菜品列表' })
   @ApiQuery({ name: 'userId', required: true, description: '当前用户ID' })
-  @ApiQuery({ name: 'category', required: false, description: '按分类筛选' })
+  @ApiQuery({ name: 'categoryId', required: false, description: '按分类ID筛选' })
   findAll(
     @Query() paginationDto: PaginationDto,
     @Query('userId', ParseIntPipe) userId: number,
-    @Query('category') category?: string,
+    @Query('categoryId') categoryId?: string,
   ) {
-    return this.dishService.findAll(paginationDto, userId, category);
+    return this.dishService.findAll(
+      paginationDto,
+      userId,
+      categoryId ? Number(categoryId) : undefined,
+    );
+  }
+
+  // 必须放在 `@Get(':id')` 之前，否则 'categories' 会被当成 id 走 ParseIntPipe
+  @Get('categories')
+  @ApiOperation({ summary: '获取启用中的菜品分类' })
+  findCategories() {
+    return this.dishService.findCategories();
   }
 
   @Get(':id')

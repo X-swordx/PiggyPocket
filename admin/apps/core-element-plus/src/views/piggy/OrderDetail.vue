@@ -2,7 +2,7 @@
 import { ref, watch, computed } from 'vue'
 import {
   ElDrawer, ElDescriptions, ElDescriptionsItem, ElTable, ElTableColumn,
-  ElImage, ElTag, ElButton, ElInput, ElMessage, ElPopconfirm, ElDivider,
+  ElImage, ElTag, ElButton, ElInput, ElMessage, ElPopconfirm, ElDivider, ElRate,
 } from 'element-plus'
 import {
   getOrder, setOrderStatus, updateOrderRemark,
@@ -126,6 +126,16 @@ async function onRevert(target: OrderStatus) {
           <ElDescriptionsItem label="创建时间">
             {{ new Date(order.createdAt).toLocaleString() }}
           </ElDescriptionsItem>
+          <ElDescriptionsItem label="评价">
+            <ElRate
+              v-if="order.rating"
+              :model-value="order.rating"
+              disabled
+              show-score
+              score-template="{value} 星"
+            />
+            <span v-else class="text-sm text-muted-foreground">未评价</span>
+          </ElDescriptionsItem>
         </ElDescriptions>
 
         <div class="mt-4">
@@ -184,7 +194,11 @@ async function onRevert(target: OrderStatus) {
                 {{ row.dish?.name ?? `已删除 (#${row.dishId})` }}
               </template>
             </ElTableColumn>
-            <ElTableColumn label="分类" width="90" prop="dish.category" />
+            <ElTableColumn label="分类" width="90">
+              <template #default="{ row }">
+                {{ row.dish?.categoryRef?.name ?? '-' }}
+              </template>
+            </ElTableColumn>
             <ElTableColumn label="数量" width="70" prop="quantity" />
             <ElTableColumn label="子项备注" prop="remark" show-overflow-tooltip />
           </ElTable>

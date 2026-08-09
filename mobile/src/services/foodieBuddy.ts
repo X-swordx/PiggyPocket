@@ -22,19 +22,25 @@ export interface FoodieDish {
   id: number
   name: string
   description?: string
-  category?: string
+  categoryId?: number
   image?: string
   status: number
   calories?: number
   cookingTime?: string
   ingredients?: DishIngredient[]
   steps?: string[]
-  tags?: string[]
   bgColor?: string
   userId?: number
   groupId?: number
   createdAt?: string
   updatedAt?: string
+}
+
+export interface DishCategory {
+  id: number
+  name: string
+  sort: number
+  enabled: number
 }
 
 export interface PageResult<T> {
@@ -61,6 +67,8 @@ export interface FoodieOrder {
   status: 'pending' | 'confirming' | 'cooking' | 'completed'
   remark?: string
   cookDate?: string
+  rating?: number
+  ratedAt?: string
   items: FoodieOrderItem[]
   user?: FoodieUser
   createdAt: string
@@ -182,11 +190,17 @@ export const getDishes = (query: {
   userId: number
   page?: number
   pageSize?: number
-  category?: string
+  categoryId?: number
 }) => {
   return request<PageResult<FoodieDish>>({
     url: '/foodie-buddy/dishes',
     query
+  })
+}
+
+export const getDishCategories = () => {
+  return request<DishCategory[]>({
+    url: '/foodie-buddy/dishes/categories'
   })
 }
 
@@ -267,6 +281,15 @@ export const updateOrderStatus = (id: number, status: FoodieOrder['status']) => 
     url: `/foodie-buddy/orders/${id}/status`,
     method: 'PUT',
     data: { status }
+  })
+}
+
+export const updateOrderRating = (id: number, userId: number, rating: number) => {
+  return request<FoodieOrder>({
+    url: `/foodie-buddy/orders/${id}/rating`,
+    method: 'PUT',
+    query: { userId },
+    data: { rating }
   })
 }
 

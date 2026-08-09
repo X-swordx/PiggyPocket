@@ -32,10 +32,11 @@ export class CreateDishDto {
   @IsString()
   description?: string;
 
-  @ApiPropertyOptional({ description: '分类：热菜/凉菜/主食/饮品' })
-  @IsOptional()
-  @IsIn(['热菜', '凉菜', '主食', '饮品'], { message: '分类只能是：热菜、凉菜、主食、饮品' })
-  category?: string;
+  @ApiProperty({ description: '所属菜品分类ID' })
+  @IsNotEmpty({ message: '请选择菜品分类' })
+  @Type(() => Number)
+  @IsInt({ message: '菜品分类ID必须是整数' })
+  categoryId: number;
 
   @ApiPropertyOptional({ description: '图片URL' })
   @IsOptional()
@@ -69,12 +70,6 @@ export class CreateDishDto {
   @IsArray()
   @IsString({ each: true })
   steps?: string[];
-
-  @ApiPropertyOptional({ description: '标签', type: [String] })
-  @IsOptional()
-  @IsArray()
-  @IsString({ each: true })
-  tags?: string[];
 
   @ApiPropertyOptional({ description: '背景色' })
   @IsOptional()

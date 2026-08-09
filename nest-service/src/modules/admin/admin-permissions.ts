@@ -38,6 +38,8 @@ export const ALL_PERMISSIONS: Array<{
     items: [
       { code: 'admin.dish:view', label: '查看菜品' },
       { code: 'admin.dish:edit', label: '增删改菜品' },
+      { code: 'admin.dishCategory:view', label: '查看菜品分类' },
+      { code: 'admin.dishCategory:edit', label: '增删改菜品分类' },
     ],
   },
   {
@@ -80,6 +82,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<AdminRole, string[]> = {
     'admin.wish:edit',
     'admin.dish:view',
     'admin.dish:edit',
+    'admin.dishCategory:view',
+    'admin.dishCategory:edit',
     'admin.order:view',
     'admin.order:edit',
     'admin.diningGroup:view',
@@ -91,6 +95,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<AdminRole, string[]> = {
     'admin.expiryFood:view',
     'admin.wish:view',
     'admin.dish:view',
+    'admin.dishCategory:view',
     'admin.order:view',
     'admin.diningGroup:view',
   ],

@@ -21,6 +21,9 @@ function WishList() {
 function DishList() {
   return import('@/views/piggy/DishList.vue')
 }
+function DishCategoryList() {
+  return import('@/views/piggy/DishCategoryList.vue')
+}
 
 function OrderList() {
   return import('@/views/piggy/OrderList.vue')
@@ -149,10 +152,17 @@ const content: RouteRecordMainRaw = {
           name: 'dishList',
           component: DishList,
           meta: {
-            title: '菜品库',
-            menu: false,
-            breadcrumb: false,
-            activeMenu: '/dish',
+            title: '菜品列表',
+            auth: 'admin.dish:view',
+          },
+        },
+        {
+          path: 'categories',
+          name: 'dishCategoryList',
+          component: DishCategoryList,
+          meta: {
+            title: '菜品分类',
+            auth: 'admin.dishCategory:view',
           },
         },
       ],

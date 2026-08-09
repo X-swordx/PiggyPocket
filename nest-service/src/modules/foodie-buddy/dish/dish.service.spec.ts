@@ -1,9 +1,10 @@
 import { Test, TestingModule } from '@nestjs/testing';
 import { getRepositoryToken } from '@nestjs/typeorm';
-import { ForbiddenException, NotFoundException } from '@nestjs/common';
+import { ForbiddenException, NotFoundException, BadRequestException } from '@nestjs/common';
 import { Repository } from 'typeorm';
 import { DishService } from './dish.service';
 import { Dish } from './entities/dish.entity';
+import { DishCategory } from './entities/dish-category.entity';
 import { DiningGroupMember } from '../dining-group/entities/dining-group-member.entity';
 import { CreateDishDto } from './dto/create-dish.dto';
 import { UpdateDishDto } from './dto/update-dish.dto';
@@ -16,12 +17,13 @@ describe('DishService', () => {
 
   const userId = 1;
   const groupId = 10;
+  const categoryId = 5;
 
   const mockDish: Dish = {
     id: 1,
     name: '宫保鸡丁',
     description: '经典川菜',
-    category: '热菜',
+    categoryId,
     image: 'http://example.com/dish.jpg',
     status: 1,
     userId,
@@ -38,6 +40,11 @@ describe('DishService', () => {
     remove: jest.fn(),
   };
 
+  const mockCategoryRepository = {
+    find: jest.fn(),
+    findOne: jest.fn(),
+  };
+
   const mockMemberRepository = {
     find: jest.fn(),
     findOne: jest.fn(),
@@ -50,6 +57,10 @@ describe('DishService', () => {
         {
           provide: getRepositoryToken(Dish),
           useValue: mockDishRepository,
+        },
+        {
+          provide: getRepositoryToken(DishCategory),
+          useValue: mockCategoryRepository,
         },
         {
           provide: getRepositoryToken(DiningGroupMember),
@@ -76,13 +87,18 @@ describe('DishService', () => {
       const createDishDto: CreateDishDto = {
         name: '宫保鸡丁',
         description: '经典川菜',
-        category: '热菜',
+        categoryId,
         status: 1,
         userId,
         groupId,
       };
 
       mockMemberRepository.findOne.mockResolvedValue({ userId, groupId });
+      mockCategoryRepository.findOne.mockResolvedValue({
+        id: categoryId,
+        name: '肉类',
+        enabled: 1,
+      });
       mockDishRepository.create.mockReturnValue(createDishDto);
       mockDishRepository.save.mockResolvedValue({
         ...mockDish,
@@ -102,7 +118,7 @@ describe('DishService', () => {
     it('非组成员创建菜品时应抛出 ForbiddenException', async () => {
       const createDishDto: CreateDishDto = {
         name: '宫保鸡丁',
-        category: '热菜',
+        categoryId,
         userId,
         groupId,
       };
@@ -111,6 +127,42 @@ describe('DishService', () => {
 
       await expect(service.create(createDishDto)).rejects.toThrow(
         ForbiddenException,
+      );
+    });
+
+    it('分类已停用时应抛出 BadRequestException', async () => {
+      const createDishDto: CreateDishDto = {
+        name: '宫保鸡丁',
+        categoryId,
+        userId,
+        groupId,
+      };
+
+      mockMemberRepository.findOne.mockResolvedValue({ userId, groupId });
+      mockCategoryRepository.findOne.mockResolvedValue({
+        id: categoryId,
+        name: '肉类',
+        enabled: 0,
+      });
+
+      await expect(service.create(createDishDto)).rejects.toThrow(
+        BadRequestException,
+      );
+    });
+
+    it('分类不存在时应抛出 BadRequestException', async () => {
+      const createDishDto: CreateDishDto = {
+        name: '宫保鸡丁',
+        categoryId: 999,
+        userId,
+        groupId,
+      };
+
+      mockMemberRepository.findOne.mockResolvedValue({ userId, groupId });
+      mockCategoryRepository.findOne.mockResolvedValue(null);
+
+      await expect(service.create(createDishDto)).rejects.toThrow(
+        BadRequestException,
       );
     });
   });
@@ -146,17 +198,16 @@ describe('DishService', () => {
       });
     });
 
-    it('应该按分类筛选菜品', async () => {
+    it('应该按分类ID筛选菜品', async () => {
       const paginationDto: PaginationDto = { page: 1, pageSize: 10 };
-      const category = '热菜';
 
       mockMemberRepository.find.mockResolvedValue([{ groupId }]);
       mockDishRepository.findAndCount.mockResolvedValue([[mockDish], 1]);
 
-      const result = await service.findAll(paginationDto, userId, category);
+      const result = await service.findAll(paginationDto, userId, categoryId);
 
       expect(repository.findAndCount).toHaveBeenCalledWith({
-        where: { groupId: expect.anything(), category },
+        where: { groupId: expect.anything(), categoryId },
         skip: 0,
         take: 10,
         order: { createdAt: 'DESC' },

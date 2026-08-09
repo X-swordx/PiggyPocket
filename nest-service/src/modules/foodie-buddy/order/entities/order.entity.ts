@@ -43,6 +43,14 @@ export class Order {
   @Column({ type: 'date', nullable: true, comment: '做菜日期' })
   cookDate?: string;
 
+  @ApiProperty({ description: '评价星级 1-5' })
+  @Column({ type: 'tinyint', nullable: true, comment: '评价星级 1-5' })
+  rating?: number;
+
+  @ApiProperty({ description: '评价时间' })
+  @Column({ type: 'datetime', nullable: true, comment: '评价时间' })
+  ratedAt?: Date;
+
   @ApiProperty({ description: '创建时间' })
   @CreateDateColumn({ type: 'datetime', comment: '创建时间' })
   createdAt: Date;

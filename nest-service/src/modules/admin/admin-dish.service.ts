@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Like, Repository } from 'typeorm';
 import { Dish } from '../foodie-buddy/dish/entities/dish.entity';
+import { DishCategory } from '../foodie-buddy/dish/entities/dish-category.entity';
 import { User } from '../foodie-buddy/user/entities/user.entity';
 import { CreateDishDto } from '../foodie-buddy/dish/dto/create-dish.dto';
 import { UpdateDishDto } from '../foodie-buddy/dish/dto/update-dish.dto';
@@ -12,7 +13,7 @@ import { AdminOperationLogService, LogContext } from './admin-operation-log.serv
  * 后台菜品服务。
  * 与 mobile DishService 的关键差异：
  * - 允许跨用户/跨分组查询，不做 group membership 校验。
- * - list 附带 user.nickname、支持 status 与 category 过滤。
+ * - list 附带 user.nickname、支持 status 与 categoryId 过滤。
  * - 单独提供 setStatus 用于上/下架。
  */
 @Injectable()
@@ -20,6 +21,8 @@ export class AdminDishService {
   constructor(
     @InjectRepository(Dish)
     private readonly dishRepo: Repository<Dish>,
+    @InjectRepository(DishCategory)
+    private readonly categoryRepo: Repository<DishCategory>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
     private readonly opLog: AdminOperationLogService,
@@ -27,18 +30,18 @@ export class AdminDishService {
 
   async findAll(
     query: AdminListQueryDto & {
-      category?: string;
+      categoryId?: number;
       status?: number;
       groupId?: number;
     },
   ) {
-    const { page, pageSize, userId, keyword, category, status, groupId } = query;
+    const { page, pageSize, userId, keyword, categoryId, status, groupId } = query;
     const skip = (page - 1) * pageSize;
 
     const where: any = {};
     if (userId) where.userId = userId;
     if (keyword) where.name = Like(`%${keyword}%`);
-    if (category) where.category = category;
+    if (categoryId) where.categoryId = categoryId;
     if (status !== undefined) where.status = status;
     if (groupId) where.groupId = groupId;
 
@@ -50,11 +53,13 @@ export class AdminDishService {
     });
 
     const users = await this.loadUserMap(rows.map((r) => r.userId));
+    const categories = await this.loadCategoryMap(rows.map((r) => r.categoryId));
 
     return {
       list: rows.map((r) => ({
         ...r,
         userNickname: users.get(r.userId)?.nickname ?? users.get(r.userId)?.name ?? null,
+        categoryName: r.categoryId ? categories.get(r.categoryId)?.name ?? null : null,
       })),
       total,
       page,
@@ -66,9 +71,13 @@ export class AdminDishService {
     const dish = await this.dishRepo.findOne({ where: { id } });
     if (!dish) throw new NotFoundException(`菜品 ID ${id} 不存在`);
     const user = await this.userRepo.findOne({ where: { id: dish.userId } });
+    const category = dish.categoryId
+      ? await this.categoryRepo.findOne({ where: { id: dish.categoryId } })
+      : null;
     return {
       ...dish,
       userNickname: user?.nickname ?? user?.name ?? null,
+      categoryName: category?.name ?? null,
     };
   }
 
@@ -110,5 +119,14 @@ export class AdminDishService {
     if (uniq.length === 0) return new Map<number, User>();
     const users = await this.userRepo.find({ where: { id: In(uniq) } });
     return new Map(users.map((u) => [u.id, u]));
+  }
+
+  private async loadCategoryMap(categoryIds: Array<number | null>) {
+    const uniq = Array.from(new Set(categoryIds)).filter(
+      (id): id is number => !!id,
+    );
+    if (uniq.length === 0) return new Map<number, DishCategory>();
+    const rows = await this.categoryRepo.find({ where: { id: In(uniq) } });
+    return new Map(rows.map((c) => [c.id, c]));
   }
 }
