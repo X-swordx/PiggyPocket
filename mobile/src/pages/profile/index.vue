@@ -217,18 +217,22 @@ const loadProfile = async () => {
       buddyCount = (group.members || []).filter((member) => member.userId !== user.id).length
     }
 
-    const [groupOrders, myOrders, completedOrders, fulfilledCount] = await Promise.all([
+    const [groupOrders, myOrders, myCompletedOrders, fulfilledCount] = await Promise.all([
       groupId
-        ? getGroupOrders(groupId, { page: 1, pageSize: 50 })
+        ? getGroupOrders(groupId, { page: 1, pageSize: 100 })
         : Promise.resolve({ list: [] as FoodieOrder[] }),
       getOrders({ userId: user.id, page: 1, pageSize: 50 }),
-      getOrders({ userId: user.id, status: 'completed', page: 1, pageSize: 1 }),
+      getOrders({ userId: user.id, status: 'completed', page: 1, pageSize: 100 }),
       getCompletedCount()
     ])
 
+    const allCompletedOrders = [...myCompletedOrders.list, ...groupOrders.list]
+    const uniqueCompletedOrders = Array.from(new Map(allCompletedOrders.map((order) => [order.id, order])).values())
+    const completedCount = uniqueCompletedOrders.filter((order) => order.status === 'completed').length
+
     stats.value = {
       orders: buddyCount,
-      recipes: completedOrders.total,
+      recipes: completedCount,
       fulfilled: fulfilledCount
     }
 

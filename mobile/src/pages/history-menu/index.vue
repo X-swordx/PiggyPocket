@@ -94,7 +94,7 @@
 import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import uniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
-import { getCurrentUser, getOrders, updateOrderRating, type FoodieOrder } from '@/services/foodieBuddy'
+import { getCurrentUser, getMyDiningGroups, getGroupOrders, getOrders, updateOrderRating, type FoodieOrder } from '@/services/foodieBuddy'
 
 interface HistoryDish {
   itemId?: number
@@ -151,8 +151,17 @@ const mapOrder = (order: FoodieOrder): HistoryOrder => {
 const loadHistory = async () => {
   try {
     const user = await getCurrentUser()
-    const res = await getOrders({ userId: user.id, status: 'completed', page: 1, pageSize: 100 })
-    const orders = res.list.map(mapOrder)
+    const diningGroups = await getMyDiningGroups(user.id)
+    const groupId = diningGroups[0]?.id
+    const [myOrders, groupOrders] = await Promise.all([
+      getOrders({ userId: user.id, status: 'completed', page: 1, pageSize: 100 }),
+      groupId
+        ? getGroupOrders(groupId, { page: 1, pageSize: 100 })
+        : Promise.resolve({ list: [] as FoodieOrder[] })
+    ])
+    const allOrders = [...myOrders.list, ...groupOrders.list]
+    const uniqueOrders = Array.from(new Map(allOrders.map((order) => [order.id, order])).values())
+    const orders = uniqueOrders.filter((order) => order.status === 'completed').map(mapOrder)
     const map = new Map<string, HistoryOrder[]>()
     orders.forEach((o) => {
       // 老订单没有 cookDate，回退用创建日期分组
