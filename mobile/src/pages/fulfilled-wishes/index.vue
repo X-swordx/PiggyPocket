@@ -1,5 +1,5 @@
 <template>
-  <view class="container">
+  <view class="container" :style="themeStyle">
     <!-- Header -->
     <view class="header">
       <view class="back-btn" @click="goBack">
@@ -24,7 +24,7 @@
             </view>
           </view>
           <view class="item-badge">
-            <uni-icons type="heart-filled" size="14" color="#ffc2cc" />
+            <uni-icons type="heart-filled" size="14" color="var(--theme-primary)" />
             <text>已实现</text>
           </view>
         </view>
@@ -39,6 +39,7 @@ import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import uniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
 import { getCompletedWishes, uncompleteWish, type Wish } from '@/services/wishlist'
+import { themeStyle } from '@/utils/theme'
 
 const items = ref<Wish[]>([])
 
@@ -70,7 +71,7 @@ onShow(reload)
 <style scoped>
 .container {
   min-height: 100vh;
-  background: #F8F5F6;
+  background: var(--theme-bg);
 }
 
 .header {
@@ -82,7 +83,7 @@ onShow(reload)
   position: sticky;
   top: 0;
   z-index: 10;
-  border-bottom: 1px solid rgba(255, 194, 204, 0.2);
+  border-bottom: 1px solid var(--theme-primary-light);
 }
 
 .back-btn {
@@ -140,7 +141,7 @@ onShow(reload)
 }
 
 .checkbox.checked {
-  background: #ffc2cc;
+  background: var(--theme-primary);
 }
 
 .item-content {
@@ -198,8 +199,8 @@ onShow(reload)
   gap: 4px;
   padding: 6px 12px;
   border-radius: 999px;
-  background: rgba(255, 194, 204, 0.16);
-  color: #f08da0;
+  background: var(--theme-primary-lighter);
+  color: var(--theme-primary-dark);
   font-size: 12px;
   font-weight: 600;
 }

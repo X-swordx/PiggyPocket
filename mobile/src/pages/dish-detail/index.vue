@@ -1,15 +1,15 @@
 <template>
-  <view class="container">
+  <view class="container" :style="themeStyle">
     <!-- Header - Glassmorphism style per Blush Velvet -->
     <view class="header">
       <view class="back-btn" @click="goBack">
-        <uni-icons type="left" size="24" color="#ffc2cc" />
+        <uni-icons type="left" size="24" color="var(--theme-primary)" />
       </view>
       <view class="title">
         <text>{{ isFoodExpiry ? '食品详情' : '菜品详情' }}</text>
       </view>
       <view class="share-btn" @click="shareDish">
-        <uni-icons type="more" size="24" color="#ffc2cc" />
+        <uni-icons type="more" size="24" color="var(--theme-primary)" />
       </view>
     </view>
 
@@ -34,7 +34,7 @@
               <text class="food-subtitle" v-if="food.spec">{{ food.spec }}</text>
             </view>
             <view class="icon-block">
-              <uni-icons type="box" size="28" color="#ffc2cc" />
+              <uni-icons type="box" size="28" color="var(--theme-primary)" />
             </view>
           </view>
 
@@ -122,7 +122,7 @@
           <view class="hero-image">
             <image v-if="dish.image" class="hero-bg-image" :src="dish.image" mode="aspectFill" />
             <view v-else class="hero-fallback-bg"
-              :style="{ background: `linear-gradient(135deg, ${dish.bgColor || '#f0b7a4'} 0%, #f5cac3 100%)` }"></view>
+              :style="{ background: `linear-gradient(135deg, ${dish.bgColor || '#f0b7a4'} 0%, var(--theme-gradient-end) 100%)` }"></view>
             <view v-if="editing" class="hero-edit-mask">
               <uni-icons type="camera-filled" size="28" color="#fff" />
               <text>更换封面</text>
@@ -165,7 +165,7 @@
             <view class="header-line"></view>
             <text>用料清单</text>
             <view v-if="editing" class="add-ing-btn" @click="addIngredient">
-              <uni-icons type="plus" size="16" color="#ffc2cc" />
+              <uni-icons type="plus" size="16" color="var(--theme-primary)" />
             </view>
           </view>
           <view class="ingredients-list" v-if="displayIngredients.length">
@@ -192,7 +192,7 @@
             <view class="header-line"></view>
             <text>烹饪步骤</text>
             <view v-if="editing" class="add-ing-btn" @click="addStep">
-              <uni-icons type="plus" size="16" color="#ffc2cc" />
+              <uni-icons type="plus" size="16" color="var(--theme-primary)" />
             </view>
           </view>
           <view class="steps-list" v-if="displaySteps.length">
@@ -265,6 +265,7 @@ import {
   STORAGE_LABELS,
   STORAGE_LABEL_DEFAULT
 } from '@/services/expiry'
+import { themeStyle } from '@/utils/theme'
 
 interface Dish {
   name: string
@@ -618,7 +619,7 @@ const deleteFood = () => {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: #f8f5f6;
+  background: var(--theme-bg);
 }
 
 /* Header - Glassmorphism per Blush Velvet rule */
@@ -632,7 +633,7 @@ const deleteFood = () => {
   background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(255, 194, 204, 0.2);
+  border-bottom: 1px solid var(--theme-primary-light);
   box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.05);
 }
 
@@ -649,7 +650,7 @@ const deleteFood = () => {
 
 .back-btn:active,
 .share-btn:active {
-  background: rgba(255, 194, 204, 0.1);
+  background: var(--theme-primary-lighter);
   transform: scale(0.95);
 }
 
@@ -682,8 +683,8 @@ const deleteFood = () => {
   width: calc(100% - 32px);
   border-radius: 16px;
   overflow: hidden;
-  /* Editorial shadow per design - 0 4px 20px -2px rgba(255, 194, 204, 0.2) */
-  box-shadow: 0 4px 20px -2px rgba(255, 194, 204, 0.2);
+  /* Editorial shadow per design - 0 4px 20px -2px rgba(var(--theme-primary-rgb), 0.2) */
+  box-shadow: 0 4px 20px -2px var(--theme-primary-light);
 }
 
 .hero-image {
@@ -713,7 +714,7 @@ const deleteFood = () => {
 .hero-gradient-overlay {
   position: absolute;
   inset: 0;
-  background: linear-gradient(to bottom right, rgba(255, 194, 204, 0.55), rgba(255, 194, 204, 0.25));
+  background: linear-gradient(to bottom right, rgba(var(--theme-primary-rgb), 0.55), rgba(var(--theme-primary-rgb), 0.25));
   z-index: 5;
 }
 
@@ -726,7 +727,7 @@ const deleteFood = () => {
   backdrop-filter: blur(8px);
   padding: 6px 12px;
   border-radius: 9999px;
-  box-shadow: 0 4px 12px -2px rgba(255, 194, 204, 0.2);
+  box-shadow: 0 4px 12px -2px var(--theme-primary-light);
 }
 
 .category-badge text {
@@ -734,7 +735,7 @@ const deleteFood = () => {
   font-weight: 700;
   letter-spacing: 0.05em;
   text-transform: uppercase;
-  color: #ffc2cc;
+  color: var(--theme-primary);
 }
 
 .main-info {
@@ -772,7 +773,7 @@ const deleteFood = () => {
 .icon-block {
   padding: 12px;
   border-radius: 12px;
-  background: rgba(255, 194, 204, 0.2);
+  background: var(--theme-primary-light);
   flex-shrink: 0;
   margin-left: 12px;
 }
@@ -790,8 +791,8 @@ const deleteFood = () => {
   background: #ffffff;
   padding: 20px;
   border-radius: 16px;
-  border: 1px solid rgba(255, 194, 204, 0.1);
-  box-shadow: 0 4px 20px -2px rgba(255, 194, 204, 0.15);
+  border: 1px solid var(--theme-primary-lighter);
+  box-shadow: 0 4px 20px -2px rgba(var(--theme-primary-rgb), 0.15);
   min-height: 160px;
   display: flex;
   flex-direction: column;
@@ -828,12 +829,12 @@ const deleteFood = () => {
 }
 
 .urgency-badge.expiring {
-  background: #f5cac3;
+  background: var(--theme-gradient-end);
   color: #653a43;
 }
 
 .urgency-badge.expired {
-  background: #ffdad6;
+  background: var(--theme-primary-light);
   color: #93000a;
 }
 
@@ -879,8 +880,8 @@ const deleteFood = () => {
   background: #ffffff;
   padding: 16px 20px;
   border-radius: 16px;
-  border: 1px solid rgba(255, 194, 204, 0.1);
-  box-shadow: 0 4px 20px -2px rgba(255, 194, 204, 0.1);
+  border: 1px solid var(--theme-primary-lighter);
+  box-shadow: 0 4px 20px -2px var(--theme-primary-lighter);
   display: flex;
   align-items: center;
   gap: 12px;
@@ -901,7 +902,7 @@ const deleteFood = () => {
 }
 
 .bg-secondary-container {
-  background: #f8d8dc;
+  background: var(--theme-bg-card);
 }
 
 .bg-tertiary-container {
@@ -933,7 +934,7 @@ const deleteFood = () => {
   background: rgba(255, 255, 255, 0.6);
   padding: 20px;
   border-radius: 16px;
-  border: 1px solid rgba(255, 194, 204, 0.1);
+  border: 1px solid var(--theme-primary-lighter);
   margin-bottom: 24px;
 }
 
@@ -982,13 +983,13 @@ const deleteFood = () => {
 }
 
 .primary-btn {
-  background: #ffc2cc;
+  background: var(--theme-primary);
   color: #321018;
-  box-shadow: 0 4px 12px rgba(255, 194, 204, 0.3);
+  box-shadow: 0 4px 12px rgba(var(--theme-primary-rgb), 0.3);
 }
 
 .danger-btn {
-  background: #f8f5f6;
+  background: var(--theme-bg);
   color: #ba1a1a;
   border: 1px solid rgba(186, 26, 26, 0.2);
 }
@@ -1028,7 +1029,7 @@ const deleteFood = () => {
 .header-line {
   width: 4px;
   height: 20px;
-  background: #ffc2cc;
+  background: var(--theme-primary);
   border-radius: 2px;
 }
 
@@ -1045,7 +1046,7 @@ const deleteFood = () => {
 }
 
 .info-card {
-  background: rgba(255, 194, 204, 0.1);
+  background: var(--theme-primary-lighter);
   padding: 12px;
   border-radius: 8px;
   display: flex;
@@ -1069,7 +1070,7 @@ const deleteFood = () => {
   padding: 20px;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(255, 194, 204, 0.1);
+  border: 1px solid var(--theme-primary-lighter);
 }
 
 .ingredient-item {
@@ -1099,7 +1100,7 @@ const deleteFood = () => {
   padding: 20px;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(255, 194, 204, 0.1);
+  border: 1px solid var(--theme-primary-lighter);
 }
 
 .step-item {
@@ -1116,7 +1117,7 @@ const deleteFood = () => {
   flex-shrink: 0;
   width: 24px;
   height: 24px;
-  background: #ffc2cc;
+  background: var(--theme-primary);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -1166,7 +1167,7 @@ const deleteFood = () => {
   width: 100%;
   padding: 8px 12px;
   background: #fff;
-  border: 1px solid rgba(255, 194, 204, 0.3);
+  border: 1px solid rgba(var(--theme-primary-rgb), 0.3);
   border-radius: 8px;
   font-size: 14px;
   color: #1f1a1b;
@@ -1199,7 +1200,7 @@ const deleteFood = () => {
   width: 28px;
   height: 28px;
   border-radius: 50%;
-  background: rgba(255, 194, 204, 0.15);
+  background: rgba(var(--theme-primary-rgb), 0.15);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -1231,7 +1232,7 @@ const deleteFood = () => {
   min-height: 60px;
   padding: 8px 12px;
   background: #fff;
-  border: 1px solid rgba(255, 194, 204, 0.3);
+  border: 1px solid rgba(var(--theme-primary-rgb), 0.3);
   border-radius: 8px;
   font-size: 14px;
   line-height: 1.5;
@@ -1257,7 +1258,7 @@ const deleteFood = () => {
   background: rgba(255, 255, 255, 0.92);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-top: 1px solid rgba(255, 194, 204, 0.15);
+  border-top: 1px solid rgba(var(--theme-primary-rgb), 0.15);
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
   z-index: 100;
 }
@@ -1278,30 +1279,30 @@ const deleteFood = () => {
 
 .edit-btn {
   flex: 2;
-  background: #ffc2cc;
+  background: var(--theme-primary);
   color: #321018;
-  box-shadow: 0 4px 12px rgba(255, 194, 204, 0.3);
+  box-shadow: 0 4px 12px rgba(var(--theme-primary-rgb), 0.3);
 }
 
 .delete-btn-bar {
   flex: 1;
-  background: #f8f5f6;
+  background: var(--theme-bg);
   color: #ba1a1a;
   border: 1px solid rgba(186, 26, 26, 0.2);
 }
 
 .cancel-btn {
   flex: 1;
-  background: #f8f5f6;
+  background: var(--theme-bg);
   color: #777;
-  border: 1px solid rgba(255, 194, 204, 0.2);
+  border: 1px solid rgba(var(--theme-primary-rgb), 0.2);
 }
 
 .save-btn {
   flex: 2;
-  background: #ffc2cc;
+  background: var(--theme-primary);
   color: #fff;
-  box-shadow: 0 4px 12px rgba(255, 194, 204, 0.3);
+  box-shadow: 0 4px 12px rgba(var(--theme-primary-rgb), 0.3);
 }
 
 .edit-btn:active,

@@ -1,5 +1,5 @@
 <template>
-  <view v-if="visible" class="privacy-mask">
+  <view v-if="visible" class="privacy-mask" :style="themeStyle">
     <view class="privacy-modal">
       <text class="privacy-title">隐私协议授权</text>
       <text class="privacy-content">
@@ -21,6 +21,7 @@
 
 <script setup lang="ts">
 import { ref } from 'vue'
+import { themeStyle } from '@/utils/theme'
 
 const visible = ref(false)
 const contractName = ref('隐私保护指引')
@@ -133,7 +134,7 @@ defineExpose({ ensurePrivacyAgreement })
 }
 
 .privacy-confirm {
-  background: #ffc2cc;
+  background: var(--theme-primary);
   color: #fff;
 }
 </style>

@@ -1,5 +1,5 @@
 <template>
-  <view class="container">
+  <view class="container" :style="themeStyle">
     <!-- Header -->
     <view class="header">
       <view class="back-btn" @click="goBack">
@@ -127,6 +127,7 @@ import {
   addWish as addWishToStore,
   type Wish
 } from '@/services/wishlist'
+import { themeStyle } from '@/utils/theme'
 
 const filters = ['全部', '旅行', '技能', '健康', '家居']
 const currentFilter = ref(0)
@@ -245,7 +246,7 @@ const handleTabChange = (index: number) => {
 <style scoped>
 .container {
   min-height: 100vh;
-  background: #F8F5F6;
+  background: var(--theme-bg);
 }
 
 .header {
@@ -276,11 +277,11 @@ const handleTabChange = (index: number) => {
   width: 52px;
   height: 52px;
   border-radius: 50%;
-  background: #ffc2cc;
+  background: var(--theme-primary);
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(255, 194, 204, 0.5);
+  box-shadow: 0 4px 12px rgba(var(--theme-primary-rgb), 0.5);
   z-index: 20;
 }
 
@@ -302,7 +303,7 @@ const handleTabChange = (index: number) => {
   background: white;
   padding: 20px;
   border-radius: 12px;
-  border: 1px solid rgba(255, 194, 204, 0.2);
+  border: 1px solid var(--theme-primary-light);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
   position: relative;
   overflow: hidden;
@@ -343,7 +344,7 @@ const handleTabChange = (index: number) => {
 .progress-icon {
   width: 48px;
   height: 48px;
-  background: rgba(255, 194, 204, 0.2);
+  background: var(--theme-primary-light);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -364,7 +365,7 @@ const handleTabChange = (index: number) => {
   top: 0;
   left: 0;
   height: 100%;
-  background: #ffc2cc;
+  background: var(--theme-primary);
   transition: width 1s;
 }
 
@@ -390,7 +391,7 @@ const handleTabChange = (index: number) => {
   justify-content: center;
   border-radius: 999px;
   padding: 0 20px;
-  background: rgba(255, 194, 204, 0.1);
+  background: var(--theme-primary-lighter);
 }
 
 .filter-chip text {
@@ -400,7 +401,7 @@ const handleTabChange = (index: number) => {
 }
 
 .filter-chip.active {
-  background: #ffc2cc;
+  background: var(--theme-primary);
 }
 
 .filter-chip.active text {
@@ -429,14 +430,14 @@ const handleTabChange = (index: number) => {
   width: 24px;
   height: 24px;
   border-radius: 50%;
-  border: 2px solid #ffc2cc;
+  border: 2px solid var(--theme-primary);
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .checkbox.checked {
-  background: #ffc2cc;
+  background: var(--theme-primary);
 }
 
 .item-content {
@@ -563,7 +564,7 @@ const handleTabChange = (index: number) => {
   padding-right: 20px;
   background: #F9FAFB;
   border-radius: 8px;
-  border: 1px solid rgba(255, 194, 204, 0.3);
+  border: 1px solid rgba(var(--theme-primary-rgb), 0.3);
   font-size: 16px;
   line-height: 1.5;
   box-sizing: border-box;
@@ -571,7 +572,7 @@ const handleTabChange = (index: number) => {
 
 .textarea:focus {
   outline: none;
-  border-color: #ffc2cc;
+  border-color: var(--theme-primary);
 }
 
 .category-list {
@@ -585,14 +586,14 @@ const handleTabChange = (index: number) => {
 .category-item {
   padding: 8px 16px;
   border-radius: 999px;
-  background: rgba(255, 194, 204, 0.1);
+  background: var(--theme-primary-lighter);
   border: 1px solid transparent;
   font-size: 14px;
   color: #6b7280;
 }
 
 .category-item.active {
-  background: #ffc2cc;
+  background: var(--theme-primary);
   color: white;
   font-weight: 600;
 }
@@ -621,9 +622,9 @@ const handleTabChange = (index: number) => {
 }
 
 .btn-confirm {
-  background: #ffc2cc;
+  background: var(--theme-primary);
   color: white;
-  box-shadow: 0 4px 12px rgba(255, 194, 204, 0.3);
+  box-shadow: 0 4px 12px rgba(var(--theme-primary-rgb), 0.3);
 }
 
 @keyframes fadeIn {

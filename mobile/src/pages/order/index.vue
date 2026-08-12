@@ -1,5 +1,5 @@
 <template>
-  <view class="container">
+  <view class="container" :style="themeStyle">
     <!-- Header -->
     <view class="header">
       <view class="back-btn" @click="goBack">
@@ -18,7 +18,7 @@
       <view class="cook-date">
         <picker mode="date" :value="cookDate" @change="onCookDateChange" class="picker-wrapper">
           <view class="picker-display">
-            <uni-icons type="calendar" size="20" color="#ffc2cc" />
+            <uni-icons type="calendar" size="20" color="var(--theme-primary)" />
             <text>{{ cookDate }}</text>
           </view>
         </picker>
@@ -80,6 +80,7 @@ import {
   SELECTED_DISHES_KEY,
   type SelectedDish
 } from '@/services/foodieBuddy'
+import { themeStyle } from '@/utils/theme'
 
 interface OrderItem {
   dishId: number
@@ -171,7 +172,7 @@ const confirmOrder = async () => {
 <style scoped>
 .container {
   min-height: 100vh;
-  background: #F8F5F6;
+  background: var(--theme-bg);
 }
 
 .header {
@@ -183,7 +184,7 @@ const confirmOrder = async () => {
   position: sticky;
   top: 0;
   z-index: 10;
-  border-bottom: 1px solid rgba(255, 194, 204, 0.2);
+  border-bottom: 1px solid var(--theme-primary-light);
 }
 
 .back-btn {
@@ -242,7 +243,7 @@ const confirmOrder = async () => {
   align-items: center;
   gap: 8px;
   background: white;
-  border: 1px solid rgba(255, 194, 204, 0.2);
+  border: 1px solid var(--theme-primary-light);
   border-radius: 12px;
   box-sizing: border-box;
 }
@@ -260,14 +261,14 @@ const confirmOrder = async () => {
   padding: 16px;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(255, 194, 204, 0.05);
+  border: 1px solid var(--theme-primary-lightest);
 }
 
 .item-image {
   width: 64px;
   height: 64px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 194, 204, 0.1);
+  border: 1px solid var(--theme-primary-lighter);
   overflow: hidden;
   flex-shrink: 0;
 }
@@ -305,7 +306,7 @@ const confirmOrder = async () => {
 
 .remark-input:focus {
   outline: none;
-  border-color: #ffc2cc;
+  border-color: var(--theme-primary);
 }
 
 .quantity-control {
@@ -324,11 +325,11 @@ const confirmOrder = async () => {
 }
 
 .qty-minus {
-  background: rgba(255, 194, 204, 0.2);
+  background: var(--theme-primary-light);
 }
 
 .qty-plus {
-  background: #ffc2cc;
+  background: var(--theme-primary);
 }
 
 .qty-number {
@@ -351,7 +352,7 @@ const confirmOrder = async () => {
 .footer-content {
   padding: 16px;
   background: rgba(255, 255, 255, 0.9);
-  border-top: 1px solid rgba(255, 194, 204, 0.1);
+  border-top: 1px solid var(--theme-primary-lighter);
 }
 
 .summary {
@@ -376,7 +377,7 @@ const confirmOrder = async () => {
 .confirm-btn {
   width: 100%;
   height: 56px;
-  background: #ffc2cc;
+  background: var(--theme-primary);
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -385,6 +386,6 @@ const confirmOrder = async () => {
   font-weight: 600;
   font-size: 16px;
   color: white;
-  box-shadow: 0 4px 12px rgba(255, 194, 204, 0.3);
+  box-shadow: 0 4px 12px rgba(var(--theme-primary-rgb), 0.3);
 }
 </style>

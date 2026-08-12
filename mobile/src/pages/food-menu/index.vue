@@ -1,5 +1,5 @@
 <template>
-  <view class="container">
+  <view class="container" :style="themeStyle">
     <!-- Header -->
     <view class="header">
       <view class="back-btn" @click="goBack">
@@ -19,7 +19,7 @@
       <view class="upload-section">
         <view class="upload-card">
           <view class="upload-icon">
-            <uni-icons type="cloud-upload" size="32" color="#ffc2cc" />
+            <uni-icons type="cloud-upload" size="32" color="var(--theme-primary)" />
           </view>
           <view class="upload-text">
             <text class="upload-title">上传食谱</text>
@@ -122,6 +122,7 @@ import {
   type DishCategory,
   type FoodieDish
 } from '@/services/foodieBuddy'
+import { themeStyle } from '@/utils/theme'
 
 interface Dish {
   id: number
@@ -247,7 +248,7 @@ const handleTabChange = (index: number) => {
 <style scoped>
 .container {
   min-height: 100vh;
-  background: #F8F5F6;
+  background: var(--theme-bg);
   display: flex;
   flex-direction: column;
 }
@@ -262,7 +263,7 @@ const handleTabChange = (index: number) => {
   position: sticky;
   top: 0;
   z-index: 10;
-  border-bottom: 1px solid rgba(255, 194, 204, 0.2);
+  border-bottom: 1px solid var(--theme-primary-light);
 }
 
 .back-btn, .notify-btn {
@@ -275,7 +276,7 @@ const handleTabChange = (index: number) => {
 }
 
 .notify-btn {
-  background: rgba(255, 194, 204, 0.2);
+  background: var(--theme-primary-light);
 }
 
 .title {
@@ -300,7 +301,7 @@ const handleTabChange = (index: number) => {
   background: white;
   padding: 24px;
   border-radius: 12px;
-  border: 2px dashed rgba(255, 194, 204, 0.4);
+  border: 2px dashed rgba(var(--theme-primary-rgb), 0.4);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -311,7 +312,7 @@ const handleTabChange = (index: number) => {
 .upload-icon {
   width: 64px;
   height: 64px;
-  background: rgba(255, 194, 204, 0.1);
+  background: var(--theme-primary-lighter);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -335,7 +336,7 @@ const handleTabChange = (index: number) => {
 .upload-btn {
   width: 100%;
   height: 48px;
-  background: #ffc2cc;
+  background: var(--theme-primary);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -366,7 +367,7 @@ const handleTabChange = (index: number) => {
   font-size: 12px;
   font-weight: 500;
   padding: 4px 8px;
-  background: rgba(255, 194, 204, 0.2);
+  background: var(--theme-primary-light);
   border-radius: 999px;
 }
 
@@ -394,7 +395,7 @@ const handleTabChange = (index: number) => {
   justify-content: center;
   border-radius: 999px;
   padding: 0 20px;
-  background: rgba(255, 194, 204, 0.1);
+  background: var(--theme-primary-lighter);
 }
 
 .filter-chip text {
@@ -404,7 +405,7 @@ const handleTabChange = (index: number) => {
 }
 
 .filter-chip.active {
-  background: #ffc2cc;
+  background: var(--theme-primary);
 }
 
 .dish-card {
@@ -412,7 +413,7 @@ const handleTabChange = (index: number) => {
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(255, 194, 204, 0.1);
+  border: 1px solid var(--theme-primary-lighter);
 }
 
 .dish-image {
@@ -456,7 +457,7 @@ const handleTabChange = (index: number) => {
   align-items: center;
   gap: 4px;
   padding: 8px 16px;
-  background: #ffc2cc;
+  background: var(--theme-primary);
   color: #111;
   border-radius: 8px;
   font-weight: 600;
@@ -464,8 +465,8 @@ const handleTabChange = (index: number) => {
 }
 
 .dish-btn.selected {
-  background: rgba(255, 194, 204, 0.2);
-  border: 1px solid rgba(255, 194, 204, 0.3);
+  background: var(--theme-primary-light);
+  border: 1px solid rgba(var(--theme-primary-rgb), 0.3);
 }
 
 .bottom-bar {

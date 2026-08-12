@@ -1,5 +1,5 @@
 <template>
-  <view class="container">
+  <view class="container" :style="themeStyle">
     <!-- Header -->
     <view class="header">
       <view class="back-btn" @click="goBack">
@@ -14,7 +14,7 @@
       <!-- Photo Upload -->
       <view class="upload-section">
         <view class="upload-area" @click="chooseImage" v-if="!coverImage">
-          <uni-icons type="camera-filled" size="40" color="#ffc2cc" />
+          <uni-icons type="camera-filled" size="40" color="var(--theme-primary)" />
           <text class="upload-text">添加美食封面图</text>
           <text class="upload-hint">美食的照片越好看，人气越高哦</text>
         </view>
@@ -44,7 +44,7 @@
         <view class="section-header">
           <text class="section-title">用料</text>
           <view class="adjust-btn">
-            <uni-icons type="gear" size="14" color="#ffc2cc" />
+            <uni-icons type="gear" size="14" color="var(--theme-primary)" />
             <text>调整比例</text>
           </view>
         </view>
@@ -85,7 +85,7 @@
               placeholder="第一步：将五花肉洗净切块..."
             />
             <view class="step-image" @click="addStepImage(index)">
-              <uni-icons type="image" size="24" color="#ffc2cc" />
+              <uni-icons type="image" size="24" color="var(--theme-primary)" />
               <text>添加步骤图</text>
             </view>
           </view>
@@ -169,6 +169,7 @@ import {
   type FoodieUser
 } from '@/services/foodieBuddy'
 import { uploadToOSS } from '@/services/oss'
+import { themeStyle } from '@/utils/theme'
 
 const DRAFT_STORAGE_KEY = 'recipe-upload-draft'
 
@@ -417,7 +418,7 @@ const publishRecipe = async () => {
 <style scoped>
 .container {
   min-height: 100vh;
-  background: #F8F5F6;
+  background: var(--theme-bg);
 }
 
 .header {
@@ -429,7 +430,7 @@ const publishRecipe = async () => {
   position: sticky;
   top: 0;
   z-index: 10;
-  border-bottom: 1px solid rgba(255, 194, 204, 0.2);
+  border-bottom: 1px solid var(--theme-primary-light);
 }
 
 .back-btn {
@@ -462,9 +463,9 @@ const publishRecipe = async () => {
 .upload-area {
   width: 100%;
   aspect-ratio: 16 / 9;
-  background: rgba(255, 194, 204, 0.1);
+  background: var(--theme-primary-lighter);
   border-radius: 12px;
-  border: 2px dashed rgba(255, 194, 204, 0.3);
+  border: 2px dashed rgba(var(--theme-primary-rgb), 0.3);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -475,7 +476,7 @@ const publishRecipe = async () => {
 .upload-text {
   font-size: 14px;
   font-weight: 500;
-  color: #ffc2cc;
+  color: var(--theme-primary);
 }
 
 .upload-hint {
@@ -579,7 +580,7 @@ const publishRecipe = async () => {
   align-items: center;
   gap: 4px;
   font-size: 14px;
-  color: #ffc2cc;
+  color: var(--theme-primary);
   font-weight: 600;
 }
 
@@ -617,7 +618,7 @@ const publishRecipe = async () => {
   margin-top: 16px;
   width: 100%;
   height: 48px;
-  background: rgba(255, 194, 204, 0.2);
+  background: var(--theme-primary-light);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -628,7 +629,7 @@ const publishRecipe = async () => {
 }
 
 .add-step-btn {
-  border: 2px dashed rgba(255, 194, 204, 0.4);
+  border: 2px dashed rgba(var(--theme-primary-rgb), 0.4);
   background: transparent;
 }
 
@@ -658,7 +659,7 @@ const publishRecipe = async () => {
 .step-number {
   width: 24px;
   height: 24px;
-  background: #ffc2cc;
+  background: var(--theme-primary);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -684,7 +685,7 @@ const publishRecipe = async () => {
 .step-image {
   width: 96px;
   height: 96px;
-  background: rgba(255, 194, 204, 0.1);
+  background: var(--theme-primary-lighter);
   border-radius: 8px;
   display: flex;
   flex-direction: column;
@@ -695,7 +696,7 @@ const publishRecipe = async () => {
 
 .step-image text:last-child {
   font-size: 10px;
-  color: #ffc2cc;
+  color: var(--theme-primary);
 }
 
 .category-list {
@@ -711,11 +712,11 @@ const publishRecipe = async () => {
   font-size: 12px;
   font-weight: 500;
   background: white;
-  border: 1px solid rgba(255, 194, 204, 0.2);
+  border: 1px solid var(--theme-primary-light);
 }
 
 .tag.active {
-  background: #ffc2cc;
+  background: var(--theme-primary);
   color: white;
 }
 
@@ -731,7 +732,7 @@ const publishRecipe = async () => {
   right: 0;
   padding: 16px;
   background: rgba(248, 245, 246, 0.95);
-  border-top: 1px solid rgba(255, 194, 204, 0.1);
+  border-top: 1px solid var(--theme-primary-lighter);
   z-index: 100;
 }
 
@@ -744,7 +745,7 @@ const publishRecipe = async () => {
   flex: 1;
   height: 56px;
   background: white;
-  border: 1px solid rgba(255, 194, 204, 0.3);
+  border: 1px solid rgba(var(--theme-primary-rgb), 0.3);
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -757,7 +758,7 @@ const publishRecipe = async () => {
 .publish-btn {
   flex: 2;
   height: 56px;
-  background: #ffc2cc;
+  background: var(--theme-primary);
   border-radius: 12px;
   display: flex;
   align-items: center;
@@ -765,6 +766,6 @@ const publishRecipe = async () => {
   font-weight: 600;
   font-size: 16px;
   color: white;
-  box-shadow: 0 4px 12px rgba(255, 194, 204, 0.3);
+  box-shadow: 0 4px 12px rgba(var(--theme-primary-rgb), 0.3);
 }
 </style>

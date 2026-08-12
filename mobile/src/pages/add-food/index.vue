@@ -1,9 +1,9 @@
 <template>
-  <view class="container">
+  <view class="container" :style="themeStyle">
     <!-- Header - Glassmorphism style -->
     <view class="header">
       <view class="back-btn" @click="goBack">
-        <uni-icons type="left" size="24" color="#ffc2cc" />
+        <uni-icons type="left" size="24" color="var(--theme-primary)" />
       </view>
       <view class="title">
         <text>{{ isEditing ? '编辑食品' : '添加食品' }}</text>
@@ -16,7 +16,7 @@
       <!-- Image Upload Area -->
       <view class="image-upload" @click="uploadImage">
         <view v-if="!formData.imageUrl" class="upload-placeholder">
-          <uni-icons type="camera" size="48" color="#ffc2cc" />
+          <uni-icons type="camera" size="48" color="var(--theme-primary)" />
           <text class="upload-text">点击上传食品图片</text>
         </view>
         <image v-else class="uploaded-image" :src="formData.imageUrl" mode="aspectFill" />
@@ -33,7 +33,7 @@
             <text>食品名称</text>
           </view>
           <view class="input-wrapper">
-            <uni-icons type="shop" size="20" color="#ffc2cc" class="input-icon" />
+            <uni-icons type="shop" size="20" color="var(--theme-primary)" class="input-icon" />
             <input
               class="form-input"
               v-model="formData.name"
@@ -50,7 +50,7 @@
               <text>保质期至</text>
             </view>
             <view class="input-wrapper">
-              <uni-icons type="calendar" size="20" color="#ffc2cc" class="input-icon" />
+              <uni-icons type="calendar" size="20" color="var(--theme-primary)" class="input-icon" />
               <picker
                 mode="date"
                 :value="formData.expiryDate"
@@ -71,7 +71,7 @@
               <text>数量</text>
             </view>
             <view class="input-wrapper">
-              <uni-icons type="box" size="20" color="#ffc2cc" class="input-icon" />
+              <uni-icons type="box" size="20" color="var(--theme-primary)" class="input-icon" />
               <input
                 class="form-input"
                 v-model.number="formData.quantity"
@@ -96,7 +96,7 @@
               :class="{ active: formData.storage === option.value }"
               @click="formData.storage = option.value"
             >
-              <uni-icons :type="option.icon" size="28" :color="formData.storage === option.value ? '#ffc2cc' : '#bbb'" />
+              <uni-icons :type="option.icon" size="28" :color="formData.storage === option.value ? 'var(--theme-primary)' : '#bbb'" />
               <text class="storage-label">{{ option.label }}</text>
             </view>
           </view>
@@ -123,7 +123,7 @@
         <!-- Notes Section -->
         <view class="notes-card">
           <view class="notes-header">
-            <uni-icons type="text" size="20" color="#ffc2cc" />
+            <uni-icons type="text" size="20" color="var(--theme-primary)" />
             <text class="notes-title">备注 (可选)</text>
           </view>
           <textarea
@@ -159,6 +159,7 @@ import uniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
 import PrivacyModal from '@/components/PrivacyModal.vue'
 import { uploadToOSS } from '@/services/oss'
 import { addExpiryFood, editExpiryFood, getExpiryFood } from '@/services/expiry'
+import { themeStyle } from '@/utils/theme'
 
 interface FormData {
   name: string
@@ -312,7 +313,7 @@ const submitForm = async () => {
   display: flex;
   flex-direction: column;
   min-height: 100vh;
-  background: #f8f5f6;
+  background: var(--theme-bg);
 }
 
 /* Header - Glassmorphism per Blush Velvet */
@@ -326,7 +327,7 @@ const submitForm = async () => {
   background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(255, 194, 204, 0.2);
+  border-bottom: 1px solid rgba(var(--theme-primary-rgb), 0.2);
   box-shadow: 0 2px 8px -2px rgba(0, 0, 0, 0.05);
 }
 
@@ -341,7 +342,7 @@ const submitForm = async () => {
 }
 
 .back-btn:active {
-  background: rgba(255, 194, 204, 0.1);
+  background: rgba(var(--theme-primary-rgb), 0.1);
   transform: scale(0.95);
 }
 
@@ -369,15 +370,15 @@ const submitForm = async () => {
   height: 192px;
   border-radius: 16px;
   overflow: hidden;
-  background: rgba(255, 194, 204, 0.08);
-  border: 2px dashed rgba(255, 194, 204, 0.4);
+  background: rgba(var(--theme-primary-rgb), 0.08);
+  border: 2px dashed rgba(var(--theme-primary-rgb), 0.4);
   margin-bottom: 24px;
   cursor: pointer;
   transition: all 0.2s;
 }
 
 .image-upload:active {
-  background: rgba(255, 194, 204, 0.15);
+  background: rgba(var(--theme-primary-rgb), 0.15);
   transform: scale(0.99);
 }
 
@@ -394,7 +395,7 @@ const submitForm = async () => {
 .upload-text {
   font-size: 14px;
   font-weight: 600;
-  color: #ffc2cc;
+  color: var(--theme-primary);
 }
 
 .uploaded-image {
@@ -410,7 +411,7 @@ const submitForm = async () => {
   backdrop-filter: blur(8px);
   padding: 6px 16px;
   border-radius: 999px;
-  border: 1px solid rgba(255, 194, 204, 0.2);
+  border: 1px solid rgba(var(--theme-primary-rgb), 0.2);
 }
 
 .image-badge text {
@@ -418,7 +419,7 @@ const submitForm = async () => {
   font-weight: 700;
   text-transform: uppercase;
   letter-spacing: 0.05em;
-  color: #ffc2cc;
+  color: var(--theme-primary);
 }
 
 /* Form Section */
@@ -460,7 +461,7 @@ const submitForm = async () => {
   width: 100%;
   padding: 16px 16px 16px 52px;
   background: #ffffff;
-  border: 1px solid rgba(255, 194, 204, 0.2);
+  border: 1px solid rgba(var(--theme-primary-rgb), 0.2);
   border-radius: 12px;
   font-size: 16px;
   color: #1f1a1b;
@@ -468,8 +469,8 @@ const submitForm = async () => {
 }
 
 .form-input:focus {
-  border-color: #ffc2cc;
-  box-shadow: 0 0 0 2px rgba(255, 194, 204, 0.2);
+  border-color: var(--theme-primary);
+  box-shadow: 0 0 0 2px rgba(var(--theme-primary-rgb), 0.2);
   outline: none;
 }
 
@@ -490,7 +491,7 @@ const submitForm = async () => {
   display: flex;
   align-items: center;
   background: #ffffff;
-  border: 1px solid rgba(255, 194, 204, 0.2);
+  border: 1px solid rgba(var(--theme-primary-rgb), 0.2);
   border-radius: 12px;
   box-sizing: border-box;
 }
@@ -525,15 +526,15 @@ const submitForm = async () => {
   justify-content: center;
   padding: 16px 8px;
   border-radius: 12px;
-  border: 2px solid rgba(255, 194, 204, 0.1);
+  border: 2px solid rgba(var(--theme-primary-rgb), 0.1);
   background: #ffffff;
   transition: all 0.2s;
   gap: 6px;
 }
 
 .storage-item.active {
-  border-color: #ffc2cc;
-  background: rgba(255, 194, 204, 0.05);
+  border-color: var(--theme-primary);
+  background: rgba(var(--theme-primary-rgb), 0.05);
 }
 
 .storage-label {
@@ -554,15 +555,15 @@ const submitForm = async () => {
 .category-item {
   padding: 12px 8px;
   border-radius: 10px;
-  border: 1px solid rgba(255, 194, 204, 0.15);
+  border: 1px solid rgba(var(--theme-primary-rgb), 0.15);
   background: #ffffff;
   text-align: center;
   transition: all 0.2s;
 }
 
 .category-item.active {
-  background: rgba(255, 194, 204, 0.2);
-  border-color: #ffc2cc;
+  background: rgba(var(--theme-primary-rgb), 0.2);
+  border-color: var(--theme-primary);
 }
 
 .category-item text {
@@ -580,7 +581,7 @@ const submitForm = async () => {
   background: #ffffff;
   padding: 16px;
   border-radius: 16px;
-  border: 1px solid rgba(255, 194, 204, 0.1);
+  border: 1px solid rgba(var(--theme-primary-rgb), 0.1);
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
 }
 
@@ -594,7 +595,7 @@ const submitForm = async () => {
 .notes-title {
   font-size: 14px;
   font-weight: 700;
-  color: #ffc2cc;
+  color: var(--theme-primary);
 }
 
 .notes-input {
@@ -629,7 +630,7 @@ const submitForm = async () => {
   background: rgba(255, 255, 255, 0.8);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-top: 1px solid rgba(255, 194, 204, 0.2);
+  border-top: 1px solid rgba(var(--theme-primary-rgb), 0.2);
   box-shadow: 0 -2px 10px rgba(0, 0, 0, 0.05);
   z-index: 100;
 }
@@ -637,7 +638,7 @@ const submitForm = async () => {
 .submit-btn {
   width: 100%;
   height: 56px;
-  background: #ffc2cc;
+  background: var(--theme-primary);
   border-radius: 999px;
   display: flex;
   align-items: center;
@@ -646,7 +647,7 @@ const submitForm = async () => {
   font-weight: 700;
   font-size: 16px;
   color: #321018;
-  box-shadow: 0 4px 16px rgba(255, 194, 204, 0.4);
+  box-shadow: 0 4px 16px rgba(var(--theme-primary-rgb), 0.4);
   transition: all 0.2s;
 }
 

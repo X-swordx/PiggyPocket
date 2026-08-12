@@ -1,5 +1,5 @@
 <template>
-  <view class="container">
+  <view class="container" :style="themeStyle">
     <!-- Header -->
     <view class="header">
       <view class="back-btn" @click="goBack">
@@ -95,6 +95,7 @@ import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import uniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
 import { getCurrentUser, getMyDiningGroups, getGroupOrders, getOrders, updateOrderRating, type FoodieOrder } from '@/services/foodieBuddy'
+import { themeStyle } from '@/utils/theme'
 
 interface HistoryDish {
   itemId?: number
@@ -234,7 +235,7 @@ onShow(loadHistory)
 <style scoped>
 .container {
   min-height: 100vh;
-  background: #F8F5F6;
+  background: var(--theme-bg);
 }
 
 .header {
@@ -246,7 +247,7 @@ onShow(loadHistory)
   position: sticky;
   top: 0;
   z-index: 10;
-  border-bottom: 1px solid rgba(255, 194, 204, 0.2);
+  border-bottom: 1px solid var(--theme-primary-light);
 }
 
 .back-btn {
@@ -295,7 +296,7 @@ onShow(loadHistory)
   padding: 16px;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(255, 194, 204, 0.05);
+  border: 1px solid var(--theme-primary-lightest);
   opacity: 0.85;
 }
 
@@ -386,7 +387,7 @@ onShow(loadHistory)
 }
 
 .order-action.rate {
-  background: #ffc2cc;
+  background: var(--theme-primary);
   color: white;
 }
 
@@ -450,7 +451,7 @@ onShow(loadHistory)
 }
 
 .rating-btn.confirm {
-  background: #ffc2cc;
+  background: var(--theme-primary);
   color: white;
 }
 

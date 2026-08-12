@@ -1,5 +1,5 @@
 <template>
-  <view class="container">
+  <view class="container" :style="themeStyle">
     <!-- Header -->
     <view class="header">
       <view class="back-btn" @click="goBack">
@@ -79,6 +79,7 @@ import {
   getExpiredFoods,
   type ExpiryFood
 } from '@/services/expiry'
+import { themeStyle } from '@/utils/theme'
 
 const tabs = ['全部', '即将过期', '已过期']
 const currentTab = ref(0)
@@ -143,7 +144,7 @@ const goToDetail = (item: ExpiryFood) => {
   display: flex;
   flex-direction: column;
   height: 100vh;
-  background: #F8F5F6;
+  background: var(--theme-bg);
 }
 
 .header {
@@ -155,7 +156,7 @@ const goToDetail = (item: ExpiryFood) => {
   background: rgba(248, 245, 246, 0.8);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(255, 194, 204, 0.2);
+  border-bottom: 1px solid var(--theme-primary-light);
   z-index: 10;
 }
 
@@ -186,7 +187,7 @@ const goToDetail = (item: ExpiryFood) => {
   background: rgba(248, 245, 246, 0.8);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
-  border-bottom: 1px solid rgba(255, 194, 204, 0.2);
+  border-bottom: 1px solid var(--theme-primary-light);
   gap: 24px;
   position: sticky;
   top: 0;
@@ -210,7 +211,7 @@ const goToDetail = (item: ExpiryFood) => {
 }
 
 .tab.active {
-  border-bottom: 3px solid #ffc2cc;
+  border-bottom: 3px solid var(--theme-primary);
 }
 
 .content {
@@ -239,7 +240,7 @@ const goToDetail = (item: ExpiryFood) => {
   padding: 16px;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(255, 194, 204, 0.1);
+  border: 1px solid var(--theme-primary-lighter);
 }
 
 .item-image {
@@ -342,12 +343,12 @@ const goToDetail = (item: ExpiryFood) => {
   right: 24px;
   width: 56px;
   height: 56px;
-  background: #ffc2cc;
+  background: var(--theme-primary);
   border-radius: 50%;
   display: flex;
   align-items: center;
   justify-content: center;
-  box-shadow: 0 4px 12px rgba(255, 194, 204, 0.4);
+  box-shadow: 0 4px 12px rgba(var(--theme-primary-rgb), 0.4);
   z-index: 50;
 }
 </style>

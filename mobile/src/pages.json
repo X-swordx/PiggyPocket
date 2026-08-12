@@ -100,14 +100,6 @@
 				"navigationStyle": "custom",
 				"backgroundColor": "#F8F5F6"
 			}
-		},
-		{
-			"path": "pages/about/index",
-			"style": {
-				"navigationBarTitleText": "关于",
-				"navigationStyle": "custom",
-				"backgroundColor": "#F8F5F6"
-			}
 		}
 	],
 	"globalStyle": {

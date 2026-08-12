@@ -1,5 +1,5 @@
 <template>
-  <view class="container">
+  <view class="container" :style="themeStyle">
     <!-- Header -->
     <view class="header">
       <view class="header-right">
@@ -36,7 +36,7 @@
             <view class="card-gradient"></view>
             <image class="card-img" src="/static/milk.png" mode="aspectFill" />
             <view class="card-icon-overlay">
-              <uni-icons type="list" size="24" color="#ffc2cc" />
+              <uni-icons type="list" size="24" color="var(--theme-primary)" />
             </view>
           </view>
           <view class="card-content">
@@ -56,7 +56,7 @@
             <view class="card-gradient"></view>
             <image class="card-img" src="/static/buddha.png" mode="aspectFill" />
             <view class="card-icon-overlay">
-              <uni-icons type="heart-filled" size="24" color="#ffc2cc" />
+              <uni-icons type="heart-filled" size="24" color="var(--theme-primary)" />
             </view>
           </view>
           <view class="card-content">
@@ -76,7 +76,7 @@
             <view class="card-gradient"></view>
             <image class="card-img" src="/static/pasta.png" mode="aspectFill" />
             <view class="card-icon-overlay">
-              <uni-icons type="wallet" size="24" color="#ffc2cc" />
+              <uni-icons type="wallet" size="24" color="var(--theme-primary)" />
             </view>
           </view>
           <view class="card-content">
@@ -120,7 +120,7 @@
         </scroll-view>
         <view class="drawer-footer">
           <view class="clear-btn" @click="clearAllNotifications">
-            <uni-icons type="trash" size="16" color="#ffc2cc" />
+            <uni-icons type="trash" size="16" color="var(--theme-primary)" />
             <text>清空全部</text>
           </view>
         </view>
@@ -138,6 +138,7 @@ import { onShareAppMessage, onShow } from '@dcloudio/uni-app'
 import TabBar from '@/components/TabBar.vue'
 import uniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
 import { getMessages, markMessagesAsRead, type Message } from '@/services/notification'
+import { themeStyle } from '@/utils/theme'
 
 const handleTabChange = (index: number) => {
   if (index === 0) {
@@ -225,7 +226,7 @@ const clearAllNotifications = () => {
 <style scoped>
 .container {
   min-height: 100vh;
-  background: #F8F5F6;
+  background: var(--theme-bg);
 }
 
 .header {
@@ -234,11 +235,11 @@ const clearAllNotifications = () => {
   justify-content: space-between;
   padding: 16px;
   padding-top: calc(16px + var(--status-bar-height));
-  background: #F8F5F6;
+  background: var(--theme-bg);
   position: sticky;
   top: 0;
   z-index: 10;
-  border-bottom: 1px solid rgba(255, 194, 204, 0.1);
+  border-bottom: 1px solid var(--theme-primary-lighter);
 }
 
 .header-center {
@@ -277,7 +278,7 @@ const clearAllNotifications = () => {
   height: 8px;
   border-radius: 50%;
   background: #ef4444;
-  border: 1px solid #F8F5F6;
+  border: 1px solid var(--theme-bg);
 }
 
 .content {
@@ -289,17 +290,17 @@ const clearAllNotifications = () => {
   display: flex;
   align-items: center;
   gap: 12px;
-  background: rgba(255, 194, 204, 0.1);
+  background: var(--theme-primary-lighter);
   margin: 16px;
   padding: 12px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 194, 204, 0.2);
+  border: 1px solid var(--theme-primary-light);
 }
 
 .announcement-icon {
   width: 40px;
   height: 40px;
-  background: #ffc2cc;
+  background: var(--theme-primary);
   border-radius: 8px;
   display: flex;
   align-items: center;
@@ -334,7 +335,7 @@ const clearAllNotifications = () => {
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(255, 194, 204, 0.1);
+  border: 1px solid var(--theme-primary-lighter);
 }
 
 .card-image {
@@ -342,7 +343,7 @@ const clearAllNotifications = () => {
   height: 160px;
   position: relative;
   overflow: hidden;
-  background: rgba(255, 194, 204, 0.2);
+  background: var(--theme-primary-light);
 }
 
 .card-img {
@@ -361,7 +362,7 @@ const clearAllNotifications = () => {
   left: 0;
   width: 100%;
   height: 100%;
-  background: linear-gradient(135deg, rgba(255, 194, 204, 0.3) 0%, rgba(255, 194, 204, 0.1) 100%);
+  background: linear-gradient(135deg, rgba(var(--theme-primary-rgb), 0.3) 0%, var(--theme-primary-lighter) 100%);
   z-index: 1;
 }
 
@@ -405,7 +406,7 @@ const clearAllNotifications = () => {
 .card-btn {
   min-width: 80px;
   height: 36px;
-  background: #ffc2cc;
+  background: var(--theme-primary);
   color: #111;
   display: flex;
   align-items: center;
@@ -545,11 +546,11 @@ const clearAllNotifications = () => {
   width: 100%;
   height: 44px;
   border-radius: 12px;
-  background: rgba(255, 194, 204, 0.1);
-  border: 1px solid rgba(255, 194, 204, 0.3);
+  background: var(--theme-primary-lighter);
+  border: 1px solid rgba(var(--theme-primary-rgb), 0.3);
   font-size: 14px;
   font-weight: 600;
-  color: #ffc2cc;
+  color: var(--theme-primary);
 }
 
 @keyframes fadeIn {

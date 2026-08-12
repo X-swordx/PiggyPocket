@@ -26,7 +26,7 @@
 | [pages/foodie-buddy](../mobile/src/pages/foodie-buddy) | 饭搭子分组管理 | 群 CRUD、成员管理 |
 | [pages/profile](../mobile/src/pages/profile) | 用户管理 | 列表、封禁、昵称/头像纠错 |
 | [pages/index](../mobile/src/pages/index) | 首页数据看板（可选） | 统计卡片 |
-| [pages/about](../mobile/src/pages/about) | 系统配置 | 备案信息、版本号 |
+| [pages/profile](../mobile/src/pages/profile) 设置弹窗 | 系统配置 | 备案信息、版本号 |
 
 ### 1.2 不在本期范围
 - 微信小程序端功能（保持现状）

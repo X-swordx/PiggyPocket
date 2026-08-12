@@ -1,14 +1,14 @@
 <template>
-  <view class="container">
+  <view class="container" :style="themeStyle">
     <!-- Header -->
     <view class="header">
-      <view class="placeholder"></view>
+      <view class="settings-btn" @click="openSettings">
+        <uni-icons type="gear-filled" size="24" color="#333" />
+      </view>
       <view class="title">
         <text>我的</text>
       </view>
-      <view class="settings-btn" @click="goToSettings">
-        <uni-icons type="gear-filled" size="24" color="#333" />
-      </view>
+      <view class="placeholder"></view>
     </view>
 
     <scroll-view scroll-y class="content">
@@ -60,7 +60,7 @@
       <!-- Piggy Orders Section -->
       <view class="orders-section">
         <view class="section-header">
-          <uni-icons type="restaurant" size="24" color="#ffc2cc" />
+          <uni-icons type="restaurant" size="24" color="var(--theme-primary)" />
           <text>猪猪订单</text>
           <view></view>
         </view>
@@ -95,6 +95,47 @@
       </view>
     </scroll-view>
 
+    <!-- Settings Modal -->
+    <view v-if="showSettingsModal" class="settings-mask" @click="closeSettings">
+      <view class="settings-sheet" @click.stop>
+        <view class="settings-header">
+          <text class="settings-title">设置</text>
+          <view class="settings-close" @click="closeSettings">
+            <uni-icons type="clear" size="20" color="#999" />
+          </view>
+        </view>
+        <view class="settings-body">
+          <view class="settings-section">
+            <text class="settings-section-title">主题颜色</text>
+            <view class="theme-list">
+              <view
+                v-for="theme in themeList"
+                :key="theme.key"
+                class="theme-item"
+                :class="{ active: currentThemeKey === theme.key }"
+                @click="selectTheme(theme.key)"
+              >
+                <view class="theme-preview" :style="{ background: theme.colors.primary }">
+                  <view class="theme-preview-dot" :style="{ background: theme.colors.gradientEnd }"></view>
+                </view>
+                <text class="theme-name">{{ theme.name }}</text>
+                <view v-if="currentThemeKey === theme.key" class="theme-check"
+                  :style="{ background: theme.colors.primary }"
+                >
+                  <uni-icons type="checkmarkempty" size="12" color="#fff" />
+                </view>
+              </view>
+            </view>
+          </view>
+
+          <view class="beian" @click="openBeian">
+            <text class="beian-text">粤ICP备2026061943号-2</text>
+            <text class="beian-tip">点击复制工信部网址</text>
+          </view>
+        </view>
+      </view>
+    </view>
+
     <!-- Tab Bar -->
     <TabBar :current-index="3" @change="handleTabChange" />
   </view>
@@ -108,6 +149,14 @@ import uniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
 import { getCurrentUser, getDiningGroup, getMyDiningGroups, getGroupOrders, getOrders, refreshCurrentUser, updateOrderStatus, type FoodieOrder } from '@/services/foodieBuddy'
 import { uploadToOSS } from '@/services/oss'
 import { getCompletedCount } from '@/services/wishlist'
+import {
+  themeStyle,
+  getSavedTheme,
+  saveTheme,
+  applyTheme,
+  getThemeList,
+  type Theme
+} from '@/utils/theme'
 
 const userInfo = ref({
   name: '猪猪主人',
@@ -147,6 +196,9 @@ interface OrderDateGroup {
 
 const orderGroups = ref<OrderDateGroup[]>([])
 const showProfileEditor = ref(false)
+const showSettingsModal = ref(false)
+const currentThemeKey = ref(getSavedTheme())
+const themeList = ref<Theme[]>(getThemeList())
 const profileForm = ref({
   nickname: '',
   avatar: ''
@@ -302,8 +354,28 @@ const saveWechatProfile = async () => {
   }
 }
 
-const goToSettings = () => {
-  uni.navigateTo({ url: '/pages/about/index' })
+const openSettings = () => {
+  currentThemeKey.value = getSavedTheme()
+  showSettingsModal.value = true
+}
+
+const closeSettings = () => {
+  showSettingsModal.value = false
+}
+
+const selectTheme = (key: string) => {
+  currentThemeKey.value = key
+  applyTheme(key)
+  saveTheme(key)
+}
+
+const openBeian = () => {
+  uni.setClipboardData({
+    data: 'https://beian.miit.gov.cn/',
+    success: () => {
+      uni.showToast({ title: '工信部网址已复制，请在浏览器打开', icon: 'none' })
+    }
+  })
 }
 
 const goToDishDetail = (dish: OrderDish) => {
@@ -355,7 +427,7 @@ const handleTabChange = (index: number) => {
 <style scoped>
 .container {
   min-height: 100vh;
-  background: #F8F5F6;
+  background: var(--theme-bg);
   display: flex;
   flex-direction: column;
 }
@@ -379,7 +451,7 @@ const handleTabChange = (index: number) => {
 .settings-btn {
   width: 40px;
   height: 40px;
-  background: rgba(255, 194, 204, 0.2);
+  background: var(--theme-primary-light);
   border-radius: 50%;
   display: flex;
   align-items: center;
@@ -410,7 +482,7 @@ const handleTabChange = (index: number) => {
   padding: 24px;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(255, 194, 204, 0.1);
+  border: 1px solid var(--theme-primary-lighter);
   display: flex;
   align-items: center;
 }
@@ -424,7 +496,7 @@ const handleTabChange = (index: number) => {
   width: 80px;
   height: 80px;
   border-radius: 50%;
-  border: 2px solid #ffc2cc;
+  border: 2px solid var(--theme-primary);
   overflow: hidden;
   position: relative;
 }
@@ -435,7 +507,7 @@ const handleTabChange = (index: number) => {
 }
 
 .avatar-placeholder {
-  background: linear-gradient(135deg, #ffc2cc 0%, #f8a5b4 100%);
+  background: linear-gradient(135deg, var(--theme-primary) 0%, var(--theme-gradient-end) 100%);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -447,7 +519,7 @@ const handleTabChange = (index: number) => {
   right: -4px;
   width: 28px;
   height: 28px;
-  background: #ffc2cc;
+  background: var(--theme-primary);
   border-radius: 50%;
   border: 2px solid white;
   display: flex;
@@ -479,7 +551,7 @@ const handleTabChange = (index: number) => {
   align-items: center;
   gap: 4px;
   padding: 4px 8px;
-  background: rgba(255, 194, 204, 0.1);
+  background: var(--theme-primary-lighter);
   border-radius: 999px;
   margin-top: 8px;
 }
@@ -487,7 +559,7 @@ const handleTabChange = (index: number) => {
 .wish-count text:last-child {
   font-size: 12px;
   font-weight: 500;
-  color: #ffc2cc;
+  color: var(--theme-primary);
 }
 
 .sync-profile-btn {
@@ -497,8 +569,8 @@ const handleTabChange = (index: number) => {
   height: 28px;
   line-height: 28px;
   border-radius: 999px;
-  background: rgba(255, 194, 204, 0.16);
-  color: #f08da0;
+  background: var(--theme-primary-lighter);
+  color: var(--theme-primary-dark);
   font-size: 12px;
 }
 
@@ -512,7 +584,7 @@ const handleTabChange = (index: number) => {
   background: white;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(255, 194, 204, 0.1);
+  border: 1px solid var(--theme-primary-lighter);
 }
 
 .avatar-picker {
@@ -520,8 +592,8 @@ const handleTabChange = (index: number) => {
   line-height: 48px;
   margin: 0 0 12px;
   border-radius: 8px;
-  background: rgba(255, 194, 204, 0.12);
-  color: #f08da0;
+  background: var(--theme-primary-lighter);
+  color: var(--theme-primary-dark);
   font-size: 14px;
 }
 
@@ -540,7 +612,7 @@ const handleTabChange = (index: number) => {
   height: 44px;
   padding: 0 12px;
   border-radius: 8px;
-  background: #F8F5F6;
+  background: var(--theme-bg);
   font-size: 14px;
 }
 
@@ -560,12 +632,12 @@ const handleTabChange = (index: number) => {
 }
 
 .cancel-profile-btn {
-  background: #F8F5F6;
+  background: var(--theme-bg);
   color: #777;
 }
 
 .save-profile-btn {
-  background: #ffc2cc;
+  background: var(--theme-primary);
   color: white;
 }
 
@@ -587,7 +659,7 @@ const handleTabChange = (index: number) => {
   border-radius: 8px;
   text-align: center;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(255, 194, 204, 0.05);
+  border: 1px solid var(--theme-primary-lightest);
 }
 
 .stat-value {
@@ -622,7 +694,7 @@ const handleTabChange = (index: number) => {
 
 .view-all {
   font-size: 14px;
-  color: #ffc2cc;
+  color: var(--theme-primary);
   font-weight: 500;
 }
 
@@ -651,7 +723,7 @@ const handleTabChange = (index: number) => {
   padding: 16px;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  border: 1px solid rgba(255, 194, 204, 0.05);
+  border: 1px solid var(--theme-primary-lightest);
 }
 
 .order-card-header {
@@ -681,7 +753,7 @@ const handleTabChange = (index: number) => {
 }
 
 .dish-row:active {
-  background: rgba(255, 194, 204, 0.05);
+  background: var(--theme-primary-lightest);
 }
 
 .order-action {
@@ -691,7 +763,7 @@ const handleTabChange = (index: number) => {
   gap: 4px;
   padding: 6px 12px;
   border-radius: 999px;
-  background: #ffc2cc;
+  background: var(--theme-primary);
   color: white;
   font-size: 12px;
   font-weight: 600;
@@ -731,6 +803,152 @@ const handleTabChange = (index: number) => {
 .order-price text {
   font-size: 16px;
   font-weight: 700;
-  color: #ffc2cc;
+  color: var(--theme-primary);
+}
+
+/* Settings Modal */
+.settings-mask {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: flex-end;
+  z-index: 200;
+  animation: fadeIn 0.3s ease;
+}
+
+.settings-sheet {
+  width: 100%;
+  background: white;
+  border-radius: 20px 20px 0 0;
+  padding: 0 16px;
+  padding-bottom: calc(20px + env(safe-area-inset-bottom));
+  animation: slideUp 0.3s ease;
+  box-sizing: border-box;
+}
+
+.settings-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 20px 16px;
+  border-bottom: 1px solid rgba(243, 244, 246, 1);
+}
+
+.settings-title {
+  font-size: 18px;
+  font-weight: 700;
+  color: #111;
+}
+
+.settings-close {
+  width: 32px;
+  height: 32px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  background: rgba(243, 244, 246, 1);
+}
+
+.settings-body {
+  padding: 20px 16px;
+}
+
+.settings-section-title {
+  display: block;
+  font-size: 14px;
+  font-weight: 600;
+  color: #374151;
+  margin-bottom: 12px;
+}
+
+.theme-list {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 16px;
+}
+
+.theme-item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 8px;
+  border-radius: 12px;
+  border: 1px solid transparent;
+  background: var(--theme-bg);
+}
+
+.theme-item.active {
+  border-color: var(--theme-primary);
+  background: var(--theme-primary-lightest);
+}
+
+.theme-preview {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.theme-preview-dot {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+}
+
+.theme-name {
+  font-size: 12px;
+  color: #333;
+  font-weight: 500;
+}
+
+.theme-check {
+  position: absolute;
+  top: -4px;
+  right: -4px;
+  width: 18px;
+  height: 18px;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.beian {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid rgba(243, 244, 246, 1);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.beian-text {
+  font-size: 12px;
+  color: #777;
+}
+
+.beian-tip {
+  font-size: 11px;
+  color: #bbb;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slideUp {
+  from { transform: translateY(100%); }
+  to { transform: translateY(0); }
 }
 </style>

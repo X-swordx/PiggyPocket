@@ -1,5 +1,5 @@
 <template>
-<view class="tab-bar">
+<view class="tab-bar" :style="themeStyle">
   <view
     v-for="(tab, index) in tabs"
     :key="index"
@@ -18,6 +18,7 @@
 <script setup lang="ts">
 import { defineProps, defineEmits } from 'vue'
 import uniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
+import { themeStyle } from '@/utils/theme'
 
 interface Tab {
   label: string
@@ -54,7 +55,7 @@ const handleTabClick = (index: number) => {
   padding-bottom: calc(12px + env(safe-area-inset-bottom));
   background: rgba(255, 255, 255, 0.95);
   backdrop-filter: blur(10px);
-  border-top: 1px solid rgba(255, 194, 204, 0.2);
+  border-top: 1px solid var(--theme-primary-light);
   display: flex;
   justify-content: space-around;
   align-items: center;
@@ -81,7 +82,7 @@ const handleTabClick = (index: number) => {
 }
 
 .tab-item.active .tab-icon {
-  background: rgba(255, 194, 204, 0.2);
+  background: var(--theme-primary-light);
 }
 
 .tab-label {

@@ -1,5 +1,5 @@
 <template>
-  <view class="page">
+  <view class="page" :style="themeStyle">
     <view class="top-bar">
       <view class="top-inner">
         <button class="icon-button back-button" @click="goBack">
@@ -89,6 +89,7 @@ import {
   type DiningGroupMember,
   type FoodieUser
 } from '@/services/foodieBuddy'
+import { themeStyle } from '@/utils/theme'
 
 const currentUser = ref<FoodieUser | null>(null)
 const currentGroup = ref<DiningGroup | null>(null)
@@ -200,14 +201,14 @@ onShareAppMessage(() => ({
 <style scoped>
 .page {
   min-height: 100vh;
-  background: #f8f5f6;
+  background: var(--theme-bg);
   color: #1f1a1b;
 }
 
 .top-bar {
   padding-top: calc(var(--status-bar-height) + 12px);
   background: rgba(255, 255, 255, 0.94);
-  border-bottom: 1px solid rgba(255, 194, 204, 0.12);
+  border-bottom: 1px solid var(--theme-primary-lighter);
   box-shadow: 0 4px 16px rgba(31, 26, 27, 0.06);
 }
 
@@ -252,7 +253,7 @@ onShareAppMessage(() => ({
 }
 
 .primary-icon {
-  color: #ffc2cc;
+  color: var(--theme-primary);
   font-size: 36px;
 }
 
@@ -269,7 +270,7 @@ onShareAppMessage(() => ({
 }
 
 .soft-glow {
-  box-shadow: 0 4px 20px -5px rgba(255, 194, 204, 0.4);
+  box-shadow: 0 4px 20px -5px rgba(var(--theme-primary-rgb), 0.4);
 }
 
 .summary-card {
@@ -277,7 +278,7 @@ onShareAppMessage(() => ({
   margin-top: 16px;
   padding: 24px;
   border-radius: 8px;
-  background: #ffc2cc;
+  background: var(--theme-primary);
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -374,7 +375,7 @@ onShareAppMessage(() => ({
 .buddy-item {
   padding: 16px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 194, 204, 0.1);
+  border: 1px solid var(--theme-primary-lighter);
   background: #ffffff;
   display: flex;
   align-items: center;
@@ -401,7 +402,7 @@ onShareAppMessage(() => ({
 }
 
 .avatar-placeholder {
-  background: linear-gradient(135deg, #ffc2cc, #f3b7c1);
+  background: linear-gradient(135deg, var(--theme-primary), var(--theme-gradient-end));
   display: flex;
   align-items: center;
   justify-content: center;
@@ -460,8 +461,8 @@ onShareAppMessage(() => ({
   margin-top: 24px;
   padding: 32px;
   border-radius: 12px;
-  border: 1px solid rgba(255, 194, 204, 0.2);
-  background: linear-gradient(135deg, rgba(255, 194, 204, 0.4), #ffffff);
+  border: 1px solid var(--theme-primary-light);
+  background: linear-gradient(135deg, rgba(var(--theme-primary-rgb), 0.4), #ffffff);
   display: flex;
   flex-direction: column;
   align-items: center;
@@ -489,7 +490,7 @@ onShareAppMessage(() => ({
   height: 80px;
   margin-bottom: 8px;
   border-radius: 50%;
-  background: rgba(255, 194, 204, 0.2);
+  background: var(--theme-primary-light);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -497,7 +498,7 @@ onShareAppMessage(() => ({
 }
 
 .invite-symbol {
-  color: #ffc2cc;
+  color: var(--theme-primary);
   font-size: 46px;
   line-height: 48px;
   font-weight: 700;
@@ -530,14 +531,14 @@ onShareAppMessage(() => ({
   padding: 0 32px;
   border: 0;
   border-radius: 999px;
-  background: #ffc2cc;
+  background: var(--theme-primary);
   color: #321018;
   font-size: 16px;
   font-weight: 700;
   display: flex;
   align-items: center;
   gap: 8px;
-  box-shadow: 0 10px 18px rgba(255, 194, 204, 0.3);
+  box-shadow: 0 10px 18px rgba(var(--theme-primary-rgb), 0.3);
 }
 
 .send-icon {
@@ -550,7 +551,7 @@ onShareAppMessage(() => ({
   height: 96px;
   margin-top: 24px;
   border-radius: 8px;
-  border: 1px solid rgba(255, 194, 204, 0.05);
+  border: 1px solid var(--theme-primary-lightest);
   background: rgba(248, 245, 246, 0.5);
   opacity: 0.6;
 }
