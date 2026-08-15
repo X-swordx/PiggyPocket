@@ -37,6 +37,10 @@
           class="recipe-input"
           placeholder="起个响亮的名字，如：秘制红烧肉"
         />
+        <view class="ai-search-btn" :class="{ disabled: !recipeName.trim() }" @click="openAiSearch">
+          <uni-icons type="search" size="16" :color="recipeName.trim() ? '#fff' : '#bbb'" />
+          <text>AI 搜索用料和步骤</text>
+        </view>
       </view>
 
       <!-- Ingredients Section -->
@@ -152,6 +156,7 @@
     </view>
 
     <PrivacyModal ref="privacyModal" />
+    <AiRecipeModal ref="aiModal" @fill="onAiFill" />
   </view>
 </template>
 
@@ -159,6 +164,7 @@
 import { ref, computed, onMounted } from 'vue'
 import uniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
 import PrivacyModal from '@/components/PrivacyModal.vue'
+import AiRecipeModal from '@/components/AiRecipeModal.vue'
 import {
   createDish,
   getCurrentUser,
@@ -177,6 +183,7 @@ const recipeName = ref('')
 const coverImage = ref('')
 const publishing = ref(false)
 const privacyModal = ref<InstanceType<typeof PrivacyModal>>()
+const aiModal = ref<InstanceType<typeof AiRecipeModal>>()
 
 const currentUser = ref<FoodieUser | null>(null)
 const groups = ref<DiningGroup[]>([])
@@ -288,6 +295,48 @@ const removeStep = (index: number) => {
   if (steps.value.length > 1) {
     steps.value.splice(index, 1)
   }
+}
+
+const openAiSearch = () => {
+  const name = recipeName.value.trim()
+  if (!name) {
+    uni.showToast({ title: '请先输入菜谱名称', icon: 'none' })
+    return
+  }
+  aiModal.value?.open(name)
+}
+
+const hasManualContent = () =>
+  ingredients.value.some((item) => item.name.trim() || item.amount.trim()) ||
+  steps.value.some((item) => item.text.trim())
+
+const applyAiRecipe = (payload: { ingredients: Ingredient[]; steps: string[] }) => {
+  if (payload.ingredients.length) {
+    ingredients.value = payload.ingredients.map((item) => ({
+      name: item.name,
+      amount: item.amount
+    }))
+  }
+  if (payload.steps.length) {
+    steps.value = payload.steps.map((text) => ({ text }))
+  }
+  uni.showToast({ title: '已填充', icon: 'success' })
+}
+
+const onAiFill = (payload: { ingredients: Ingredient[]; steps: string[] }) => {
+  // 已经手填过内容时先确认，避免直接抹掉用户写的东西
+  if (!hasManualContent()) {
+    applyAiRecipe(payload)
+    return
+  }
+  uni.showModal({
+    title: '覆盖已填写内容？',
+    content: '填充会替换当前的用料和烹饪步骤',
+    confirmText: '覆盖',
+    success: (res) => {
+      if (res.confirm) applyAiRecipe(payload)
+    }
+  })
 }
 
 const addStepImage = async (index: number) => {
@@ -534,6 +583,25 @@ const publishRecipe = async () => {
   border-radius: 12px;
   padding: 16px;
   font-size: 16px;
+}
+
+.ai-search-btn {
+  margin-top: 12px;
+  height: 44px;
+  background: var(--theme-primary);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.ai-search-btn.disabled {
+  background: #eee;
+  color: #bbb;
 }
 
 .ingredients-section, .steps-section, .category-section, .group-section {
