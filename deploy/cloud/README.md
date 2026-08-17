@@ -188,6 +188,8 @@ sudo chown -R $(whoami):$(whoami) /home/admin/PiggyPocket
 ```bash
 cd /home/admin/PiggyPocket
 git pull
+
+cd deploy/cloud
 docker compose -p piggy-pocket down
 docker compose -p piggy-pocket up -d --build
 ```
@@ -196,7 +198,53 @@ docker compose -p piggy-pocket up -d --build
 > 如果 api 起不来，先看日志确认是不是迁移失败：
 > `docker compose -p piggy-pocket logs api`
 
-### 4.6 其他方式
+### 4.6 只有后端接口修改时的快速部署
+
+适用于：**只改了 `nest-service/src` 下的接口代码**（controller / service / dto / 业务逻辑），没有新增 migration，没有改 `mobile`、`admin`、`.env`、`docker-compose.yml`。
+
+这种情况**不需要 `down` 整套服务**，只重建 api 一个容器，MySQL 和 Nginx Proxy Manager 保持运行，外网只在 api 重启的几秒内短暂 502：
+
+```bash
+cd /home/admin/PiggyPocket
+git pull
+
+cd deploy/cloud
+docker compose -p piggy-pocket up -d --build api
+```
+
+验证：
+
+```bash
+# 看启动日志，确认没有报错
+docker compose -p piggy-pocket logs -f api
+
+# 本地打一下接口
+curl http://127.0.0.1:3000/api
+```
+
+> api 容器启动时依然会执行 `migration:run:prod`，迁移是幂等的，没有新迁移就直接跳过，不影响数据。
+
+小程序端无需重新发布（接口地址没变），除了以下情况：
+
+| 改动内容                                | 额外操作                                                        |
+| --------------------------------------- | --------------------------------------------------------------- |
+| 改了接口路径 / 出入参结构               | mobile 端需同步改并重新 `npm run build:mp-weixin` 发布          |
+| 新增了 `.env` 环境变量                  | 先编辑 `.env`，再执行上面的 `up -d --build api`（会重建容器生效）|
+| 新增了 migration（表结构变更）          | 同样用上面的命令即可，启动时自动迁移；建议先 `./backup.sh` 备份 |
+| 改了 `docker-compose.yml`               | 用 `docker compose -p piggy-pocket up -d` 让所有受影响服务生效  |
+| 只改了 `admin` 前端                     | `docker compose -p piggy-pocket up -d --build admin`            |
+
+回滚到上一个版本：
+
+```bash
+cd /home/admin/PiggyPocket
+git log --oneline -5          # 找到上一个正常的 commit
+git checkout <commit-id>
+cd deploy/cloud
+docker compose -p piggy-pocket up -d --build api
+```
+
+### 4.7 其他方式
 
 | 方式                        | 适用场景                                        |
 | --------------------------- | ----------------------------------------------- |
