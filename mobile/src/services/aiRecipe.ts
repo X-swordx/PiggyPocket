@@ -1,4 +1,4 @@
-import { API_BASE_URL } from './request'
+import { API_BASE_URL, request } from './request'
 
 export interface AiRecipeIngredient {
   name: string
@@ -164,4 +164,16 @@ export const streamRecipe = (
       task?.abort?.()
     }
   }
+}
+
+/**
+ * 估算每人份热量（千卡）。普通请求，不走上面那套流式解码。
+ * 返回 0 表示 AI 估不出来。
+ */
+export const estimateCalories = (name: string, ingredients: AiRecipeIngredient[]) => {
+  return request<{ calories: number }>({
+    url: '/ai/calories',
+    method: 'POST',
+    data: { name, ingredients }
+  })
 }

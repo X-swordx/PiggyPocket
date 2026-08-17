@@ -1,7 +1,8 @@
-import { Controller, Get, Logger, Query, Res } from '@nestjs/common';
+import { Body, Controller, Get, Logger, Post, Query, Res } from '@nestjs/common';
 import type { Response } from 'express';
 import { AiService } from './ai.service';
 import { GenerateRecipeDto } from './dto/generate-recipe.dto';
+import { EstimateCaloriesDto } from './dto/estimate-calories.dto';
 
 @Controller('ai')
 export class AiController {
@@ -53,5 +54,15 @@ export class AiController {
     } finally {
       if (!clientGone) res.end();
     }
+  }
+
+  /** 根据用料估算每人份热量，发布菜谱时调用。calories 为 0 表示估不出来。 */
+  @Post('calories')
+  async estimateCalories(
+    @Body() dto: EstimateCaloriesDto,
+  ): Promise<{ calories: number }> {
+    return {
+      calories: await this.aiService.estimateCalories(dto.name, dto.ingredients),
+    };
   }
 }

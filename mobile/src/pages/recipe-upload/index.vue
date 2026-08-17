@@ -165,6 +165,7 @@ import { ref, computed, onMounted } from 'vue'
 import uniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
 import PrivacyModal from '@/components/PrivacyModal.vue'
 import AiRecipeModal from '@/components/AiRecipeModal.vue'
+import { estimateCalories } from '@/services/aiRecipe'
 import {
   createDish,
   getCurrentUser,
@@ -408,6 +409,27 @@ const buildDescription = (validIngredients: Ingredient[], validSteps: Step[]) =>
     .join('\n')
 }
 
+/**
+ * 发布前根据用料估算每人份能量。
+ * 估算失败不阻断发布：能量只是附加信息，用户还能在菜品详情页手动改。
+ */
+const resolveCalories = async (name: string, validIngredients: Ingredient[]) => {
+  if (!validIngredients.length) return undefined
+  try {
+    uni.showLoading({ title: '正在估算能量...' })
+    const { calories } = await estimateCalories(
+      name,
+      validIngredients.map((item) => ({ name: item.name.trim(), amount: item.amount.trim() }))
+    )
+    return calories > 0 ? calories : undefined
+  } catch (err) {
+    console.error('estimateCalories fail', err)
+    return undefined
+  } finally {
+    uni.hideLoading()
+  }
+}
+
 const publishRecipe = async () => {
   if (publishing.value) return
   const name = recipeName.value.trim()
@@ -437,12 +459,14 @@ const publishRecipe = async () => {
 
   publishing.value = true
   try {
+    const calories = await resolveCalories(name, validIngredients)
     await createDish({
       name,
       description: buildDescription(validIngredients, validSteps),
       categoryId: selectedCategoryId.value,
       image: coverImage.value,
       status: 1,
+      calories,
       cookingTime: validSteps.length ? `${validSteps.length * 5} 分钟` : undefined,
       ingredients: validIngredients.map((item) => ({
         name: item.name.trim(),
