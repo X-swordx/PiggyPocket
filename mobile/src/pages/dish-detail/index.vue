@@ -134,6 +134,25 @@
         <view class="dish-name-section">
           <text v-if="!editing" class="dish-name">{{ dish.name }}</text>
           <input v-else class="edit-input name-input" v-model="editForm.name" placeholder="菜品名称" />
+          <view v-if="editing" class="ai-search-btn" :class="{ disabled: !editForm.name.trim() }" @click="openAiSearch">
+            <uni-icons type="search" size="16" :color="editForm.name.trim() ? '#fff' : '#bbb'" />
+            <text>AI 搜索用料和步骤</text>
+          </view>
+        </view>
+
+        <!-- Dish Category (edit mode only) -->
+        <view class="category-section" v-if="editing">
+          <view class="section-header">
+            <view class="header-line"></view>
+            <text>菜品分类</text>
+          </view>
+          <view class="category-list">
+            <view v-for="cat in categories" :key="cat.id" class="tag"
+              :class="{ active: editForm.categoryId === cat.id }" @click="editForm.categoryId = cat.id">
+              <text>{{ cat.name }}</text>
+            </view>
+            <text v-if="categoriesLoaded && !categories.length" class="category-empty">暂无可选分类，请联系管理员配置</text>
+          </view>
         </view>
 
         <!-- Dish Info -->
@@ -241,6 +260,8 @@
     </view>
 
     <PrivacyModal ref="privacyModal" />
+    <AiRecipeModal ref="aiModal" @fill="onAiFill" />
+
   </view>
 </template>
 
@@ -249,11 +270,14 @@ import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import uniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
 import PrivacyModal from '@/components/PrivacyModal.vue'
+import AiRecipeModal from '@/components/AiRecipeModal.vue'
 import {
   getCurrentUser,
   getDish,
+  getDishCategories,
   updateDish,
   deleteDish,
+  type DishCategory,
   type FoodieDish,
   type FoodieUser
 } from '@/services/foodieBuddy'
@@ -275,6 +299,7 @@ interface Dish {
   steps: string[]
   bgColor?: string
   image?: string
+  categoryId?: number | null
 }
 
 interface FoodItem {
@@ -320,6 +345,20 @@ const readonly = ref(false)
 const editing = ref(false)
 const saving = ref(false)
 const privacyModal = ref<InstanceType<typeof PrivacyModal>>()
+const aiModal = ref<InstanceType<typeof AiRecipeModal>>()
+
+const categories = ref<DishCategory[]>([])
+const categoriesLoaded = ref(false)
+
+const loadCategories = async () => {
+  try {
+    categories.value = await getDishCategories()
+  } catch (err: any) {
+    uni.showToast({ title: err.message || '加载菜品分类失败', icon: 'none' })
+  } finally {
+    categoriesLoaded.value = true
+  }
+}
 
 interface EditForm {
   name: string
@@ -328,6 +367,7 @@ interface EditForm {
   ingredients: Array<{ name: string; amount: string }>
   steps: string[]
   image: string
+  categoryId: number | null
 }
 
 const editForm = ref<EditForm>({
@@ -336,7 +376,8 @@ const editForm = ref<EditForm>({
   time: '',
   ingredients: [],
   steps: [],
-  image: ''
+  image: '',
+  categoryId: null
 })
 
 const displayIngredients = computed(() => editing.value ? editForm.value.ingredients : dish.value.ingredients)
@@ -349,9 +390,11 @@ const startEditing = () => {
     time: dish.value.time === '未知' ? '' : dish.value.time,
     ingredients: dish.value.ingredients.length ? dish.value.ingredients.map(i => ({ ...i })) : [],
     steps: dish.value.steps.length ? [...dish.value.steps] : [],
-    image: dish.value.image || ''
+    image: dish.value.image || '',
+    categoryId: dish.value.categoryId ?? null
   }
   editing.value = true
+  if (!categoriesLoaded.value) loadCategories()
 }
 
 const cancelEditing = () => {
@@ -416,6 +459,45 @@ const removeStep = (index: number) => {
   editForm.value.steps.splice(index, 1)
 }
 
+const openAiSearch = () => {
+  const name = editForm.value.name.trim()
+  if (!name) {
+    uni.showToast({ title: '请先输入菜品名称', icon: 'none' })
+    return
+  }
+  aiModal.value?.open(name)
+}
+
+const hasManualContent = () =>
+  editForm.value.ingredients.some((item) => item.name.trim() || item.amount.trim()) ||
+  editForm.value.steps.some((item) => item.trim())
+
+const applyAiRecipe = (payload: { ingredients: Array<{ name: string; amount: string }>; steps: string[] }) => {
+  if (payload.ingredients.length) {
+    editForm.value.ingredients = payload.ingredients.map((item) => ({ ...item }))
+  }
+  if (payload.steps.length) {
+    editForm.value.steps = [...payload.steps]
+  }
+  uni.showToast({ title: '已填充', icon: 'success' })
+}
+
+const onAiFill = (payload: { ingredients: Array<{ name: string; amount: string }>; steps: string[] }) => {
+  // 已经有用料/步骤时先确认，避免直接抹掉原有内容
+  if (!hasManualContent()) {
+    applyAiRecipe(payload)
+    return
+  }
+  uni.showModal({
+    title: '覆盖已填写内容？',
+    content: '填充会替换当前的用料和烹饪步骤',
+    confirmText: '覆盖',
+    success: (res) => {
+      if (res.confirm) applyAiRecipe(payload)
+    }
+  })
+}
+
 const saveDish = async () => {
   if (saving.value) return
   if (!editForm.value.name.trim()) {
@@ -434,6 +516,7 @@ const saveDish = async () => {
       ingredients: validIngredients.length ? validIngredients : undefined,
       steps: validSteps.length ? validSteps : undefined,
       image: editForm.value.image || undefined,
+      categoryId: editForm.value.categoryId ?? undefined,
     }
 
     if (!currentUser.value) {
@@ -459,7 +542,8 @@ const mapDish = (item: FoodieDish): Dish => ({
   ingredients: item.ingredients || [],
   steps: item.steps?.length ? item.steps : (item.description ? [item.description] : []),
   bgColor: item.bgColor,
-  image: item.image
+  image: item.image,
+  categoryId: item.categoryId
 })
 
 const loadDish = async (id: number) => {
@@ -1015,7 +1099,8 @@ const deleteFood = () => {
 
 .info-section,
 .ingredients-section,
-.steps-section {
+.steps-section,
+.category-section {
   padding: 24px 16px 0;
 }
 
@@ -1177,6 +1262,50 @@ const deleteFood = () => {
   font-size: 24px;
   font-weight: 700;
   padding: 12px 16px;
+}
+
+.ai-search-btn {
+  margin-top: 12px;
+  height: 44px;
+  background: var(--theme-primary);
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  font-size: 14px;
+  font-weight: 600;
+  color: #fff;
+}
+
+.ai-search-btn.disabled {
+  background: #eee;
+  color: #bbb;
+}
+
+.category-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag {
+  padding: 8px 16px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 500;
+  background: white;
+  border: 1px solid var(--theme-primary-light);
+}
+
+.tag.active {
+  background: var(--theme-primary);
+  color: white;
+}
+
+.category-empty {
+  font-size: 12px;
+  color: #777;
 }
 
 .edit-input-wrap {
