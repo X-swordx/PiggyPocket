@@ -205,11 +205,14 @@ const profileForm = ref({
 })
 let hasPromptedWechatProfile = false
 
+// 平移到东八区后用 UTC getter 取值，避免手机时区非东八区时产生偏差
+const toBeijing = (date: string | Date) => new Date(new Date(date).getTime() + 8 * 60 * 60 * 1000)
+
 const formatDate = (date: string | Date) => {
-  const d = new Date(date)
-  const m = String(d.getMonth() + 1).padStart(2, '0')
-  const day = String(d.getDate()).padStart(2, '0')
-  return `${d.getFullYear()}-${m}-${day}`
+  const d = toBeijing(date)
+  const m = String(d.getUTCMonth() + 1).padStart(2, '0')
+  const day = String(d.getUTCDate()).padStart(2, '0')
+  return `${d.getUTCFullYear()}-${m}-${day}`
 }
 
 // 老订单没有 cookDate，回退用创建日期分组
@@ -219,7 +222,9 @@ const dateLabel = (date: string) => (date === formatDate(new Date()) ? '今天' 
 
 const formatTime = (dateText: string) => {
   const date = new Date(dateText)
-  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`
+  if (isNaN(date.getTime())) return dateText
+  const beijing = toBeijing(date)
+  return `${String(beijing.getUTCHours()).padStart(2, '0')}:${String(beijing.getUTCMinutes()).padStart(2, '0')}`
 }
 
 const mapOrder = (order: FoodieOrder): Order => {

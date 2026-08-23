@@ -12,6 +12,9 @@ RUN npm run build
 # 运行阶段
 FROM node:20-alpine
 
+RUN apk add --no-cache tzdata
+ENV TZ=Asia/Shanghai
+
 WORKDIR /app
 
 ENV NODE_ENV=production

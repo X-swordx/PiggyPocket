@@ -25,7 +25,8 @@ import { AiModule } from './modules/ai/ai.module';
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
         synchronize: false,
         logging: true,
-        timezone: '+08:00',
+        // 全链路 UTC：MySQL 以 UTC 生成 CURRENT_TIMESTAMP，客户端也按 UTC 解析
+        timezone: 'Z',
       }),
       inject: [ConfigService],
     }),
