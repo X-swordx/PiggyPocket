@@ -21,7 +21,7 @@
           <uni-icons type="sound-filled" size="20" color="#fff" />
         </view>
         <view class="announcement-text">
-          <text>最新：食品追踪新技巧已更新！</text>
+          <text>最新：到期管家上线，家里什么都能记到期！</text>
         </view>
         <view class="announcement-arrow">
           <uni-icons type="right" size="20" color="#999" />
@@ -30,46 +30,6 @@
 
       <!-- Featured Cards -->
       <view class="cards">
-        <!-- Food Tracker Card -->
-        <view class="card" @click="navigateTo('/pages/expiry/index')">
-          <view class="card-image">
-            <view class="card-gradient"></view>
-            <image class="card-img" src="/static/milk.png" mode="aspectFill" />
-            <view class="card-icon-overlay">
-              <uni-icons type="list" size="24" color="var(--theme-primary)" />
-            </view>
-          </view>
-          <view class="card-content">
-            <text class="card-title">临期食品</text>
-            <view class="card-footer">
-              <text class="card-desc">不再让零食过期。节省开支，减少浪费。</text>
-              <view class="card-btn">
-                <text>打开</text>
-              </view>
-            </view>
-          </view>
-        </view>
-
-        <!-- Bucket List Card -->
-        <view class="card" @click="navigateTo('/pages/wishlist/index')">
-          <view class="card-image">
-            <view class="card-gradient"></view>
-            <image class="card-img" src="/static/buddha.png" mode="aspectFill" />
-            <view class="card-icon-overlay">
-              <uni-icons type="heart-filled" size="24" color="var(--theme-primary)" />
-            </view>
-          </view>
-          <view class="card-content">
-            <text class="card-title">心愿清单</text>
-            <view class="card-footer">
-              <text class="card-desc">怀揣梦想，记录微小进步，庆祝你的成长。</text>
-              <view class="card-btn">
-                <text>查看</text>
-              </view>
-            </view>
-          </view>
-        </view>
-
         <!-- Daily Menu Card -->
         <view class="card" @click="navigateTo('/pages/food-menu/index')">
           <view class="card-image">
@@ -82,9 +42,47 @@
           <view class="card-content">
             <text class="card-title">美食菜单</text>
             <view class="card-footer">
-              <text class="card-desc">今天吃什么？根据心情为你推荐精选菜谱。</text>
+              <text class="card-desc">上传家常菜谱，AI匹配做菜信息，和饭搭子共享美食</text>
               <view class="card-btn">
                 <text>探索</text>
+              </view>
+            </view>
+          </view>
+        </view>
+        <!-- Expiry Keeper Card -->
+        <view class="card" @click="navigateTo('/pages/expiry/index')">
+          <view class="card-image">
+            <view class="card-gradient"></view>
+            <image class="card-img" src="/static/milk.png" mode="aspectFill" />
+            <view class="card-icon-overlay">
+              <uni-icons type="list" size="24" color="var(--theme-primary)" />
+            </view>
+          </view>
+          <view class="card-content">
+            <text class="card-title">到期管家</text>
+            <view class="card-footer">
+              <text class="card-desc">食品药品化妆品，家里什么时候到期我都替你记着</text>
+              <view class="card-btn">
+                <text>打开</text>
+              </view>
+            </view>
+          </view>
+        </view>
+        <!-- Bucket List Card -->
+        <view class="card" @click="navigateTo('/pages/wishlist/index')">
+          <view class="card-image">
+            <view class="card-gradient"></view>
+            <image class="card-img" src="/static/buddha.png" mode="aspectFill" />
+            <view class="card-icon-overlay">
+              <uni-icons type="heart-filled" size="24" color="var(--theme-primary)" />
+            </view>
+          </view>
+          <view class="card-content">
+            <text class="card-title">心愿清单</text>
+            <view class="card-footer">
+              <text class="card-desc">分类收好每个心愿，勾选打卡，心愿清单陪你一件件实现</text>
+              <view class="card-btn">
+                <text>查看</text>
               </view>
             </view>
           </view>

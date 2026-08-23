@@ -10,8 +10,8 @@ function Dashboard() {
   return import('@/views/piggy/Dashboard.vue')
 }
 
-function ExpiryFoodList() {
-  return import('@/views/piggy/ExpiryFoodList.vue')
+function ExpiryItemList() {
+  return import('@/views/piggy/ExpiryItemList.vue')
 }
 
 function WishList() {
@@ -93,25 +93,25 @@ const content: RouteRecordMainRaw = {
   },
   children: [
     {
-      path: '/expiry-food',
+      path: '/expiry-item',
       component: Layout,
-      redirect: '/expiry-food/list',
-      name: 'expiryFood',
+      redirect: '/expiry-item/list',
+      name: 'expiryItem',
       meta: {
-        title: '临期食品',
+        title: '到期管家',
         icon: 'i-lucide:refrigerator',
         auth: 'admin.expiryFood:view',
       },
       children: [
         {
           path: 'list',
-          name: 'expiryFoodList',
-          component: ExpiryFoodList,
+          name: 'expiryItemList',
+          component: ExpiryItemList,
           meta: {
-            title: '临期食品',
+            title: '到期管家',
             menu: false,
             breadcrumb: false,
-            activeMenu: '/expiry-food',
+            activeMenu: '/expiry-item',
           },
         },
       ],

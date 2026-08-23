@@ -19,7 +19,7 @@ import { AdminAuthGuard } from './admin-auth.guard';
 import { AdminRoleGuard } from './admin-role.guard';
 import { AdminResponseInterceptor } from './admin-response.interceptor';
 import { AdminListQueryDto } from './dto/admin-list-query.dto';
-import { AdminExpiryFoodService } from './admin-expiry-food.service';
+import { AdminExpiryItemService } from './admin-expiry-item.service';
 import { AdminWishService } from './admin-wish.service';
 import { AdminDishService } from './admin-dish.service';
 import { AdminDishCategoryService } from './admin-dish-category.service';
@@ -27,8 +27,8 @@ import { AdminUserService } from './admin-user.service';
 import { AdminOrderService, OrderStatus } from './admin-order.service';
 import { AdminDiningGroupService } from './admin-dining-group.service';
 import { OssService } from '../oss/oss.service';
-import { CreateExpiryFoodDto } from '../expiry/dto/create-expiry-food.dto';
-import { UpdateExpiryFoodDto } from '../expiry/dto/update-expiry-food.dto';
+import { CreateExpiryItemDto } from '../expiry/dto/create-expiry-item.dto';
+import { UpdateExpiryItemDto } from '../expiry/dto/update-expiry-item.dto';
 import { CreateWishDto } from '../wish/dto/create-wish.dto';
 import { UpdateWishDto } from '../wish/dto/update-wish.dto';
 import { CreateDishDto } from '../foodie-buddy/dish/dto/create-dish.dto';
@@ -177,7 +177,7 @@ class UserUpdateDto {
 @UseInterceptors(AdminResponseInterceptor)
 export class AdminResourceController {
   constructor(
-    private readonly expiryService: AdminExpiryFoodService,
+    private readonly expiryService: AdminExpiryItemService,
     private readonly wishService: AdminWishService,
     private readonly dishService: AdminDishService,
     private readonly dishCategoryService: AdminDishCategoryService,
@@ -246,46 +246,58 @@ export class AdminResourceController {
     return this.ossService.generatePostPolicy(dir);
   }
 
-  // ================== 临期食品 ==================
+  // ================== 到期管家 ==================
 
-  @Get('expiry-foods')
-  @ApiOperation({ summary: '临期食品列表' })
-  listFoods(@Query() query: ExpiryQueryDto) {
+  @Get('expiry-items')
+  @ApiOperation({ summary: '到期物品列表' })
+  listItems(@Query() query: ExpiryQueryDto) {
     return this.expiryService.findAll(query);
   }
 
-  @Get('expiry-foods/:id')
-  getFood(@Param('id', ParseIntPipe) id: number) {
+  @Get('expiry-items/:id')
+  getItem(@Param('id', ParseIntPipe) id: number) {
     return this.expiryService.findOne(id);
   }
 
-  @Post('expiry-foods')
-  createFood(@Req() req: any, @Body() dto: CreateExpiryFoodDto) {
+  @Post('expiry-items')
+  createItem(@Req() req: any, @Body() dto: CreateExpiryItemDto) {
     return this.expiryService.create(this.ctx(req), dto);
   }
 
-  @Put('expiry-foods/:id')
-  updateFood(
+  @Put('expiry-items/:id')
+  updateItem(
     @Req() req: any,
     @Param('id', ParseIntPipe) id: number,
-    @Body() dto: UpdateExpiryFoodDto,
+    @Body() dto: UpdateExpiryItemDto,
   ) {
     return this.expiryService.update(this.ctx(req), id, dto);
   }
 
-  @Delete('expiry-foods/:id')
-  removeFood(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
+  @Delete('expiry-items/:id')
+  removeItem(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
     return this.expiryService.remove(this.ctx(req), id);
   }
 
-  @Delete('expiry-foods/expired/batch')
-  @ApiOperation({ summary: '批量删除已过期食品，可选按 userId 过滤' })
-  removeExpiredFoods(
+  @Delete('expiry-items/expired/batch')
+  @ApiOperation({ summary: '批量删除已过期物品，可选按 userId 过滤' })
+  removeExpiredItems(
     @Req() req: any,
     @Query('userId') userId?: string,
   ) {
     const uid = userId ? Number(userId) : undefined;
     return this.expiryService.removeExpired(this.ctx(req), uid);
+  }
+
+  @Post('expiry-items/reindex')
+  @ApiOperation({ summary: '重建到期物品的向量索引（历史数据补向量用）' })
+  reindexItems(@Req() req: any) {
+    return this.expiryService.reindex(this.ctx(req));
+  }
+
+  @Post('expiry-items/reminder/run')
+  @ApiOperation({ summary: '立即执行一次到期提醒扫描' })
+  runItemReminder(@Req() req: any) {
+    return this.expiryService.runReminder(this.ctx(req));
   }
 
   // ================== 心愿 ==================

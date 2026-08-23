@@ -87,7 +87,7 @@ async function onSaveNickname() {
         <ElRow :gutter="12" class="mb-4">
           <ElCol :span="6">
             <div class="p-3 rounded border bg-muted/40">
-              <ElStatistic :value="user.foodCount" title="临期食品" />
+              <ElStatistic :value="user.itemCount" title="到期物品" />
             </div>
           </ElCol>
           <ElCol :span="6">

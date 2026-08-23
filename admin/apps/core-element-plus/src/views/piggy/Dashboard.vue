@@ -74,7 +74,7 @@ onMounted(load)
     <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
       <ElCard v-for="item in [
         { label: '用户总数', value: cards?.userTotal ?? 0, sub: `今日新增 ${cards?.newUsersToday ?? 0}`, icon: 'i-lucide:users' },
-        { label: '临期食品', value: cards?.foodTotal ?? 0, sub: `3天内到期 ${cards?.expiringSoon ?? 0}`, icon: 'i-lucide:refrigerator' },
+        { label: '到期管家', value: cards?.itemTotal ?? 0, sub: `即将到期 ${cards?.expiringSoon ?? 0}`, icon: 'i-lucide:refrigerator' },
         { label: '心愿总数', value: cards?.wishTotal ?? 0, sub: '', icon: 'i-lucide:sparkles' },
         { label: '订单总数', value: cards?.orderTotal ?? 0, sub: `今日新增 ${cards?.newOrdersToday ?? 0}`, icon: 'i-lucide:shopping-cart' },
       ]" :key="item.label" shadow="never">

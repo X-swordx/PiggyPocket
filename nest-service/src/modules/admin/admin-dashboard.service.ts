@@ -1,8 +1,9 @@
 import { Injectable } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Between, MoreThan, Repository } from 'typeorm';
+import { MoreThan, Repository } from 'typeorm';
 import { User } from '../foodie-buddy/user/entities/user.entity';
-import { ExpiryFood } from '../expiry/entities/expiry-food.entity';
+import { ExpiryItem } from '../expiry/entities/expiry-item.entity';
+import { applyStatusFilter } from '../expiry/expiry.service';
 import { Wish } from '../wish/entities/wish.entity';
 import { Order } from '../foodie-buddy/order/entities/order.entity';
 
@@ -11,8 +12,8 @@ export class AdminDashboardService {
   constructor(
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
-    @InjectRepository(ExpiryFood)
-    private readonly foodRepo: Repository<ExpiryFood>,
+    @InjectRepository(ExpiryItem)
+    private readonly itemRepo: Repository<ExpiryItem>,
     @InjectRepository(Wish)
     private readonly wishRepo: Repository<Wish>,
     @InjectRepository(Order)
@@ -21,11 +22,10 @@ export class AdminDashboardService {
 
   async overview() {
     const today = this.formatDate(new Date());
-    const threeDaysLater = this.formatDate(this.daysFromNow(3));
 
-    const [userTotal, foodTotal, wishTotal, orderTotal] = await Promise.all([
+    const [userTotal, itemTotal, wishTotal, orderTotal] = await Promise.all([
       this.userRepo.count(),
-      this.foodRepo.count(),
+      this.itemRepo.count(),
       this.wishRepo.count(),
       this.orderRepo.count(),
     ]);
@@ -44,10 +44,12 @@ export class AdminDashboardService {
       this.orderRepo.count({
         where: { createdAt: MoreThan(new Date(`${today}T00:00:00`)) },
       }),
-      // 临期但还没过期（日期在今天到三天内）
-      this.foodRepo.count({
-        where: { expiryDate: Between(today, threeDaysLater) },
-      }),
+      // 已进入各自提醒窗口但还没过期的物品，与列表页「即将到期」口径一致
+      applyStatusFilter(
+        this.itemRepo.createQueryBuilder('item'),
+        'item',
+        'expiring',
+      ).getCount(),
       // 0 业务含义：占位以避免变量重名
       Promise.resolve(0),
       this.orderRepo.count({ where: { status: 'pending' } }),
@@ -57,7 +59,7 @@ export class AdminDashboardService {
     return {
       cards: {
         userTotal,
-        foodTotal,
+        itemTotal,
         wishTotal,
         orderTotal,
         newUsersToday,
@@ -104,13 +106,6 @@ export class AdminDashboardService {
       list.push({ date: key, count: map.get(key) ?? 0 });
     }
     return list;
-  }
-
-  private daysFromNow(d: number) {
-    const date = new Date();
-    date.setDate(date.getDate() + d);
-    date.setHours(0, 0, 0, 0);
-    return date;
   }
 
   private formatDate(d: Date): string {

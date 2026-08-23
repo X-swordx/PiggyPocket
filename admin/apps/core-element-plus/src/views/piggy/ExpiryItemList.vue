@@ -5,23 +5,24 @@ import {
   ElPagination, ElImage, ElTag, ElPopconfirm, ElMessage, ElMessageBox,
 } from 'element-plus'
 import {
-  listExpiryFoods, removeExpiryFood, removeExpiredFoods,
-  type AdminExpiryFood, type ExpiryListQuery,
+  listExpiryItems, removeExpiryItem, removeExpiredItems,
+  reindexExpiryItems, runExpiryReminder,
+  type AdminExpiryItem, type ExpiryListQuery,
 } from '@/api/modules/piggy'
 import {
   EXPIRY_STATUS_OPTIONS, EXPIRY_STATUS_TAG_TYPE,
-  STORAGE_OPTIONS, FOOD_CATEGORY_OPTIONS, labelOf,
+  STORAGE_OPTIONS, ITEM_CATEGORY_OPTIONS, labelOf,
 } from './options'
 import UserSelect from './components/UserSelect.vue'
-import ExpiryFoodEditor from './ExpiryFoodEditor.vue'
+import ExpiryItemEditor from './ExpiryItemEditor.vue'
 import { usePiggyAuth } from './usePiggyAuth'
 
-defineOptions({ name: 'ExpiryFoodList' })
+defineOptions({ name: 'ExpiryItemList' })
 
 const { canEdit } = usePiggyAuth('admin.expiryFood:edit')
 
 const loading = ref(false)
-const list = ref<AdminExpiryFood[]>([])
+const list = ref<AdminExpiryItem[]>([])
 const total = ref(0)
 
 const query = reactive<Required<Pick<ExpiryListQuery, 'page' | 'pageSize'>> & ExpiryListQuery>({
@@ -35,7 +36,7 @@ const query = reactive<Required<Pick<ExpiryListQuery, 'page' | 'pageSize'>> & Ex
 async function fetchData() {
   loading.value = true
   try {
-    const res = await listExpiryFoods({
+    const res = await listExpiryItems({
       page: query.page,
       pageSize: query.pageSize,
       keyword: query.keyword || undefined,
@@ -71,7 +72,7 @@ function onCreate() {
   editorVisible.value = true
 }
 
-function onEdit(row: AdminExpiryFood) {
+function onEdit(row: AdminExpiryItem) {
   editingId.value = row.id
   editorVisible.value = true
 }
@@ -82,8 +83,8 @@ function onEditorSaved() {
 }
 
 // ================ 删除 ================
-async function onDelete(row: AdminExpiryFood) {
-  await removeExpiryFood(row.id)
+async function onDelete(row: AdminExpiryItem) {
+  await removeExpiryItem(row.id)
   ElMessage.success('已删除')
   fetchData()
 }
@@ -92,8 +93,8 @@ async function onBatchClean() {
   try {
     await ElMessageBox.confirm(
       query.userId
-        ? '将清理该用户所有已过期食品，是否继续？'
-        : '将清理系统内所有用户的已过期食品，是否继续？',
+        ? '将清理该用户所有已过期物品，是否继续？'
+        : '将清理系统内所有用户的已过期物品，是否继续？',
       '批量清理已过期',
       { type: 'warning' },
     )
@@ -101,9 +102,40 @@ async function onBatchClean() {
   catch {
     return
   }
-  const res = await removeExpiredFoods(query.userId)
+  const res = await removeExpiredItems(query.userId)
   ElMessage.success(`已清理 ${res.affected} 条`)
   fetchData()
+}
+
+// ================ 运维操作 ================
+const reindexing = ref(false)
+const reminding = ref(false)
+
+async function onReindex() {
+  reindexing.value = true
+  try {
+    const res = await reindexExpiryItems()
+    if (!res.enabled) {
+      ElMessage.warning('向量库未配置，语义搜索当前降级为关键词匹配')
+      return
+    }
+    ElMessage.success(`已索引 ${res.indexed}/${res.total} 条，失败 ${res.failed} 条`)
+  }
+  finally {
+    reindexing.value = false
+  }
+}
+
+async function onRunReminder() {
+  reminding.value = true
+  try {
+    const res = await runExpiryReminder()
+    ElMessage.success(`命中 ${res.candidates} 条，推送 ${res.sent} 人，跳过 ${res.skipped} 人`)
+    fetchData()
+  }
+  finally {
+    reminding.value = false
+  }
 }
 
 onMounted(fetchData)
@@ -143,8 +175,14 @@ onMounted(fetchData)
         重置
       </ElButton>
       <div class="flex-1" />
+      <ElButton v-if="canEdit" :loading="reindexing" @click="onReindex">
+        重建向量索引
+      </ElButton>
+      <ElButton v-if="canEdit" :loading="reminding" @click="onRunReminder">
+        立即执行提醒
+      </ElButton>
       <ElButton v-if="canEdit" type="primary" @click="onCreate">
-        新增食品
+        新增物品
       </ElButton>
       <ElButton v-if="canEdit" type="danger" plain @click="onBatchClean">
         清理已过期
@@ -181,17 +219,27 @@ onMounted(fetchData)
         </template>
       </ElTableColumn>
       <ElTableColumn label="数量" prop="quantity" width="64" />
-      <ElTableColumn label="储存" width="120">
+      <ElTableColumn label="存放" width="120">
         <template #default="{ row }">
           {{ labelOf(STORAGE_OPTIONS, row.storage) }}
         </template>
       </ElTableColumn>
-      <ElTableColumn label="分类" width="80">
+      <ElTableColumn label="分类" width="96">
         <template #default="{ row }">
-          {{ labelOf(FOOD_CATEGORY_OPTIONS, row.category) }}
+          {{ labelOf(ITEM_CATEGORY_OPTIONS, row.category) }}
         </template>
       </ElTableColumn>
       <ElTableColumn label="到期日" prop="expiryDate" width="105" />
+      <ElTableColumn label="提醒" width="150">
+        <template #default="{ row }">
+          <div class="text-xs">
+            {{ row.remindDays > 0 ? `提前 ${row.remindDays} 天` : '当天提醒' }}
+          </div>
+          <div class="text-xs text-muted-foreground">
+            {{ row.notifiedAt ? `已推送 ${row.notifiedAt}` : '未推送' }}
+          </div>
+        </template>
+      </ElTableColumn>
       <ElTableColumn label="状态" width="180">
         <template #default="{ row }">
           <ElTag
@@ -205,13 +253,13 @@ onMounted(fetchData)
       <ElTableColumn label="操作" width="150" fixed="right">
         <template #default="{ row }">
           <template v-if="canEdit">
-            <ElButton link type="primary" @click="onEdit(row as AdminExpiryFood)">
+            <ElButton link type="primary" @click="onEdit(row as AdminExpiryItem)">
               编辑
             </ElButton>
             <ElPopconfirm
               title="确认删除？"
               width="200"
-              @confirm="onDelete(row as AdminExpiryFood)"
+              @confirm="onDelete(row as AdminExpiryItem)"
             >
               <template #reference>
                 <ElButton link type="danger">
@@ -237,7 +285,7 @@ onMounted(fetchData)
       />
     </div>
 
-    <ExpiryFoodEditor
+    <ExpiryItemEditor
       v-if="editorVisible"
       v-model:visible="editorVisible"
       :id="editingId"

@@ -1,25 +1,28 @@
 /** 前后端约定的选项字典，展示层用；提交时用 code。 */
 
 export const STORAGE_OPTIONS = [
-  { label: '冰箱 (冷藏室)', value: 'fridge' },
-  { label: '冰箱 (冷冻室)', value: 'freezer' },
-  { label: '常温储藏', value: 'pantry' },
+  { label: '冰箱冷藏', value: 'fridge' },
+  { label: '冰箱冷冻', value: 'freezer' },
+  { label: '常温橱柜', value: 'pantry' },
+  { label: '药箱收纳柜', value: 'cabinet' },
+  { label: '其他', value: 'other' },
 ]
 
-export const FOOD_CATEGORY_OPTIONS = [
-  { label: '乳制品', value: 'dairy' },
-  { label: '肉类', value: 'meat' },
-  { label: '蔬菜', value: 'vegetable' },
-  { label: '水果', value: 'fruit' },
-  { label: '海鲜', value: 'seafood' },
-  { label: '调味品', value: 'condiment' },
-  { label: '零食', value: 'snack' },
+export const ITEM_CATEGORY_OPTIONS = [
+  { label: '食品饮料', value: 'food' },
+  { label: '药品', value: 'medicine' },
+  { label: '美妆护肤', value: 'cosmetic' },
+  { label: '日用品', value: 'daily' },
+  { label: '宠物用品', value: 'pet' },
+  { label: '滤芯耗材', value: 'consumable' },
+  { label: '卡券会员', value: 'card' },
+  { label: '证件保险', value: 'document' },
   { label: '其他', value: 'other' },
 ]
 
 export const EXPIRY_STATUS_OPTIONS = [
-  { label: '新鲜', value: 'fresh' },
-  { label: '即将过期', value: 'expiring' },
+  { label: '充足', value: 'fresh' },
+  { label: '即将到期', value: 'expiring' },
   { label: '已过期', value: 'expired' },
 ] as const
 

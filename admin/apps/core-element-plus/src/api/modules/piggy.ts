@@ -53,17 +53,19 @@ export interface OssPolicy {
 export const getOssUploadToken = (dir = 'admin') =>
   unwrap<OssPolicy>(api.get('admin/oss/upload-token', { params: { dir } }))
 
-// ============================ 临期食品 ============================
+// ============================ 到期管家 ============================
 
 export type ExpiryStatus = 'fresh' | 'expiring' | 'expired'
 
-export interface AdminExpiryFood {
+export interface AdminExpiryItem {
   id: number
   userId: number
   name: string
   imageUrl?: string
   expiryDate: string
   quantity: number
+  remindDays: number
+  notifiedAt?: string | null
   storage?: string
   category?: string
   notes?: string
@@ -85,28 +87,40 @@ export interface ExpiryListQuery {
   status?: ExpiryStatus
 }
 
-export const listExpiryFoods = (query: ExpiryListQuery) =>
-  unwrap<PageResult<AdminExpiryFood>>(
-    api.get('admin/expiry-foods', { params: query }),
+export const listExpiryItems = (query: ExpiryListQuery) =>
+  unwrap<PageResult<AdminExpiryItem>>(
+    api.get('admin/expiry-items', { params: query }),
   )
 
-export const getExpiryFood = (id: number) =>
-  unwrap<AdminExpiryFood>(api.get(`admin/expiry-foods/${id}`))
+export const getExpiryItem = (id: number) =>
+  unwrap<AdminExpiryItem>(api.get(`admin/expiry-items/${id}`))
 
-export const createExpiryFood = (data: Partial<AdminExpiryFood>) =>
-  unwrap<AdminExpiryFood>(api.post('admin/expiry-foods', data))
+export const createExpiryItem = (data: Partial<AdminExpiryItem>) =>
+  unwrap<AdminExpiryItem>(api.post('admin/expiry-items', data))
 
-export const updateExpiryFood = (id: number, data: Partial<AdminExpiryFood>) =>
-  unwrap<AdminExpiryFood>(api.put(`admin/expiry-foods/${id}`, data))
+export const updateExpiryItem = (id: number, data: Partial<AdminExpiryItem>) =>
+  unwrap<AdminExpiryItem>(api.put(`admin/expiry-items/${id}`, data))
 
-export const removeExpiryFood = (id: number) =>
-  unwrap<{ success: boolean }>(api.delete(`admin/expiry-foods/${id}`))
+export const removeExpiryItem = (id: number) =>
+  unwrap<{ success: boolean }>(api.delete(`admin/expiry-items/${id}`))
 
-export const removeExpiredFoods = (userId?: number) =>
+export const removeExpiredItems = (userId?: number) =>
   unwrap<{ success: boolean; affected: number }>(
-    api.delete('admin/expiry-foods/expired/batch', {
+    api.delete('admin/expiry-items/expired/batch', {
       params: userId ? { userId } : undefined,
     }),
+  )
+
+/** 给历史数据补向量索引；enabled 为 false 说明向量库没配置 */
+export const reindexExpiryItems = () =>
+  unwrap<{ total: number; indexed: number; failed: number; enabled: boolean }>(
+    api.post('admin/expiry-items/reindex'),
+  )
+
+/** 手动触发一次到期提醒扫描（定时任务每天 9:00 也会跑） */
+export const runExpiryReminder = () =>
+  unwrap<{ candidates: number; sent: number; skipped: number }>(
+    api.post('admin/expiry-items/reminder/run'),
   )
 
 // ============================ 心愿 ============================
@@ -372,7 +386,7 @@ export interface AdminUserRow {
   openidTail: string | null
   status: number
   createdAt: string
-  foodCount: number
+  itemCount: number
   wishCount: number
   dishCount: number
   orderCount: number
@@ -402,7 +416,7 @@ export const setUserStatus = (id: number, status: 0 | 1) =>
 
 export interface DashboardCards {
   userTotal: number
-  foodTotal: number
+  itemTotal: number
   wishTotal: number
   orderTotal: number
   newUsersToday: number

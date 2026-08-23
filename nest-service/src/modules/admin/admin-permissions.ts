@@ -20,10 +20,10 @@ export const ALL_PERMISSIONS: Array<{
     ],
   },
   {
-    group: '临期食品',
+    group: '到期管家',
     items: [
-      { code: 'admin.expiryFood:view', label: '查看食品' },
-      { code: 'admin.expiryFood:edit', label: '增删改食品' },
+      { code: 'admin.expiryFood:view', label: '查看物品' },
+      { code: 'admin.expiryFood:edit', label: '增删改物品' },
     ],
   },
   {

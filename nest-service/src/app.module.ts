@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { FoodieBuddyModule } from './modules/foodie-buddy/foodie-buddy.module';
 import { WishModule } from './modules/wish/wish.module';
@@ -13,6 +14,8 @@ import { AiModule } from './modules/ai/ai.module';
     ConfigModule.forRoot({
       isGlobal: true,
     }),
+    // 到期提醒的每日定时任务
+    ScheduleModule.forRoot(),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({

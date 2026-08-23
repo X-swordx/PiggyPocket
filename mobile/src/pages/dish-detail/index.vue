@@ -6,7 +6,7 @@
         <uni-icons type="left" size="24" color="var(--theme-primary)" />
       </view>
       <view class="title">
-        <text>{{ isFoodExpiry ? '食品详情' : '菜品详情' }}</text>
+        <text>{{ isFoodExpiry ? '物品详情' : '菜品详情' }}</text>
       </view>
       <view class="share-btn" @click="shareDish">
         <uni-icons type="more" size="24" color="var(--theme-primary)" />
@@ -21,7 +21,7 @@
           <view class="hero-image" :style="{ backgroundColor: food.bgColor }">
             <view class="hero-gradient-overlay"></view>
             <view class="category-badge">
-              <text>{{ food.category || '食品' }}</text>
+              <text>{{ food.category || '未分类' }}</text>
             </view>
           </view>
         </view>
@@ -43,7 +43,7 @@
             <!-- Expiry Status Card - Full Width -->
             <view class="expiry-card">
               <view class="card-header">
-                <text class="card-label">过期状态</text>
+                <text class="card-label">到期状态</text>
                 <view class="urgency-badge" :class="getStatusClass(food.status)">
                   <text>{{ getUrgencyText(food.status) }}</text>
                 </view>
@@ -51,9 +51,20 @@
               <view class="expiry-content">
                 <view class="days-display">
                   <text class="days-number" :class="getStatusTextClass(food.status)">{{ food.daysCount || '?' }}</text>
-                  <text class="days-label">天后过期</text>
+                  <text class="days-label">{{ food.status === 'expired' ? '天前过期' : '天后到期' }}</text>
                 </view>
-                <text class="expiry-date">过期日期: {{ food.expiryDate }}</text>
+                <text class="expiry-date">到期日期: {{ food.expiryDate }}</text>
+              </view>
+            </view>
+
+            <!-- Remind Ahead - Full Width -->
+            <view class="mini-card full-width">
+              <view class="mini-card-icon bg-secondary-container">
+                <uni-icons type="notification" size="20" color="#70585c" />
+              </view>
+              <view class="mini-card-content">
+                <text class="mini-card-label">提醒设置</text>
+                <text class="mini-card-value">{{ food.remindText || '提前 3 天提醒' }}</text>
               </view>
             </view>
 
@@ -63,8 +74,8 @@
                 <uni-icons type="cold" size="20" color="#70585c" />
               </view>
               <view class="mini-card-content">
-                <text class="mini-card-label">储藏位置</text>
-                <text class="mini-card-value">{{ food.storage || '冰箱' }}</text>
+                <text class="mini-card-label">存放位置</text>
+                <text class="mini-card-value">{{ food.storage || '未指定' }}</text>
               </view>
             </view>
 
@@ -102,11 +113,11 @@
           <view class="action-buttons">
             <view class="action-btn primary-btn" @click="editFood">
               <uni-icons type="compose" size="20" color="#321018" />
-              <text>修改食品</text>
+              <text>修改物品</text>
             </view>
             <view class="action-btn danger-btn" @click="deleteFood">
               <uni-icons type="clear" size="20" color="#ba1a1a" />
-              <text>删除食品</text>
+              <text>删除物品</text>
             </view>
           </view>
         </view>
@@ -283,8 +294,8 @@ import {
 } from '@/services/foodieBuddy'
 import { uploadToOSS } from '@/services/oss'
 import {
-  getExpiryFood,
-  removeExpiryFood,
+  getExpiryItem,
+  removeExpiryItem,
   CATEGORY_LABELS,
   STORAGE_LABELS,
   STORAGE_LABEL_DEFAULT
@@ -313,6 +324,7 @@ interface FoodItem {
   category?: string
   spec?: string
   storage?: string
+  remindText?: string
   notes?: string
 }
 
@@ -557,10 +569,10 @@ const loadDish = async (id: number) => {
   }
 }
 
-const loadExpiryFood = async (id: number) => {
+const loadExpiryItem = async (id: number) => {
   try {
     foodId.value = id
-    const item = await getExpiryFood(id)
+    const item = await getExpiryItem(id)
     food.value = {
       name: item.name,
       expiryDate: item.expiryDate,
@@ -572,17 +584,18 @@ const loadExpiryFood = async (id: number) => {
       category: item.category ? CATEGORY_LABELS[item.category] || '未分类' : '未分类',
       spec: `${item.quantity} 件`,
       storage: item.storage ? STORAGE_LABELS[item.storage] || STORAGE_LABEL_DEFAULT : STORAGE_LABEL_DEFAULT,
+      remindText: item.remindDays > 0 ? `提前 ${item.remindDays} 天提醒` : '到期当天提醒',
       notes: item.notes || ''
     }
   } catch (err: any) {
-    uni.showToast({ title: err.message || '食品加载失败', icon: 'none' })
+    uni.showToast({ title: err.message || '物品加载失败', icon: 'none' })
   }
 }
 
 onLoad((options: any) => {
   readonly.value = options?.readonly === '1'
   if (options?.mode === 'expiry' && options?.id) {
-    loadExpiryFood(Number(options.id))
+    loadExpiryItem(Number(options.id))
     return
   }
   if (options?.id) {
@@ -598,9 +611,10 @@ onLoad((options: any) => {
       status: (decodeURIComponent(options.status) || 'fresh') as any,
       statusText: decodeURIComponent(options.statusText) || '',
       bgColor: options.bgColor ? decodeURIComponent(options.bgColor) : getRandomBgColor(),
-      category: options.category ? decodeURIComponent(options.category) : '乳制品',
-      spec: options.spec ? decodeURIComponent(options.spec) : '950ml · 1瓶',
-      storage: options.storage ? decodeURIComponent(options.storage) : '冰箱 (冷藏室)',
+      category: options.category ? decodeURIComponent(options.category) : '未分类',
+      spec: options.spec ? decodeURIComponent(options.spec) : '',
+      storage: options.storage ? decodeURIComponent(options.storage) : STORAGE_LABEL_DEFAULT,
+      remindText: options.remindText ? decodeURIComponent(options.remindText) : '',
       notes: options.notes ? decodeURIComponent(options.notes) : ''
     }
   }
@@ -628,9 +642,9 @@ const getUrgencyText = (status: string) => {
 }
 
 const getDefaultNote = (status: string) => {
-  if (status === 'fresh') return '食品仍然新鲜，请尽快食用。'
-  if (status === 'expiring') return '即将过期，建议优先食用。'
-  return '已过期，建议丢弃处理。'
+  if (status === 'fresh') return '还在有效期内，暂时不用着急。'
+  if (status === 'expiring') return '即将到期，建议优先处理。'
+  return '已过期，建议及时处理或丢弃。'
 }
 
 const goBack = () => {
@@ -677,11 +691,11 @@ const deleteFood = () => {
   if (!foodId.value) return
   uni.showModal({
     title: '确认删除',
-    content: '确定要删除这个食品记录吗？',
+    content: '确定要删除这个物品记录吗？',
     success: async (res) => {
       if (res.confirm) {
         try {
-          await removeExpiryFood(foodId.value)
+          await removeExpiryItem(foodId.value)
           uni.showToast({ title: '已删除', icon: 'success' })
           setTimeout(() => {
             uni.navigateBack()

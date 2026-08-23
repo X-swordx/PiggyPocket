@@ -46,7 +46,7 @@ npm run migration:run
 | 模块 | 页面 |
 | --- | --- |
 | 数据概览 | `Dashboard.vue` — 统计卡片、订单状态分布、7 天趋势 |
-| 临期食品 | `ExpiryFoodList.vue` + `ExpiryFoodEditor.vue` |
+| 到期管家 | `ExpiryItemList.vue` + `ExpiryItemEditor.vue`（含重建向量索引、立即执行提醒） |
 | 心愿清单 | `WishList.vue` + `WishEditor.vue` |
 | 菜品库 | `DishList.vue` + `DishEditor.vue`（食材/步骤/标签/封面） |
 | 订单管理 | `OrderList.vue` + `OrderDetail.vue`（状态流转） |

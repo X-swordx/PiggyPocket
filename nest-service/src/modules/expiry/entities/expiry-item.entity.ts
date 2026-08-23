@@ -8,10 +8,10 @@ import {
 } from 'typeorm';
 import { ApiProperty } from '@nestjs/swagger';
 
-@Entity('expiry_foods')
-export class ExpiryFood {
-  @ApiProperty({ description: '食品ID' })
-  @PrimaryGeneratedColumn({ comment: '食品ID' })
+@Entity('expiry_items')
+export class ExpiryItem {
+  @ApiProperty({ description: '物品ID' })
+  @PrimaryGeneratedColumn({ comment: '物品ID' })
   id: number;
 
   @ApiProperty({ description: '用户ID' })
@@ -19,27 +19,49 @@ export class ExpiryFood {
   @Column({ type: 'int', comment: '用户ID' })
   userId: number;
 
-  @ApiProperty({ description: '食品名称' })
-  @Column({ type: 'varchar', length: 100, comment: '食品名称' })
+  @ApiProperty({ description: '物品名称' })
+  @Column({ type: 'varchar', length: 100, comment: '物品名称' })
   name: string;
 
   @ApiProperty({ description: '图片URL' })
   @Column({ type: 'varchar', length: 255, nullable: true, comment: '图片URL' })
   imageUrl?: string;
 
-  @ApiProperty({ description: '保质期日期' })
-  @Column({ type: 'date', comment: '保质期日期' })
+  @ApiProperty({ description: '到期日期' })
+  @Column({ type: 'date', comment: '到期日期' })
   expiryDate: string;
 
   @ApiProperty({ description: '数量' })
   @Column({ type: 'int', default: 1, comment: '数量' })
   quantity: number;
 
-  @ApiProperty({ description: '储存位置：fridge/freezer/pantry' })
-  @Column({ type: 'varchar', length: 20, nullable: true, comment: '储存位置：fridge/freezer/pantry' })
+  @ApiProperty({ description: '提前多少天提醒' })
+  @Column({ type: 'int', default: 3, comment: '提前多少天提醒' })
+  remindDays: number;
+
+  @ApiProperty({ description: '已推送提醒的日期，非空即不再重复推送' })
+  @Column({
+    type: 'date',
+    nullable: true,
+    comment: '已推送提醒的日期',
+  })
+  notifiedAt?: string | null;
+
+  @ApiProperty({
+    description: '存放位置：fridge/freezer/pantry/cabinet/other',
+  })
+  @Column({
+    type: 'varchar',
+    length: 20,
+    nullable: true,
+    comment: '存放位置：fridge/freezer/pantry/cabinet/other',
+  })
   storage?: string;
 
-  @ApiProperty({ description: '分类：dairy/meat/vegetable/fruit/seafood/condiment/snack/other' })
+  @ApiProperty({
+    description:
+      '分类：food/medicine/cosmetic/daily/pet/consumable/card/document/other',
+  })
   @Column({ type: 'varchar', length: 20, nullable: true, comment: '分类' })
   category?: string;
 

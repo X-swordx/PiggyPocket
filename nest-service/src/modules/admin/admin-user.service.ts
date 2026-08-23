@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { In, Like, Repository } from 'typeorm';
 import { User } from '../foodie-buddy/user/entities/user.entity';
-import { ExpiryFood } from '../expiry/entities/expiry-food.entity';
+import { ExpiryItem } from '../expiry/entities/expiry-item.entity';
 import { Wish } from '../wish/entities/wish.entity';
 import { Dish } from '../foodie-buddy/dish/entities/dish.entity';
 import { Order } from '../foodie-buddy/order/entities/order.entity';
@@ -17,8 +17,8 @@ export class AdminUserService {
   constructor(
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
-    @InjectRepository(ExpiryFood)
-    private readonly foodRepo: Repository<ExpiryFood>,
+    @InjectRepository(ExpiryItem)
+    private readonly itemRepo: Repository<ExpiryItem>,
     @InjectRepository(Wish)
     private readonly wishRepo: Repository<Wish>,
     @InjectRepository(Dish)
@@ -71,7 +71,7 @@ export class AdminUserService {
         openidTail: r.openid?.slice(-6) ?? null,
         status: r.status,
         createdAt: r.createdAt,
-        foodCount: counts.food.get(r.id) ?? 0,
+        itemCount: counts.item.get(r.id) ?? 0,
         wishCount: counts.wish.get(r.id) ?? 0,
         dishCount: counts.dish.get(r.id) ?? 0,
         orderCount: counts.order.get(r.id) ?? 0,
@@ -96,7 +96,7 @@ export class AdminUserService {
       status: user.status,
       createdAt: user.createdAt,
       updatedAt: user.updatedAt,
-      foodCount: counts.food.get(id) ?? 0,
+      itemCount: counts.item.get(id) ?? 0,
       wishCount: counts.wish.get(id) ?? 0,
       dishCount: counts.dish.get(id) ?? 0,
       orderCount: counts.order.get(id) ?? 0,
@@ -130,15 +130,15 @@ export class AdminUserService {
   private async loadCounts(userIds: number[]) {
     const empty = new Map<number, number>();
     if (!userIds.length) {
-      return { food: empty, wish: empty, dish: empty, order: empty };
+      return { item: empty, wish: empty, dish: empty, order: empty };
     }
-    const [foods, wishes, dishes, orders] = await Promise.all([
-      this.groupCount(this.foodRepo, 'expiry_food', 'userId', userIds),
+    const [items, wishes, dishes, orders] = await Promise.all([
+      this.groupCount(this.itemRepo, 'expiry_item', 'userId', userIds),
       this.groupCount(this.wishRepo, 'wish', 'userId', userIds),
       this.groupCount(this.dishRepo, 'dish', 'userId', userIds),
       this.groupCount(this.orderRepo, 'order', 'userId', userIds),
     ]);
-    return { food: foods, wish: wishes, dish: dishes, order: orders };
+    return { item: items, wish: wishes, dish: dishes, order: orders };
   }
 
   private async groupCount(

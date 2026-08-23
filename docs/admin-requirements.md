@@ -14,8 +14,8 @@
 
 | 移动端页面 | 后台对应模块 | 主要动作 |
 | --- | --- | --- |
-| [pages/expiry](../mobile/src/pages/expiry) | 临期食品管理 | CRUD、按用户筛选、批量清理已过期 |
-| [pages/add-food](../mobile/src/pages/add-food) | 临期食品管理（新增表单参照字段） | — |
+| [pages/expiry](../mobile/src/pages/expiry) | 到期管家 | CRUD、按用户筛选、批量清理已过期、重建向量索引、手动执行提醒 |
+| [pages/add-food](../mobile/src/pages/add-food) | 到期管家（新增表单参照字段） | — |
 | [pages/wishlist](../mobile/src/pages/wishlist) | 心愿清单管理 | CRUD、按状态筛选 |
 | [pages/fulfilled-wishes](../mobile/src/pages/fulfilled-wishes) | 心愿清单管理（已完成筛选） | — |
 | [pages/food-menu](../mobile/src/pages/food-menu) | 菜品管理 | CRUD、上/下架、封面预览 |
@@ -42,7 +42,7 @@
 | 实体 | 关键字段 | 后台管理点 |
 | --- | --- | --- |
 | `FoodieUser` | id, openid, nickname, avatar, createdAt | 列表、搜索、禁用 |
-| `ExpiryFood` | id, userId, name, imageUrl, expiryDate, quantity, storage(fridge/freezer/pantry), category(8 类), notes, bgColor, status(fresh/expiring/expired) | 分组织人筛选、批量删除已过期 |
+| `ExpiryItem` | id, userId, name, imageUrl, expiryDate, quantity, remindDays, notifiedAt, storage(fridge/freezer/pantry/cabinet/other), category(9 类), notes, bgColor, status(fresh/expiring/expired) | 分组织人筛选、批量删除已过期、向量索引重建 |
 | `Wish` | id, userId, title, category, tagClass, filter, completed | 完成状态切换、按分类过滤 |
 | `FoodieDish` | id, userId, groupId, name, description, category, image, status, calories, cookingTime, ingredients(name+amount 数组), steps(有序), tags, bgColor | 富表单编辑、软删除 |
 | `FoodieOrder` | id, orderNo, userId, groupId, status(pending/confirming/cooking/completed), remark, items[] | 列表 + 状态流转 |
@@ -62,21 +62,21 @@
 - 菜单路由动态下发，走 fantastic-admin `route/asyncRoutes` 机制。
 
 ### 3.2 首页 Dashboard
-- 卡片：今日新增用户、今日新订单、待处理订单数、临期(≤3 天) 食品数、心愿完成率。
+- 卡片：今日新增用户、今日新订单、待处理订单数、进入各自提醒窗口的到期物品数、心愿完成率。
 - 折线：近 30 天订单数；柱状：菜品分类分布。
 - 允许后期屏蔽，非核心。
 
 ### 3.3 用户管理 `/user`
-- 列表：id / 头像 / 昵称 / openid（脱敏） / 创建时间 / 关联心愿数 / 关联食品数。
+- 列表：id / 头像 / 昵称 / openid（脱敏） / 创建时间 / 关联心愿数 / 关联物品数。
 - 搜索：昵称、openid 精确、创建时间区间。
-- 操作：查看详情（展示该用户的临期食品、心愿、菜品、订单 Tab）、修改昵称、禁用（软删除，前端登录后 403）。
+- 操作：查看详情（展示该用户的到期物品、心愿、菜品、订单 Tab）、修改昵称、禁用（软删除，前端登录后 403）。
 
-### 3.4 临期食品管理 `/expiry-food`
-- 列表：图片缩略 / 名称 / 用户 / 数量 / 储存位置 / 分类 / 到期日 / 剩余天数 / 状态。
+### 3.4 到期管家 `/expiry-item`
+- 列表：图片缩略 / 名称 / 用户 / 数量 / 存放位置 / 分类 / 到期日 / 提醒设置 / 剩余天数 / 状态。
 - 搜索：用户 id / 名称模糊 / 状态（`fresh|expiring|expired`）/ 到期日区间。
-- 状态由 `expiryDate` 计算，只读展示，参照 [expiry.ts:4](../mobile/src/services/expiry.ts#L4)。
-- 操作：新增、编辑、删除、批量删除已过期。
-- 表单字段与 `createExpiryFood` 一致，图片走后端已有 OSS 接口 [oss module](../nest-service/src/modules/oss/)。
+- 状态由 `expiryDate` 与该物品的 `remindDays` 共同计算（不再是全局 3 天），只读展示。
+- 操作：新增、编辑、删除、批量删除已过期、重建向量索引、立即执行提醒。
+- 表单字段与 `createExpiryItem` 一致，图片走后端已有 OSS 接口 [oss module](../nest-service/src/modules/oss/)。
 
 ### 3.5 心愿清单管理 `/wish`
 - 列表：id / 用户 / 标题 / 分类 / 标签样式 / 筛选值 / 状态。
@@ -140,12 +140,14 @@ GET    /api/admin/users/:id
 PUT    /api/admin/users/:id                         改昵称/头像
 PUT    /api/admin/users/:id/status                  启用/禁用
 
-GET    /api/admin/expiry-foods                      page/pageSize/userId/keyword/status
-GET    /api/admin/expiry-foods/:id
-POST   /api/admin/expiry-foods
-PUT    /api/admin/expiry-foods/:id
-DELETE /api/admin/expiry-foods/:id
-DELETE /api/admin/expiry-foods/expired/batch?userId= 批量清理已过期
+GET    /api/admin/expiry-items                      page/pageSize/userId/keyword/status
+GET    /api/admin/expiry-items/:id
+POST   /api/admin/expiry-items
+PUT    /api/admin/expiry-items/:id
+DELETE /api/admin/expiry-items/:id
+DELETE /api/admin/expiry-items/expired/batch?userId= 批量清理已过期
+POST   /api/admin/expiry-items/reindex               历史数据补向量索引
+POST   /api/admin/expiry-items/reminder/run          手动跑一次到期提醒扫描
 
 GET    /api/admin/wishes                            + completed/category
 GET    /api/admin/wishes/:id
@@ -244,7 +246,7 @@ admin/
 │  ├─ views/
 │  │   ├─ dashboard/
 │  │   ├─ user/
-│  │   ├─ expiry-food/
+│  │   ├─ expiry-item/
 │  │   ├─ wish/
 │  │   ├─ dish/
 │  │   ├─ order/
@@ -270,7 +272,7 @@ admin/
 | 阶段 | 交付 | 预估 | 状态 |
 | --- | --- | --- | --- |
 | M0 脚手架 | fantastic-admin 接入、登录、菜单权限、部署脚本 | 2 天 | ✅ 已完成 |
-| M1 内容管理 | 临期食品、心愿、菜品三大 CRUD | 4 天 | ✅ 已完成 |
+| M1 内容管理 | 到期管家、心愿、菜品三大 CRUD | 4 天 | ✅ 已完成 |
 | M2 交易管理 | 订单、饭搭子、用户管理 | 3 天 | ✅ 已完成 |
 | M3 系统与看板 | 管理员/角色/日志、Dashboard | 2 天 | ✅ 已完成 |
 | M4 联调上线 | 权限拦截、构建验证、QA 用例、文档 | 2 天 | ✅ 已完成 |

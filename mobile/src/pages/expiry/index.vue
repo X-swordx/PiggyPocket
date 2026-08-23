@@ -6,15 +6,38 @@
         <uni-icons type="left" size="24" color="#333" />
       </view>
       <view class="title">
-        <text>临期食品</text>
+        <text>到期管家</text>
       </view>
-      <view class="search-btn">
-        <uni-icons type="search" size="24" color="#333" />
+      <view class="header-placeholder"></view>
+    </view>
+
+    <!-- 提醒授权提示：额度为 0 时出现。微信一次授权只能推一条，
+         推送消耗掉额度后这条会自动回来，提示用户续授权 -->
+    <view v-if="showSubscribeTip" class="subscribe-tip">
+      <uni-icons type="notification" size="18" color="#333" />
+      <text class="subscribe-text">开启微信提醒，物品到期前通知你</text>
+      <view class="subscribe-btn" @click="openSubscribe">
+        <text>开启</text>
+      </view>
+      <view class="subscribe-close" @click="tipDismissed = true">
+        <uni-icons type="closeempty" size="16" color="#999" />
       </view>
     </view>
 
+    <!-- Search -->
+    <view v-if="searchVisible" class="search-bar">
+      <uni-icons type="search" size="18" color="#999" />
+      <input
+        v-model="keyword"
+        class="search-input"
+        placeholder="试试「快过期的感冒药」"
+        confirm-type="search"
+        @confirm="runSearch"
+      />
+    </view>
+
     <!-- Tabs -->
-    <view class="tabs">
+    <view v-if="!searching" class="tabs">
       <view
         v-for="(tab, index) in tabs"
         :key="index"
@@ -24,6 +47,9 @@
       >
         <text>{{ tab }}</text>
       </view>
+      <view class="tab-search-btn" @click="toggleSearch">
+        <uni-icons type="search" size="20" color="#333" />
+      </view>
     </view>
 
     <!-- Content -->
@@ -32,7 +58,7 @@
         <text>加载中...</text>
       </view>
       <view v-else-if="!filteredItems.length" class="state-text">
-        <text>暂无食品记录</text>
+        <text>{{ searching ? '没有搜到相关物品' : '暂无物品记录' }}</text>
       </view>
       <view v-for="item in filteredItems" :key="item.id" class="item-card" @click="goToDetail(item)">
         <view class="item-image" :style="{ backgroundColor: item.bgColor || '#ffc2cc' }">
@@ -49,7 +75,11 @@
           <text class="item-name">{{ item.name }}</text>
           <view class="item-date">
             <uni-icons type="calendar" size="14" color="#777" />
-            <text>过期日期: {{ item.expiryDate }}</text>
+            <text>到期日期: {{ item.expiryDate }}</text>
+          </view>
+          <view class="item-date">
+            <uni-icons type="notification" size="14" color="#777" />
+            <text>{{ remindText(item) }}</text>
           </view>
         </view>
       </view>
@@ -69,23 +99,37 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue'
+import { ref, computed, watch } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import TabBar from '@/components/TabBar.vue'
 import uniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
 import {
-  getAllFoods,
-  getExpiringFoods,
-  getExpiredFoods,
-  type ExpiryFood
+  getAllItems,
+  getExpiringItems,
+  getExpiredItems,
+  searchItems,
+  ensureSubscribe,
+  getReminderQuota,
+  type ExpiryItem
 } from '@/services/expiry'
 import { themeStyle } from '@/utils/theme'
 
-const tabs = ['全部', '即将过期', '已过期']
+const tabs = ['全部', '即将到期', '已过期']
 const currentTab = ref(0)
 
-const items = ref<ExpiryFood[]>([])
+const items = ref<ExpiryItem[]>([])
 const loading = ref(false)
+
+/** 剩余推送额度，0 表示没授权过或额度已被推送消耗完 */
+const quota = ref(0)
+/** 用户手动关掉提示条后，本次进入页面不再打扰 */
+const tipDismissed = ref(false)
+const showSubscribeTip = computed(() => quota.value === 0 && !tipDismissed.value)
+
+const searchVisible = ref(false)
+const keyword = ref('')
+/** 搜索态：搜索框有内容时列表展示搜索结果而不是分页列表 */
+const searching = computed(() => searchVisible.value && !!keyword.value.trim())
 
 const filteredItems = items
 
@@ -93,22 +137,70 @@ const loadList = async () => {
   loading.value = true
   try {
     if (currentTab.value === 1) {
-      items.value = await getExpiringFoods()
+      items.value = await getExpiringItems()
     } else if (currentTab.value === 2) {
-      items.value = await getExpiredFoods()
+      items.value = await getExpiredItems()
     } else {
-      items.value = await getAllFoods()
+      items.value = await getAllItems()
     }
   } catch (err: any) {
-    uni.showToast({ title: err.message || '食品加载失败', icon: 'none' })
+    uni.showToast({ title: err.message || '物品加载失败', icon: 'none' })
     items.value = []
   } finally {
     loading.value = false
   }
 }
 
+const runSearch = async () => {
+  const text = keyword.value.trim()
+  if (!text) {
+    await loadList()
+    return
+  }
+  loading.value = true
+  try {
+    const res = await searchItems(text)
+    items.value = res.list
+  } catch (err: any) {
+    uni.showToast({ title: err.message || '搜索失败', icon: 'none' })
+    items.value = []
+  } finally {
+    loading.value = false
+  }
+}
+
+const toggleSearch = () => {
+  searchVisible.value = !searchVisible.value
+  if (!searchVisible.value && keyword.value) {
+    keyword.value = ''
+    loadList()
+  }
+}
+
+const openSubscribe = async () => {
+  try {
+    const ok = await ensureSubscribe()
+    uni.showToast({
+      title: ok ? '已开启到期提醒' : '未开启提醒',
+      icon: 'none'
+    })
+    if (ok) quota.value = await getReminderQuota()
+  } catch (err: any) {
+    uni.showToast({ title: err.message || '开启失败', icon: 'none' })
+  }
+}
+
+const remindText = (item: ExpiryItem) =>
+  item.remindDays > 0 ? `提前 ${item.remindDays} 天提醒` : '到期当天提醒'
+
 watch(currentTab, loadList)
-onShow(loadList)
+onShow(() => {
+  if (!searching.value) loadList()
+  // 额度可能被后台推送消耗掉，每次进页面都重新取一次
+  getReminderQuota()
+    .then((remaining) => (quota.value = remaining))
+    .catch(() => {})
+})
 
 const goBack = () => {
   uni.navigateBack()
@@ -132,7 +224,7 @@ const handleTabChange = (index: number) => {
   }
 }
 
-const goToDetail = (item: ExpiryFood) => {
+const goToDetail = (item: ExpiryItem) => {
   uni.navigateTo({
     url: `/pages/dish-detail/index?id=${item.id}&mode=expiry`
   })
@@ -160,13 +252,91 @@ const goToDetail = (item: ExpiryFood) => {
   z-index: 10;
 }
 
-.back-btn, .search-btn {
+.back-btn {
+  flex-shrink: 0;
   width: 40px;
   height: 40px;
   display: flex;
   align-items: center;
   justify-content: center;
   border-radius: 50%;
+}
+
+.header-placeholder {
+  flex-shrink: 0;
+  width: 40px;
+  height: 40px;
+}
+
+.tab-search-btn {
+  margin-left: auto;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 16px 0;
+  padding: 0 12px;
+  height: 40px;
+  background: white;
+  border-radius: 999px;
+  border: 1px solid var(--theme-primary-lighter);
+}
+
+.subscribe-tip {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 16px 0;
+  padding: 0 12px;
+  height: 40px;
+  background: white;
+  border-radius: 999px;
+  border: 1px solid var(--theme-primary-lighter);
+}
+
+.subscribe-text {
+  flex: 1;
+  font-size: 13px;
+  color: #1f1a1b;
+}
+
+.subscribe-btn {
+  padding: 0 12px;
+  height: 26px;
+  display: flex;
+  align-items: center;
+  border-radius: 999px;
+  background: var(--theme-primary);
+}
+
+.subscribe-btn text {
+  font-size: 12px;
+  font-weight: 600;
+  color: #1f1a1b;
+}
+
+.subscribe-close {
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.search-input {
+  flex: 1;
+  height: 40px;
+  font-size: 14px;
+  color: #1f1a1b;
 }
 
 .title {

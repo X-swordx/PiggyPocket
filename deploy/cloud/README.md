@@ -276,6 +276,10 @@ cp .env.example .env
 | `WECHAT_APPID` / `WECHAT_SECRET`      | 微信小程序凭证                                                  |
 | `ADMIN_JWT_SECRET` / `ADMIN_JWT_EXPIRES_IN` | 后台管理员 JWT 密钥与有效期（建议设置长随机字符串）        |
 | `OSS_*`                               | 阿里云 OSS 配置                                                 |
+| `MODEL_NAME` / `OPENAI_API_KEY` / `OPENAI_BASE_URL` | AI 大模型配置（菜谱流式生成）                     |
+| `WECHAT_EXPIRY_TEMPLATE_ID`           | 到期管家的订阅消息模板 ID，留空则不推送微信通知                  |
+| `MILVUS_ADDRESS` / `MILVUS_TOKEN`     | Zilliz Cloud 连接信息，留空则语义搜索降级为关键词匹配            |
+| `EMBEDDING_MODEL_NAME` / `EMBEDDING_DIM` | 向量模型及其维度，默认 `doubao-embedding-vision` / `2048`，两者必须匹配 |
 
 ## 6. 一键部署
 
@@ -471,6 +475,7 @@ ADMIN_JWT_EXPIRES_IN=2h
 | Migration                     | 变更内容                                                      |
 | ----------------------------- | ------------------------------------------------------------- |
 | `AddOrderCookDate`            | `orders` 表新增 `cookDate`（做菜日期，date，可空）+ 索引      |
+| `RenameExpiryFoodsToItems`    | `expiry_foods` 改名为 `expiry_items`，新增 `remindDays`/`notifiedAt`，旧食品分类合并为 `food`，新建 `wechat_subscribe_quotas` |
 
 ### AddOrderCookDate（做菜日期）
 
@@ -487,6 +492,27 @@ docker compose -p piggy-pocket exec mysql \
 ```
 
 应输出一行 `cookDate | date | YES`。
+
+### RenameExpiryFoodsToItems（临期食品 → 到期管家）
+
+「临期食品」升级为「到期管家」，可记录家里所有需要关注到期时间的物品（药品、化妆品、滤芯、卡券等）。
+
+迁移做了四件事，全部幂等：
+
+1. `RENAME TABLE expiry_foods TO expiry_items`（新表已存在则跳过）。
+2. 新增 `remindDays`（提前几天提醒，默认 3）与 `notifiedAt`（最近推送日期，可空）。
+3. 旧的 7 个食品分类（`dairy`/`meat`/`vegetable`/`fruit`/`seafood`/`condiment`/`snack`）统一并入新分类 `food`。
+4. 新建 `wechat_subscribe_quotas` 表，累计每个用户的订阅消息可推送次数。
+
+> `down()` 是有损的：合并掉的食品细分类无法还原，回滚后全部变成 `other`。
+
+验证：
+
+```bash
+docker compose -p piggy-pocket exec mysql \
+  mysql -u"$DB_USERNAME" -p"$DB_PASSWORD" "$DB_DATABASE" \
+  -e "SHOW COLUMNS FROM expiry_items LIKE 'remindDays'; SELECT DISTINCT category FROM expiry_items;"
+```
 
 ## 16. 安全建议
 
@@ -515,3 +541,35 @@ docker compose -p piggy-pocket exec mysql \
 | 小程序提示域名不合法                                    | 未在微信后台配置                 | 检查微信公众平台服务器域名                                        |
 | api 容器反复重启 / 起不来                               | 启动时数据库迁移失败             | `docker compose -p piggy-pocket logs api` 看迁移报错              |
 | 数据库连接失败                                          | MySQL 未就绪 / 密码错误          | `docker compose -p piggy-pocket logs mysql`                       |
+| 到期提醒没推送                                          | 模板 ID 未配 / 用户没授权 / 配额用完 | `logs api | grep -i subscribe`；后台点「立即执行提醒」看返回的 `skipped` |
+| 搜索结果像是关键词匹配                                  | 向量库不可用，已降级             | 接口返回的 `semantic` 为 `false`；`logs api | grep -i milvus`      |
+
+## 19. 到期管家配置（订阅消息 + 语义搜索）
+
+这两项都是**可选增强**：不配置时后端照常启动，提醒不推送、搜索退化为数据库关键词匹配。
+
+### 19.1 微信订阅消息模板
+
+1. 微信公众平台 → 功能 → 订阅消息 → 公共模板库，搜索「到期提醒」类模板并添加。
+2. 选择三个关键词，顺序需与代码一致：**物品名称**、**到期时间**、**备注**。
+3. 把模板 ID 填到 `.env` 的 `WECHAT_EXPIRY_TEMPLATE_ID`。
+4. 如果你选的模板字段编号不是 `thing1` / `time2` / `thing3`，改
+   [nest-service/src/modules/wechat/wechat.service.ts](../../nest-service/src/modules/wechat/wechat.service.ts)
+   里的 `buildExpiryData` 一处即可。
+
+> 微信规则：用户**每授权一次只能收到一条**消息。小程序端每次保存物品都会弹一次授权，
+> 后端把授权次数累加到 `wechat_subscribe_quotas`，每日 9:00（Asia/Shanghai）扫描时消耗一次。
+> 因此配额为 0 的用户会被跳过，发送失败会把配额退回。
+
+### 19.2 Zilliz Cloud（托管 Milvus）
+
+不在自己服务器上跑 Milvus——standalone 版官方建议 8GB 内存，会挤掉 MySQL 和 API。
+
+1. 注册 [Zilliz Cloud](https://zilliz.com.cn/)，创建 Serverless 免费集群（选与服务器同区域，如华东）。
+2. 复制 **Public Endpoint** 填 `MILVUS_ADDRESS`，创建 **API Key** 填 `MILVUS_TOKEN`。
+3. 向量模型复用 `OPENAI_API_KEY` / `OPENAI_BASE_URL`（方舟 Agent Plan，`https://ark.cn-beijing.volces.com/api/plan/v3`），无需额外的 Key。该端点目前仅放通 `doubao-embedding-vision`（输出 2048 维），填别的向量模型会返回 `404 UnsupportedModel`；换模型时 `EMBEDDING_DIM` 必须同步改成新模型的维度，并删掉旧集合重建。
+4. 集合 `expiry_items` 由 API 启动时自动创建（`AUTOINDEX` + `COSINE`），无需手工建表。
+5. 历史数据补向量：后台「到期管家」列表页点 **重建向量索引**，或调
+   `POST /api/admin/expiry-items/reindex`。
+
+> 维度填错会导致建集合失败并降级，`logs api` 里会有 warn；改对后重启 api 容器即可。

@@ -15,7 +15,7 @@
 		{
 			"path": "pages/expiry/index",
 			"style": {
-				"navigationBarTitleText": "临期食品",
+				"navigationBarTitleText": "到期管家",
 				"navigationStyle": "custom",
 				"backgroundColor": "#F8F5F6"
 			}
@@ -96,7 +96,7 @@
 		{
 			"path": "pages/add-food/index",
 			"style": {
-				"navigationBarTitleText": "添加食品",
+				"navigationBarTitleText": "添加物品",
 				"navigationStyle": "custom",
 				"backgroundColor": "#F8F5F6"
 			}

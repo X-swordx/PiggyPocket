@@ -1,138 +1,285 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
-import { InjectRepository } from '@nestjs/typeorm';
-import { Repository, MoreThan, LessThan, Between, FindOperator } from 'typeorm';
-import { ExpiryFood } from './entities/expiry-food.entity';
-import { CreateExpiryFoodDto } from './dto/create-expiry-food.dto';
-import { UpdateExpiryFoodDto } from './dto/update-expiry-food.dto';
-import { PaginationDto } from '../../common/dto/pagination.dto';
+import { Injectable, Inject, NotFoundException } from "@nestjs/common";
+import { InjectRepository } from "@nestjs/typeorm";
+import { In, Repository, SelectQueryBuilder } from "typeorm";
+import { ChatOpenAI } from "@langchain/openai";
+import { ExpiryItem } from "./entities/expiry-item.entity";
+import { CreateExpiryItemDto } from "./dto/create-expiry-item.dto";
+import { UpdateExpiryItemDto } from "./dto/update-expiry-item.dto";
+import {
+  SearchExpiryItemDto,
+  SearchExpiryStatus,
+} from "./dto/search-expiry-item.dto";
+import { buildSearchText } from "./expiry-labels";
+import { selectHits } from "./expiry-search-ranking";
+import {
+  RERANK_MODEL,
+  RERANK_TOP_K,
+  RERANK_SYSTEM_PROMPT,
+  buildRerankInput,
+  parseRerankIds,
+} from "./expiry-search-rerank";
+import { ItemVectorService } from "../vector/item-vector.service";
+import { PaginationDto } from "../../common/dto/pagination.dto";
 
-export type ExpiryStatus = 'fresh' | 'expiring' | 'expired';
+/**
+ * 取分数分布用的检索宽度。要判断「某条是否显著高于其他」就得先看到整个分布，
+ * 所以不能只捞 topK；家庭物品量级下这个宽度一次就能把全部物品捞回来。
+ */
+const DISTRIBUTION_LIMIT = 100;
 
-export interface ExpiryFoodResponse extends ExpiryFood {
+export type ExpiryStatus = "fresh" | "expiring" | "expired";
+
+export interface ExpiryItemResponse extends ExpiryItem {
   status: ExpiryStatus;
   statusText: string;
   daysRemaining: number;
   daysText: string;
 }
 
+/**
+ * 按状态过滤。阈值取每条记录自己的 `remindDays`，不能用统一常量：
+ * 设了「提前 30 天提醒」的物品，收到提醒时列表里也应该显示「即将到期」。
+ * mobile 与 admin 两个 service 共用这一份条件。
+ */
+export const applyStatusFilter = <T>(
+  qb: SelectQueryBuilder<T>,
+  alias: string,
+  status?: ExpiryStatus
+): SelectQueryBuilder<T> => {
+  const threshold = `DATE_ADD(CURDATE(), INTERVAL ${alias}.remindDays DAY)`;
+  if (status === "expired") {
+    qb.andWhere(`${alias}.expiryDate < CURDATE()`);
+  } else if (status === "expiring") {
+    qb.andWhere(
+      `${alias}.expiryDate >= CURDATE() AND ${alias}.expiryDate <= ${threshold}`
+    );
+  } else if (status === "fresh") {
+    qb.andWhere(`${alias}.expiryDate > ${threshold}`);
+  }
+  return qb;
+};
+
+/**
+ * 从搜索词里推断状态意图。例如「即将过期的东西」不是语义搜索，
+ * 应该走到期日状态过滤。
+ */
+const detectStatusIntent = (keyword: string): SearchExpiryStatus | null => {
+  const k = keyword.toLowerCase();
+  if (
+    /即将过期|快过期|要过期|马上过期|没几天|快到期|要到期|即将到期|临期|今天到期/.test(
+      k
+    )
+  )
+    return "expiring";
+  if (/已过期|过期了|坏掉|不能用了/.test(k)) return "expired";
+  if (/新鲜|充足|刚买|还有很多天|很久才到期/.test(k)) return "fresh";
+  return null;
+};
+
 @Injectable()
 export class ExpiryService {
   constructor(
-    @InjectRepository(ExpiryFood)
-    private readonly foodRepository: Repository<ExpiryFood>,
+    @InjectRepository(ExpiryItem)
+    private readonly itemRepository: Repository<ExpiryItem>,
+    private readonly vectorService: ItemVectorService,
+    @Inject(RERANK_MODEL)
+    private readonly rerankModel: ChatOpenAI | null
   ) {}
 
-  async create(createDto: CreateExpiryFoodDto) {
-    const food = this.foodRepository.create(createDto);
-    const saved = await this.foodRepository.save(food);
+  async create(createDto: CreateExpiryItemDto) {
+    const item = this.itemRepository.create(createDto);
+    const saved = await this.itemRepository.save(item);
+    await this.vectorService.upsert(
+      saved.id,
+      saved.userId,
+      buildSearchText(saved)
+    );
     return this.toResponse(saved);
   }
 
   async findAll(
     paginationDto: PaginationDto,
     userId: number,
-    status?: ExpiryStatus,
+    status?: ExpiryStatus
   ) {
     const { page, pageSize } = paginationDto;
-    const skip = (page - 1) * pageSize;
 
-    const { today, soon } = this.dateBounds();
-    let expiryDateOp: FindOperator<string> | undefined;
-    if (status === 'expired') {
-      expiryDateOp = LessThan(today);
-    } else if (status === 'expiring') {
-      expiryDateOp = Between(today, soon);
-    } else if (status === 'fresh') {
-      expiryDateOp = MoreThan(soon);
-    }
+    const qb = this.itemRepository
+      .createQueryBuilder("item")
+      .where("item.userId = :userId", { userId })
+      .orderBy("item.expiryDate", "ASC")
+      .skip((page - 1) * pageSize)
+      .take(pageSize);
+    applyStatusFilter(qb, "item", status);
 
-    const where: any = { userId };
-    if (expiryDateOp) {
-      where.expiryDate = expiryDateOp;
-    }
-
-    const [list, total] = await this.foodRepository.findAndCount({
-      where,
-      skip,
-      take: pageSize,
-      order: { expiryDate: 'ASC' },
-    });
+    const [list, total] = await qb.getManyAndCount();
 
     return {
-      list: list.map((f) => this.toResponse(f)),
+      list: list.map((item) => this.toResponse(item)),
       total,
       page,
       pageSize,
     };
   }
 
-  async findOne(id: number) {
-    const food = await this.foodRepository.findOne({ where: { id } });
-    if (!food) {
-      throw new NotFoundException(`食品 ID ${id} 不存在`);
+  /**
+   * 语义搜索。向量库可用时按相似度排序返回，
+   * 不可用（未配置或调用失败）则降级为名称/备注关键词匹配。
+   * 搜索词包含「即将过期」等状态时，直接走 MySQL 状态过滤，不走向量。
+   */
+  async search(searchDto: SearchExpiryItemDto) {
+    const { userId, keyword, topK = 10, status } = searchDto;
+    const statusIntent = status ?? detectStatusIntent(keyword);
+
+    if (statusIntent) {
+      const qb = this.itemRepository
+        .createQueryBuilder("item")
+        .where("item.userId = :userId", { userId });
+      applyStatusFilter(qb, "item", statusIntent);
+      const list = await qb
+        .orderBy("item.expiryDate", "ASC")
+        .take(topK)
+        .getMany();
+      return {
+        list: list.map((item) => this.toResponse(item)),
+        semantic: false,
+      };
     }
-    return this.toResponse(food);
+
+    const hits = await this.vectorService.search(
+      userId,
+      keyword,
+      DISTRIBUTION_LIMIT
+    );
+    if (!hits) {
+      const list = await this.itemRepository
+        .createQueryBuilder("item")
+        .where("item.userId = :userId", { userId })
+        .andWhere("(item.name LIKE :kw OR item.notes LIKE :kw)", {
+          kw: `%${keyword}%`,
+        })
+        .orderBy("item.expiryDate", "ASC")
+        .take(topK)
+        .getMany();
+      return {
+        list: list.map((item) => this.toResponse(item)),
+        semantic: false,
+      };
+    }
+
+    if (!hits.length) return { list: [], semantic: true };
+
+    // 向量库可能存有已删物品的残留 id，所以仍按 userId 兜一层
+    const candidates = hits.slice(0, RERANK_TOP_K);
+    const found = await this.itemRepository.findBy({
+      id: In(candidates.map((hit) => hit.id)),
+      userId,
+    });
+    const byId = new Map(found.map((item) => [item.id, item]));
+    const ordered = candidates
+      .map((hit) => byId.get(hit.id))
+      .filter((item): item is ExpiryItem => !!item);
+    if (!ordered.length) return { list: [], semantic: true };
+
+    const picked = await this.rerank(keyword, ordered);
+    // 重排不可用时回退到统计阈值：只保留显著高于其他物品的命中，
+    // 否则任何查询都会把全部物品按相似度排一遍返回
+    const list =
+      picked ??
+      (() => {
+        const strong = selectHits(hits, topK);
+        const keep = new Set(strong.map((hit) => hit.id));
+        return ordered.filter((item) => keep.has(item.id));
+      })();
+
+    return { list: list.map((item) => this.toResponse(item)), semantic: true };
   }
 
-  async update(id: number, updateDto: UpdateExpiryFoodDto) {
-    const food = await this.foodRepository.findOne({ where: { id } });
-    if (!food) {
-      throw new NotFoundException(`食品 ID ${id} 不存在`);
+  /**
+   * 让模型从候选里挑出真正相关的。返回 null 表示重排不可用（未配置、超时、
+   * 解析失败），调用方回退到统计阈值。
+   */
+  private async rerank(
+    keyword: string,
+    candidates: ExpiryItem[]
+  ): Promise<ExpiryItem[] | null> {
+    if (!this.rerankModel) return null;
+    try {
+      const response = await this.rerankModel.invoke([
+        ["system", RERANK_SYSTEM_PROMPT],
+        ["human", buildRerankInput(keyword, candidates)],
+      ]);
+      const ids = parseRerankIds(String(response.content), candidates.length);
+      return ids ? ids.map((index) => candidates[index]) : null;
+    } catch {
+      return null;
     }
-    Object.assign(food, updateDto);
-    const saved = await this.foodRepository.save(food);
+  }
+
+  async findOne(id: number) {
+    return this.toResponse(await this.getOrFail(id));
+  }
+
+  async update(id: number, updateDto: UpdateExpiryItemDto) {
+    const item = await this.getOrFail(id);
+    // 到期日或提醒天数变了，之前的推送记录就作废，让它重新进提醒队列
+    const resetNotified =
+      (updateDto.expiryDate !== undefined &&
+        updateDto.expiryDate !== item.expiryDate) ||
+      (updateDto.remindDays !== undefined &&
+        updateDto.remindDays !== item.remindDays);
+
+    Object.assign(item, updateDto);
+    if (resetNotified) item.notifiedAt = null;
+
+    const saved = await this.itemRepository.save(item);
+    await this.vectorService.upsert(
+      saved.id,
+      saved.userId,
+      buildSearchText(saved)
+    );
     return this.toResponse(saved);
   }
 
   async remove(id: number) {
-    const food = await this.foodRepository.findOne({ where: { id } });
-    if (!food) {
-      throw new NotFoundException(`食品 ID ${id} 不存在`);
-    }
-    await this.foodRepository.remove(food);
+    const item = await this.getOrFail(id);
+    await this.itemRepository.remove(item);
+    await this.vectorService.remove(id);
     return { success: true };
   }
 
-  /** 返回今天与"即将过期"上限（含）的日期字符串，用于按状态过滤。 */
-  private dateBounds() {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const soon = new Date(today);
-    soon.setDate(soon.getDate() + 3);
-    return { today: this.formatDate(today), soon: this.formatDate(soon) };
+  private async getOrFail(id: number) {
+    const item = await this.itemRepository.findOne({ where: { id } });
+    if (!item) {
+      throw new NotFoundException(`物品 ID ${id} 不存在`);
+    }
+    return item;
   }
 
-  private formatDate(d: Date): string {
-    const y = d.getFullYear();
-    const m = String(d.getMonth() + 1).padStart(2, '0');
-    const day = String(d.getDate()).padStart(2, '0');
-    return `${y}-${m}-${day}`;
-  }
-
-  private toResponse(food: ExpiryFood): ExpiryFoodResponse {
-    const days = this.daysRemaining(food.expiryDate);
+  private toResponse(item: ExpiryItem): ExpiryItemResponse {
+    const days = this.daysRemaining(item.expiryDate);
     let status: ExpiryStatus;
     let statusText: string;
     if (days < 0) {
-      status = 'expired';
-      statusText = '已过期';
-    } else if (days <= 3) {
-      status = 'expiring';
-      statusText = '即将过期';
+      status = "expired";
+      statusText = "已过期";
+    } else if (days <= item.remindDays) {
+      status = "expiring";
+      statusText = "即将到期";
     } else {
-      status = 'fresh';
-      statusText = '新鲜';
+      status = "fresh";
+      statusText = "充足";
     }
 
     const daysText =
       days < 0
         ? `${Math.abs(days)}天前过期`
         : days === 0
-          ? '今天过期'
-          : `${days}天后过期`;
+        ? "今天到期"
+        : `${days}天后到期`;
 
     return {
-      ...food,
+      ...item,
       status,
       statusText,
       daysRemaining: days,

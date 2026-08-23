@@ -6,7 +6,7 @@
         <uni-icons type="left" size="24" color="var(--theme-primary)" />
       </view>
       <view class="title">
-        <text>{{ isEditing ? '编辑食品' : '添加食品' }}</text>
+        <text>{{ isEditing ? '编辑物品' : '添加物品' }}</text>
       </view>
       <view class="placeholder-btn">
       </view>
@@ -17,7 +17,7 @@
       <view class="image-upload" @click="uploadImage">
         <view v-if="!formData.imageUrl" class="upload-placeholder">
           <uni-icons type="camera" size="48" color="var(--theme-primary)" />
-          <text class="upload-text">点击上传食品图片</text>
+          <text class="upload-text">点击上传物品图片</text>
         </view>
         <image v-else class="uploaded-image" :src="formData.imageUrl" mode="aspectFill" />
         <view class="image-badge">
@@ -27,17 +27,17 @@
 
       <!-- Form Section -->
       <view class="form-section">
-        <!-- Food Name Input -->
+        <!-- Item Name Input -->
         <view class="form-item">
           <view class="label">
-            <text>食品名称</text>
+            <text>物品名称</text>
           </view>
           <view class="input-wrapper">
             <uni-icons type="shop" size="20" color="var(--theme-primary)" class="input-icon" />
             <input
               class="form-input"
               v-model="formData.name"
-              placeholder="例如：有机全脂牛奶"
+              placeholder="例如：布洛芬缓释胶囊"
               placeholder-class="placeholder"
             />
           </view>
@@ -47,7 +47,7 @@
         <view class="form-grid">
           <view class="form-item">
             <view class="label">
-              <text>保质期至</text>
+              <text>到期日期</text>
             </view>
             <view class="input-wrapper">
               <uni-icons type="calendar" size="20" color="var(--theme-primary)" class="input-icon" />
@@ -83,10 +83,31 @@
           </view>
         </view>
 
+        <!-- Remind Ahead -->
+        <view class="form-item">
+          <view class="label">
+            <text>提前提醒</text>
+          </view>
+          <view class="input-wrapper">
+            <uni-icons type="notification" size="20" color="var(--theme-primary)" class="input-icon" />
+            <picker
+              :value="remindIndex"
+              :range="remindOptions"
+              range-key="label"
+              @change="onRemindChange"
+              class="picker-wrapper"
+            >
+              <view class="picker-display">
+                <text>{{ remindOptions[remindIndex].label }}</text>
+              </view>
+            </picker>
+          </view>
+        </view>
+
         <!-- Storage Location -->
         <view class="form-item">
           <view class="label">
-            <text>储存位置</text>
+            <text>存放位置</text>
           </view>
           <view class="storage-grid">
             <view
@@ -105,7 +126,7 @@
         <!-- Category Selection -->
         <view class="form-item">
           <view class="label">
-            <text>食品分类</text>
+            <text>物品分类</text>
           </view>
           <view class="category-grid">
             <view
@@ -129,7 +150,7 @@
           <textarea
             class="notes-input"
             v-model="formData.notes"
-            placeholder="记录一些细节，比如购于哪家超市..."
+            placeholder="记录一些细节，比如品牌、放在哪一格（搜索时也会用到）"
             placeholder-class="placeholder"
             rows="3"
           />
@@ -153,18 +174,24 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
+import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
 import uniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
 import PrivacyModal from '@/components/PrivacyModal.vue'
 import { uploadToOSS } from '@/services/oss'
-import { addExpiryFood, editExpiryFood, getExpiryFood } from '@/services/expiry'
+import {
+  addExpiryItem,
+  editExpiryItem,
+  getExpiryItem,
+  ensureSubscribe
+} from '@/services/expiry'
 import { themeStyle } from '@/utils/theme'
 
 interface FormData {
   name: string
   expiryDate: string
   quantity: number
+  remindDays: number
   storage: string
   category: string
   notes: string
@@ -175,8 +202,9 @@ const formData = ref<FormData>({
   name: '',
   expiryDate: '',
   quantity: 1,
+  remindDays: 3,
   storage: 'fridge',
-  category: 'dairy',
+  category: 'food',
   notes: '',
   imageUrl: ''
 })
@@ -189,19 +217,40 @@ const privacyModal = ref<InstanceType<typeof PrivacyModal>>()
 const storageOptions = [
   { label: '冷藏', value: 'fridge', icon: 'home' },
   { label: '冷冻', value: 'freezer', icon: 'cold' },
-  { label: '常温', value: 'pantry', icon: 'tag' }
+  { label: '常温', value: 'pantry', icon: 'tag' },
+  { label: '收纳柜', value: 'cabinet', icon: 'folder-add' },
+  { label: '其他', value: 'other', icon: 'more' }
 ]
 
 const categories = [
-  { label: '乳制品', value: 'dairy' },
-  { label: '肉类', value: 'meat' },
-  { label: '蔬菜', value: 'vegetable' },
-  { label: '水果', value: 'fruit' },
-  { label: '海鲜', value: 'seafood' },
-  { label: '调味品', value: 'condiment' },
-  { label: '零食', value: 'snack' },
+  { label: '食品饮料', value: 'food' },
+  { label: '药品', value: 'medicine' },
+  { label: '美妆护肤', value: 'cosmetic' },
+  { label: '日用品', value: 'daily' },
+  { label: '宠物用品', value: 'pet' },
+  { label: '滤芯耗材', value: 'consumable' },
+  { label: '卡券会员', value: 'card' },
+  { label: '证件保险', value: 'document' },
   { label: '其他', value: 'other' }
 ]
+
+const remindOptions = [
+  { label: '到期当天提醒', value: 0 },
+  { label: '提前 1 天', value: 1 },
+  { label: '提前 3 天', value: 3 },
+  { label: '提前 7 天', value: 7 },
+  { label: '提前 15 天', value: 15 },
+  { label: '提前 30 天', value: 30 }
+]
+
+const remindIndex = computed(() => {
+  const idx = remindOptions.findIndex((o) => o.value === formData.value.remindDays)
+  return idx >= 0 ? idx : 2
+})
+
+const onRemindChange = (e: any) => {
+  formData.value.remindDays = remindOptions[Number(e.detail.value)].value
+}
 
 const onDateChange = (e: any) => {
   formData.value.expiryDate = e.detail.value
@@ -221,7 +270,7 @@ const uploadImage = async () => {
       if (!tempFilePath) return
       try {
         uni.showLoading({ title: '上传中...' })
-        formData.value.imageUrl = await uploadToOSS(tempFilePath, 'foods')
+        formData.value.imageUrl = await uploadToOSS(tempFilePath, 'items')
         uni.showToast({ title: '图片上传成功', icon: 'success' })
       } catch (err: any) {
         uni.showToast({ title: err.message || '上传失败', icon: 'none' })
@@ -251,15 +300,16 @@ onLoad(async (options: any) => {
     editingId.value = Number(options.id)
     isEditing.value = true
     try {
-      const food = await getExpiryFood(editingId.value)
+      const item = await getExpiryItem(editingId.value)
       formData.value = {
-        name: food.name,
-        expiryDate: food.expiryDate,
-        quantity: food.quantity || 1,
-        storage: food.storage || 'fridge',
-        category: food.category || 'dairy',
-        notes: food.notes || '',
-        imageUrl: food.imageUrl || ''
+        name: item.name,
+        expiryDate: item.expiryDate,
+        quantity: item.quantity || 1,
+        remindDays: item.remindDays ?? 3,
+        storage: item.storage || 'fridge',
+        category: item.category || 'food',
+        notes: item.notes || '',
+        imageUrl: item.imageUrl || ''
       }
     } catch (err: any) {
       uni.showToast({ title: err.message || '加载失败', icon: 'none' })
@@ -267,14 +317,39 @@ onLoad(async (options: any) => {
   }
 })
 
+/**
+ * 保存后询问是否开启微信提醒。
+ * 微信规则：一次授权只能推一条消息，所以每次保存都问一次，把配额攒在后端。
+ */
+const askSubscribe = () =>
+  new Promise<void>((resolve) => {
+    uni.showModal({
+      title: '开启到期提醒',
+      content: '到了提醒日期，用微信服务通知提醒你处理。每次授权可推送一条。',
+      confirmText: '开启',
+      cancelText: '暂不',
+      success: async (res) => {
+        if (res.confirm) {
+          try {
+            await ensureSubscribe()
+          } catch (err) {
+            console.error('ensureSubscribe fail', err)
+          }
+        }
+        resolve()
+      },
+      fail: () => resolve()
+    })
+  })
+
 const submitForm = async () => {
   if (submitting.value) return
   if (!formData.value.name.trim()) {
-    uni.showToast({ title: '请输入食品名称', icon: 'none' })
+    uni.showToast({ title: '请输入物品名称', icon: 'none' })
     return
   }
   if (!formData.value.expiryDate) {
-    uni.showToast({ title: '请选择保质期日期', icon: 'none' })
+    uni.showToast({ title: '请选择到期日期', icon: 'none' })
     return
   }
 
@@ -282,6 +357,7 @@ const submitForm = async () => {
     name: formData.value.name.trim(),
     expiryDate: formData.value.expiryDate,
     quantity: formData.value.quantity || 1,
+    remindDays: formData.value.remindDays,
     storage: formData.value.storage,
     category: formData.value.category,
     notes: formData.value.notes || undefined,
@@ -291,15 +367,14 @@ const submitForm = async () => {
   submitting.value = true
   try {
     if (isEditing.value) {
-      await editExpiryFood(editingId.value, payload)
+      await editExpiryItem(editingId.value, payload)
       uni.showToast({ title: '保存成功', icon: 'success', duration: 1500 })
     } else {
-      await addExpiryFood({ ...payload, bgColor: getRandomBgColor() })
+      await addExpiryItem({ ...payload, bgColor: getRandomBgColor() })
       uni.showToast({ title: '添加成功', icon: 'success', duration: 1500 })
     }
-    setTimeout(() => {
-      uni.navigateBack()
-    }, 1500)
+    await askSubscribe()
+    uni.navigateBack()
   } catch (err: any) {
     uni.showToast({ title: err.message || '操作失败', icon: 'none' })
   } finally {

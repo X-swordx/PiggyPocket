@@ -123,7 +123,7 @@ onMounted(fetchData)
           </ElTag>
         </template>
       </ElTableColumn>
-      <ElTableColumn label="食品" prop="foodCount" width="80" />
+      <ElTableColumn label="物品" prop="itemCount" width="80" />
       <ElTableColumn label="心愿" prop="wishCount" width="80" />
       <ElTableColumn label="菜品" prop="dishCount" width="80" />
       <ElTableColumn label="订单" prop="orderCount" width="80" />

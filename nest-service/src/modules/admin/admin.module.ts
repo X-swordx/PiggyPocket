@@ -11,7 +11,7 @@ import { AdminAuthGuard } from './admin-auth.guard';
 import { AdminRoleGuard } from './admin-role.guard';
 import { AdminResourceController } from './admin-resource.controller';
 import { AdminSystemController } from './admin-system.controller';
-import { AdminExpiryFoodService } from './admin-expiry-food.service';
+import { AdminExpiryItemService } from './admin-expiry-item.service';
 import { AdminWishService } from './admin-wish.service';
 import { AdminDishService } from './admin-dish.service';
 import { AdminDishCategoryService } from './admin-dish-category.service';
@@ -22,7 +22,7 @@ import { AdminAccountService } from './admin-account.service';
 import { AdminOperationLogService } from './admin-operation-log.service';
 import { AdminDashboardService } from './admin-dashboard.service';
 import { AdminRolePermissionService } from './admin-role-permission.service';
-import { ExpiryFood } from '../expiry/entities/expiry-food.entity';
+import { ExpiryItem } from '../expiry/entities/expiry-item.entity';
 import { Wish } from '../wish/entities/wish.entity';
 import { Dish } from '../foodie-buddy/dish/entities/dish.entity';
 import { DishCategory } from '../foodie-buddy/dish/entities/dish-category.entity';
@@ -35,6 +35,8 @@ import { Message } from '../foodie-buddy/message/entities/message.entity';
 import { MessageRead } from '../foodie-buddy/message/entities/message-read.entity';
 import { AdminMessageService } from './admin-message.service';
 import { OssModule } from '../oss/oss.module';
+import { VectorModule } from '../vector/vector.module';
+import { ExpiryModule } from '../expiry/expiry.module';
 
 @Module({
   imports: [
@@ -42,7 +44,7 @@ import { OssModule } from '../oss/oss.module';
       AdminUser,
       AdminOperationLog,
       AdminRolePermission,
-      ExpiryFood,
+      ExpiryItem,
       Wish,
       Dish,
       DishCategory,
@@ -55,6 +57,9 @@ import { OssModule } from '../oss/oss.module';
       MessageRead,
     ]),
     OssModule,
+    // AdminExpiryItemService 依赖 ItemVectorService（重建索引）和 ExpiryReminderService（手动触发扫描）
+    VectorModule,
+    ExpiryModule,
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -71,7 +76,7 @@ import { OssModule } from '../oss/oss.module';
     AdminAuthService,
     AdminAuthGuard,
     AdminRoleGuard,
-    AdminExpiryFoodService,
+    AdminExpiryItemService,
     AdminWishService,
     AdminDishService,
     AdminDishCategoryService,

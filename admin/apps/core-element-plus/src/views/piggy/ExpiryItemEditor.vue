@@ -5,10 +5,10 @@ import {
   ElOption, ElDatePicker, ElButton, ElMessage, type FormInstance,
 } from 'element-plus'
 import {
-  getExpiryFood, createExpiryFood, updateExpiryFood,
-  type AdminExpiryFood,
+  getExpiryItem, createExpiryItem, updateExpiryItem,
+  type AdminExpiryItem,
 } from '@/api/modules/piggy'
-import { STORAGE_OPTIONS, FOOD_CATEGORY_OPTIONS } from './options'
+import { STORAGE_OPTIONS, ITEM_CATEGORY_OPTIONS } from './options'
 import UserSelect from './components/UserSelect.vue'
 import ImageUpload from './components/ImageUpload.vue'
 
@@ -25,12 +25,13 @@ const emit = defineEmits<{
 const formRef = ref<FormInstance>()
 const submitting = ref(false)
 
-const form = reactive<Partial<AdminExpiryFood>>({
+const form = reactive<Partial<AdminExpiryItem>>({
   userId: undefined,
   name: '',
   imageUrl: '',
   expiryDate: '',
   quantity: 1,
+  remindDays: 3,
   storage: undefined,
   category: undefined,
   notes: '',
@@ -41,8 +42,8 @@ const initialUserNickname = ref<string | null>(null)
 
 const rules = {
   userId: [{ required: true, message: '请选择所属用户', trigger: 'change' }],
-  name: [{ required: true, message: '请输入食品名称', trigger: 'blur' }],
-  expiryDate: [{ required: true, message: '请选择保质期', trigger: 'change' }],
+  name: [{ required: true, message: '请输入物品名称', trigger: 'blur' }],
+  expiryDate: [{ required: true, message: '请选择到期日期', trigger: 'change' }],
 }
 
 watch(
@@ -51,19 +52,20 @@ watch(
     if (!v) return
     resetForm()
     if (id) {
-      const food = await getExpiryFood(id)
+      const item = await getExpiryItem(id)
       Object.assign(form, {
-        userId: food.userId,
-        name: food.name,
-        imageUrl: food.imageUrl ?? '',
-        expiryDate: food.expiryDate,
-        quantity: food.quantity,
-        storage: food.storage,
-        category: food.category,
-        notes: food.notes ?? '',
-        bgColor: food.bgColor ?? '',
+        userId: item.userId,
+        name: item.name,
+        imageUrl: item.imageUrl ?? '',
+        expiryDate: item.expiryDate,
+        quantity: item.quantity,
+        remindDays: item.remindDays,
+        storage: item.storage,
+        category: item.category,
+        notes: item.notes ?? '',
+        bgColor: item.bgColor ?? '',
       })
-      initialUserNickname.value = food.userNickname
+      initialUserNickname.value = item.userNickname
     }
   },
   { immediate: true },
@@ -75,6 +77,7 @@ function resetForm() {
   form.imageUrl = ''
   form.expiryDate = ''
   form.quantity = 1
+  form.remindDays = 3
   form.storage = undefined
   form.category = undefined
   form.notes = ''
@@ -90,11 +93,11 @@ async function onSubmit() {
     if (props.id) {
       // 更新时后端不接受 userId 字段
       const { userId, ...rest } = form
-      await updateExpiryFood(props.id, rest)
+      await updateExpiryItem(props.id, rest)
       ElMessage.success('已更新')
     }
     else {
-      await createExpiryFood(form)
+      await createExpiryItem(form)
       ElMessage.success('已创建')
     }
     emit('saved')
@@ -112,7 +115,7 @@ function onClose() {
 <template>
   <ElDialog
     :model-value="visible"
-    :title="id ? '编辑临期食品' : '新增临期食品'"
+    :title="id ? '编辑到期物品' : '新增到期物品'"
     width="640px"
     destroy-on-close
     @update:model-value="emit('update:visible', $event)"
@@ -136,7 +139,7 @@ function onClose() {
       <ElFormItem label="图片">
         <ImageUpload v-model="form.imageUrl" dir="admin/expiry" />
       </ElFormItem>
-      <ElFormItem label="保质期" prop="expiryDate">
+      <ElFormItem label="到期日期" prop="expiryDate">
         <ElDatePicker
           v-model="form.expiryDate"
           type="date"
@@ -148,7 +151,11 @@ function onClose() {
       <ElFormItem label="数量">
         <ElInputNumber v-model="form.quantity" :min="1" :max="999" />
       </ElFormItem>
-      <ElFormItem label="储存位置">
+      <ElFormItem label="提前提醒">
+        <ElInputNumber v-model="form.remindDays" :min="0" :max="365" />
+        <span class="ml-2 text-xs text-muted-foreground">天，0 表示到期当天才提醒</span>
+      </ElFormItem>
+      <ElFormItem label="存放位置">
         <ElSelect v-model="form.storage" clearable class="w-full">
           <ElOption
             v-for="opt in STORAGE_OPTIONS"
@@ -161,7 +168,7 @@ function onClose() {
       <ElFormItem label="分类">
         <ElSelect v-model="form.category" clearable class="w-full">
           <ElOption
-            v-for="opt in FOOD_CATEGORY_OPTIONS"
+            v-for="opt in ITEM_CATEGORY_OPTIONS"
             :key="opt.value"
             :label="opt.label"
             :value="opt.value"
