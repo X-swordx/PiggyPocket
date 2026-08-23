@@ -9,3 +9,7 @@
 nest-service/dist/
 nest-service/.env
 nest-service/.env.*
+
+# 本地专用配置（含真实凭据，勿提交）
+**/.env.local
+deploy/cloud/docker-compose.override.yml
