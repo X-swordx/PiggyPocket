@@ -54,7 +54,11 @@ export class AdminOrderService {
     if (groupId) where.groupId = groupId;
     if (keyword) where.orderNo = Like(`%${keyword}%`);
     if (startDate && endDate) {
-      where.createdAt = Between(new Date(startDate), new Date(`${endDate}T23:59:59`));
+      // 显式带东八区偏移：库内是 UTC，纯日期串会被当成 UTC 零点，起始边界会偏 8 小时
+      where.createdAt = Between(
+        new Date(`${startDate}T00:00:00+08:00`),
+        new Date(`${endDate}T23:59:59+08:00`),
+      );
     }
     if (cookStartDate && cookEndDate) {
       where.cookDate = Between(cookStartDate, cookEndDate);

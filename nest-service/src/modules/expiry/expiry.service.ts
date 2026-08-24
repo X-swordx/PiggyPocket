@@ -37,6 +37,12 @@ export interface ExpiryItemResponse extends ExpiryItem {
 }
 
 /**
+ * MySQL 会话时区是 UTC，CURDATE() 在北京时间 00:00-08:00 会返回前一天，
+ * 使到期状态整体错一天。这里显式换算出东八区当天。
+ */
+export const BEIJING_TODAY = `DATE(CONVERT_TZ(UTC_TIMESTAMP(), '+00:00', '+08:00'))`;
+
+/**
  * 按状态过滤。阈值取每条记录自己的 `remindDays`，不能用统一常量：
  * 设了「提前 30 天提醒」的物品，收到提醒时列表里也应该显示「即将到期」。
  * mobile 与 admin 两个 service 共用这一份条件。
@@ -46,12 +52,12 @@ export const applyStatusFilter = <T>(
   alias: string,
   status?: ExpiryStatus
 ): SelectQueryBuilder<T> => {
-  const threshold = `DATE_ADD(CURDATE(), INTERVAL ${alias}.remindDays DAY)`;
+  const threshold = `DATE_ADD(${BEIJING_TODAY}, INTERVAL ${alias}.remindDays DAY)`;
   if (status === "expired") {
-    qb.andWhere(`${alias}.expiryDate < CURDATE()`);
+    qb.andWhere(`${alias}.expiryDate < ${BEIJING_TODAY}`);
   } else if (status === "expiring") {
     qb.andWhere(
-      `${alias}.expiryDate >= CURDATE() AND ${alias}.expiryDate <= ${threshold}`
+      `${alias}.expiryDate >= ${BEIJING_TODAY} AND ${alias}.expiryDate <= ${threshold}`
     );
   } else if (status === "fresh") {
     qb.andWhere(`${alias}.expiryDate > ${threshold}`);

@@ -6,6 +6,7 @@ import { ExpiryItem } from './entities/expiry-item.entity';
 import { User } from '../foodie-buddy/user/entities/user.entity';
 import { WechatService, buildExpiryData } from '../wechat/wechat.service';
 import { STORAGE_LABELS } from './expiry-labels';
+import { BEIJING_TODAY } from './expiry.service';
 
 export interface ReminderResult {
   candidates: number;
@@ -47,7 +48,7 @@ export class ExpiryReminderService {
       .createQueryBuilder('item')
       .where('item.notifiedAt IS NULL')
       .andWhere(
-        'item.expiryDate <= DATE_ADD(CURDATE(), INTERVAL item.remindDays DAY)',
+        `item.expiryDate <= DATE_ADD(${BEIJING_TODAY}, INTERVAL item.remindDays DAY)`,
       )
       .orderBy('item.expiryDate', 'ASC')
       .getMany();
