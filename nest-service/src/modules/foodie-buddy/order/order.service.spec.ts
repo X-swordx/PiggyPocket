@@ -264,6 +264,15 @@ describe('OrderService', () => {
       expect(result.ratedAt).toBeDefined();
     });
 
+    it('应该保存评价图片', async () => {
+      mockOrderRepository.findOne.mockResolvedValue(completedOrder);
+      mockOrderRepository.save.mockImplementation((order) => Promise.resolve(order));
+
+      const result = await service.updateRating(1, 1, 5, 'https://example.com/img.jpg');
+
+      expect(result.ratingImage).toBe('https://example.com/img.jpg');
+    });
+
     it('订单不存在时应抛出 NotFoundException', async () => {
       mockOrderRepository.findOne.mockResolvedValue(null);
 

@@ -51,6 +51,9 @@
                 </view>
               </view>
             </view>
+            <view v-if="order.ratingImage" class="rating-image-card" @click="previewImage(order.ratingImage)">
+              <image class="rating-image" :src="order.ratingImage" mode="aspectFill" />
+            </view>
           </view>
         </view>
       </view>
@@ -73,13 +76,25 @@
             @click="setRating(n)"
           />
         </view>
+        <view class="rating-image-section">
+          <view v-if="!ratingImage" class="rating-image-picker" @click="chooseRatingImage">
+            <uni-icons type="camera-filled" size="24" color="var(--theme-primary)" />
+            <text>添加评价图片（可选）</text>
+          </view>
+          <view v-else class="rating-image-preview" @click="previewImage(ratingImage)">
+            <image class="rating-image" :src="ratingImage" mode="aspectFill" />
+            <view class="rating-image-clear" @click.stop="ratingImage = ''">
+              <uni-icons type="clear" size="16" color="#fff" />
+            </view>
+          </view>
+        </view>
         <view class="rating-actions">
           <view class="rating-btn cancel" @click="cancelRating">
             <text>取消</text>
           </view>
           <view
             class="rating-btn confirm"
-            :class="{ disabled: ratingValue < 1 || submittingRating }"
+            :class="{ disabled: ratingValue < 1 || submittingRating || uploadingImage }"
             @click="confirmRating"
           >
             <text>{{ submittingRating ? '提交中...' : '确认' }}</text>
@@ -87,6 +102,8 @@
         </view>
       </view>
     </view>
+
+    <PrivacyModal ref="privacyModal" />
   </view>
 </template>
 
@@ -94,7 +111,9 @@
 import { ref } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import uniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
+import PrivacyModal from '@/components/PrivacyModal.vue'
 import { getCurrentUser, getMyDiningGroups, getGroupOrders, getOrders, updateOrderRating, type FoodieOrder } from '@/services/foodieBuddy'
+import { uploadToOSS } from '@/services/oss'
 import { themeStyle } from '@/utils/theme'
 
 interface HistoryDish {
@@ -112,6 +131,7 @@ interface HistoryOrder {
   createdAt: string
   cookDate?: string
   rating?: number
+  ratingImage?: string
   dishes: HistoryDish[]
 }
 
@@ -137,6 +157,7 @@ const mapOrder = (order: FoodieOrder): HistoryOrder => {
     createdAt: order.createdAt,
     cookDate: order.cookDate,
     rating: order.rating,
+    ratingImage: order.ratingImage,
     dishes: (order.items || []).map((item) => ({
       itemId: item.id,
       dishId: item.dishId,
@@ -189,11 +210,15 @@ const goBack = () => {
 
 const ratingOrder = ref<HistoryOrder | null>(null)
 const ratingValue = ref(0)
+const ratingImage = ref('')
+const uploadingImage = ref(false)
 const submittingRating = ref(false)
+const privacyModal = ref<InstanceType<typeof PrivacyModal>>()
 
 const openRating = (order: HistoryOrder) => {
   ratingOrder.value = order
   ratingValue.value = order.rating || 0
+  ratingImage.value = order.ratingImage || ''
 }
 
 const setRating = (n: number) => {
@@ -203,17 +228,56 @@ const setRating = (n: number) => {
 const cancelRating = () => {
   ratingOrder.value = null
   ratingValue.value = 0
+  ratingImage.value = ''
+}
+
+const previewImage = (url: string) => {
+  uni.previewImage({ urls: [url], current: url })
+}
+
+const chooseRatingImage = async () => {
+  const agreed = await privacyModal.value?.ensurePrivacyAgreement()
+  if (!agreed) return
+
+  uni.chooseMedia({
+    count: 1,
+    mediaType: ['image'],
+    sourceType: ['album', 'camera'],
+    success: async (res) => {
+      const tempFilePath = res.tempFiles?.[0]?.tempFilePath
+      if (!tempFilePath) return
+      uploadingImage.value = true
+      try {
+        uni.showLoading({ title: '上传中...' })
+        ratingImage.value = await uploadToOSS(tempFilePath, 'order-ratings')
+      } catch (err: any) {
+        uni.showToast({ title: err.message || '上传失败', icon: 'none' })
+      } finally {
+        uni.hideLoading()
+        uploadingImage.value = false
+      }
+    },
+    fail: (err) => {
+      console.error('chooseMedia fail', err)
+      if (err.errMsg?.includes('cancel')) return
+      uni.showToast({ title: err.errMsg || '选择图片失败', icon: 'none' })
+    }
+  })
 }
 
 const confirmRating = async () => {
-  if (!ratingOrder.value || ratingValue.value < 1) return
+  if (!ratingOrder.value || ratingValue.value < 1 || uploadingImage.value) return
   submittingRating.value = true
   try {
     const user = await getCurrentUser()
-    await updateOrderRating(ratingOrder.value.id, user.id, ratingValue.value)
+    await updateOrderRating(
+      ratingOrder.value.id,
+      user.id,
+      ratingValue.value,
+      ratingImage.value || undefined
+    )
     uni.showToast({ title: '评价已提交', icon: 'success' })
-    ratingOrder.value = null
-    ratingValue.value = 0
+    cancelRating()
     await loadHistory()
   } catch (err: any) {
     uni.showToast({ title: err.message || '评价失败', icon: 'none' })
@@ -427,6 +491,62 @@ onShow(loadHistory)
   justify-content: center;
   gap: 16px;
   margin-bottom: 32px;
+}
+
+.rating-image-section {
+  margin-bottom: 24px;
+}
+
+.rating-image-picker {
+  height: 96px;
+  background: var(--theme-primary-lighter);
+  border-radius: 12px;
+  border: 2px dashed rgba(var(--theme-primary-rgb), 0.3);
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.rating-image-picker text {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--theme-primary);
+}
+
+.rating-image-preview {
+  position: relative;
+  width: 96px;
+  height: 96px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.rating-image-clear {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  width: 24px;
+  height: 24px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.rating-image-card {
+  margin-top: 12px;
+  width: 96px;
+  height: 96px;
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.rating-image {
+  width: 100%;
+  height: 100%;
 }
 
 .rating-actions {

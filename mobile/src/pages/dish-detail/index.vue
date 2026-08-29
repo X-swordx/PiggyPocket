@@ -131,7 +131,7 @@
         <!-- Hero Image -->
         <view class="hero-section" @click="onHeroTap">
           <view class="hero-image">
-            <image v-if="dish.image" class="hero-bg-image" :src="dish.image" mode="aspectFill" />
+            <image v-if="displayImage" class="hero-bg-image" :src="displayImage" mode="aspectFill" />
             <view v-else class="hero-fallback-bg"
               :style="{ background: `linear-gradient(135deg, ${dish.bgColor || '#f0b7a4'} 0%, var(--theme-gradient-end) 100%)` }"></view>
             <view v-if="editing" class="hero-edit-mask">
@@ -394,6 +394,7 @@ const editForm = ref<EditForm>({
 
 const displayIngredients = computed(() => editing.value ? editForm.value.ingredients : dish.value.ingredients)
 const displaySteps = computed(() => editing.value ? editForm.value.steps : dish.value.steps)
+const displayImage = computed(() => editing.value ? editForm.value.image : dish.value.image)
 
 const startEditing = () => {
   editForm.value = {

@@ -69,6 +69,7 @@ export interface FoodieOrder {
   cookDate?: string
   rating?: number
   ratedAt?: string
+  ratingImage?: string
   items: FoodieOrderItem[]
   user?: FoodieUser
   createdAt: string
@@ -284,12 +285,17 @@ export const updateOrderStatus = (id: number, status: FoodieOrder['status']) => 
   })
 }
 
-export const updateOrderRating = (id: number, userId: number, rating: number) => {
+export const updateOrderRating = (
+  id: number,
+  userId: number,
+  rating: number,
+  ratingImage?: string
+) => {
   return request<FoodieOrder>({
     url: `/foodie-buddy/orders/${id}/rating`,
     method: 'PUT',
     query: { userId },
-    data: { rating }
+    data: { rating, ratingImage }
   })
 }
 

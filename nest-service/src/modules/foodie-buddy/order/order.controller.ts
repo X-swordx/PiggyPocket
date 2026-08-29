@@ -82,7 +82,7 @@ export class OrderController {
     @Query('userId') userId: string,
     @Body() dto: UpdateOrderRatingDto,
   ) {
-    return this.orderService.updateRating(id, Number(userId), dto.rating);
+    return this.orderService.updateRating(id, Number(userId), dto.rating, dto.ratingImage);
   }
 
   @Delete(':id')

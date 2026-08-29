@@ -51,6 +51,10 @@ export class Order {
   @Column({ type: 'datetime', nullable: true, comment: '评价时间' })
   ratedAt?: Date;
 
+  @ApiProperty({ description: '评价图片URL', required: false })
+  @Column({ type: 'varchar', length: 255, nullable: true, comment: '评价图片URL' })
+  ratingImage?: string;
+
   @ApiProperty({ description: '创建时间' })
   @CreateDateColumn({ type: 'datetime', comment: '创建时间' })
   createdAt: Date;

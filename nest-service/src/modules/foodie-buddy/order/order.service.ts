@@ -110,7 +110,7 @@ export class OrderService {
     return await this.orderRepository.save(order);
   }
 
-  async updateRating(id: number, userId: number, rating: number) {
+  async updateRating(id: number, userId: number, rating: number, ratingImage?: string) {
     const order = await this.findOne(id);
     if (order.userId !== userId) {
       throw new ForbiddenException('只能评价自己的订单');
@@ -120,6 +120,9 @@ export class OrderService {
     }
     order.rating = rating;
     order.ratedAt = new Date();
+    if (ratingImage !== undefined) {
+      order.ratingImage = ratingImage;
+    }
     return await this.orderRepository.save(order);
   }
 
