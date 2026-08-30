@@ -1,5 +1,6 @@
-import { Module } from '@nestjs/common';
+import { Module, MiddlewareConsumer, NestModule } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
+import { APP_INTERCEPTOR } from '@nestjs/core';
 import { ScheduleModule } from '@nestjs/schedule';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { FoodieBuddyModule } from './modules/foodie-buddy/foodie-buddy.module';
@@ -8,6 +9,8 @@ import { ExpiryModule } from './modules/expiry/expiry.module';
 import { OssModule } from './modules/oss/oss.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { AiModule } from './modules/ai/ai.module';
+import { OssSignInterceptor } from './common/interceptors/oss-sign.interceptor';
+import { OssUrlMiddleware } from './common/middleware/oss-url.middleware';
 
 @Module({
   imports: [
@@ -40,5 +43,15 @@ import { AiModule } from './modules/ai/ai.module';
     AdminModule,
     AiModule,
   ],
+  providers: [
+    // 私有 bucket：响应里的 OSS URL 统一加临时读取签名
+    { provide: APP_INTERCEPTOR, useClass: OssSignInterceptor },
+    OssUrlMiddleware,
+  ],
 })
-export class AppModule {}
+export class AppModule implements NestModule {
+  configure(consumer: MiddlewareConsumer) {
+    // 与上面的签名拦截器对称：入库前把签名剥回裸 URL
+    consumer.apply(OssUrlMiddleware).forRoutes('*');
+  }
+}

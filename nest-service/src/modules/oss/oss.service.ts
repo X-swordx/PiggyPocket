@@ -65,4 +65,39 @@ export class OssService {
       dir,
     };
   }
+
+  /**
+   * 给私有 bucket 的对象 URL 加读取签名。
+   * bucket 是私有读，裸 URL 直接访问返回 AccessDenied。
+   * 不属于本 bucket 的 URL（如微信 CDN 头像）原样返回。
+   */
+  signUrl(url: string): string {
+    const key = this.extractKey(url);
+    if (!key) return url;
+
+    const expires = Math.floor(Date.now() / 1000) + 7200; // 2 小时，够浏览一轮
+    const signature = crypto
+      .createHmac('sha1', this.accessKeySecret)
+      .update(`GET\n\n\n${expires}\n/${this.bucket}/${key}`)
+      .digest('base64');
+
+    return `${this.host}/${key}?OSSAccessKeyId=${this.accessKeyId}&Expires=${expires}&Signature=${encodeURIComponent(signature)}`;
+  }
+
+  /**
+   * 去掉读取签名。
+   * 签名会过期，绝不能入库——否则 TTL 到点后那条记录的图片永久失效。
+   */
+  stripSign(url: string): string {
+    const key = this.extractKey(url);
+    return key ? `${this.host}/${key}` : url;
+  }
+
+  /** 从本 bucket 的 URL 里取出 object key；不是本 bucket 的返回空串。 */
+  private extractKey(url: string): string {
+    if (!this.host) return '';
+    const prefix = `${this.host}/`;
+    if (!url.startsWith(prefix)) return '';
+    return url.slice(prefix.length).split('?')[0];
+  }
 }
