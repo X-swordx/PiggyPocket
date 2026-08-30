@@ -23,7 +23,7 @@ export const getUploadToken = (dir: string): Promise<OssUploadToken> => {
  * 将本地文件直传到阿里云 OSS
  * @param filePath 本地文件临时路径（wx.chooseImage 返回的 tempFilePath）
  * @param dir 上传到 OSS 的目录，如 'dishes'、'avatars'、'foods'
- * @returns OSS 文件的公开访问 URL
+ * @returns OSS 文件的裸 URL（bucket 私有读，展示时由后端加签名）
  */
 export const uploadToOSS = async (filePath: string, dir: string): Promise<string> => {
   const token = await getUploadToken(dir)
@@ -46,8 +46,15 @@ export const uploadToOSS = async (filePath: string, dir: string): Promise<string
         signature: token.signature,
         success_action_status: '200'
       },
-      success: () => {
-        // 构造 OSS 公开访问 URL
+      success: (res) => {
+        // uni.uploadFile 只要服务端有响应就走 success（403 也算），
+        // 不判状态码会把失败的上传当成功，把无效 URL 写进数据库
+        if (res.statusCode < 200 || res.statusCode >= 300) {
+          console.error('uploadToOSS fail', res.statusCode, res.data)
+          reject(new Error(`图片上传失败（${res.statusCode}）`))
+          return
+        }
+        // 入库存裸 URL，bucket 私有读，展示时由后端加签名
         const url = `${token.host}/${ossKey}`
         resolve(url)
       },
