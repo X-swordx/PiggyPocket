@@ -174,13 +174,26 @@ export const ensureSubscribe = async () => {
   const { templateId } = await request<{ templateId: string }>({
     url: '/expiry-items/reminder/config'
   })
-  if (!templateId) return false
+  if (!templateId) {
+    console.warn('ensureSubscribe skip: 服务端未配置 WECHAT_EXPIRY_TEMPLATE_ID')
+    return false
+  }
 
   const accepted = await new Promise<boolean>((resolve) => {
     uni.requestSubscribeMessage({
       tmplIds: [templateId],
-      success: (res: any) => resolve(res[templateId] === 'accept'),
-      fail: () => resolve(false)
+      success: (res: any) => {
+        // 拒绝时为 'reject'；勾过「总是保持以上选择」后不再弹窗，直接返回上次的选择
+        if (res[templateId] !== 'accept') {
+          console.warn('ensureSubscribe reject', templateId, res[templateId])
+        }
+        resolve(res[templateId] === 'accept')
+      },
+      // 常见 errCode：10001 模板不属于该小程序，20004 用户关闭了订阅消息主开关
+      fail: (err: any) => {
+        console.warn('requestSubscribeMessage fail', err?.errCode, err?.errMsg)
+        resolve(false)
+      }
     })
   })
   if (!accepted) return false
