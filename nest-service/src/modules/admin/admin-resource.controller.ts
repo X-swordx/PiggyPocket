@@ -246,6 +246,13 @@ export class AdminResourceController {
     return this.ossService.generatePostPolicy(dir);
   }
 
+  @Get('oss/signed-url')
+  @ApiOperation({ summary: '给裸 OSS URL 加读取签名' })
+  getOssSignedUrl(@Query('url') url: string) {
+    // 直传成功后前端只有裸 URL，bucket 私有读，直接展示会 AccessDenied
+    return { url: this.ossService.signUrl(url) };
+  }
+
   // ================== 到期管家 ==================
 
   @Get('expiry-items')

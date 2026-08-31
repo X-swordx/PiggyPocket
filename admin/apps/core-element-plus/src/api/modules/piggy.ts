@@ -53,6 +53,9 @@ export interface OssPolicy {
 export const getOssUploadToken = (dir = 'admin') =>
   unwrap<OssPolicy>(api.get('admin/oss/upload-token', { params: { dir } }))
 
+export const getOssSignedUrl = (url: string) =>
+  unwrap<{ url: string }>(api.get('admin/oss/signed-url', { params: { url } }))
+
 // ============================ 到期管家 ============================
 
 export type ExpiryStatus = 'fresh' | 'expiring' | 'expired'

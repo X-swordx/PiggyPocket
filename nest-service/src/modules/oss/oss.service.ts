@@ -75,7 +75,9 @@ export class OssService {
     const key = this.extractKey(url);
     if (!key) return url;
 
-    const expires = Math.floor(Date.now() / 1000) + 7200; // 2 小时，够浏览一轮
+    // 7 天：前端会把带图的数据缓存进本地存储（菜谱草稿、已选菜、登录用户），
+    // 有效期太短会让隔天打开的缓存图 403
+    const expires = Math.floor(Date.now() / 1000) + 7 * 24 * 3600;
     const signature = crypto
       .createHmac('sha1', this.accessKeySecret)
       .update(`GET\n\n\n${expires}\n/${this.bucket}/${key}`)

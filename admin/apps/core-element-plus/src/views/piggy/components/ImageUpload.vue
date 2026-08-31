@@ -2,11 +2,12 @@
 import { ref, computed } from 'vue'
 import { ElUpload, ElMessage } from 'element-plus'
 import type { UploadRawFile, UploadRequestOptions } from 'element-plus'
-import { getOssUploadToken, type OssPolicy } from '@/api/modules/piggy'
+import { getOssSignedUrl, getOssUploadToken, type OssPolicy } from '@/api/modules/piggy'
 
 /**
  * 通过后台的 OSS 代理接口拿到 Post Policy，然后直传到 OSS。
  * OSS Post Policy 是全局公用签名，dir 是前缀限制。上传完成后 URL = `${host}/${key}`。
+ * bucket 是私有读，裸 URL 展示不了，所以拿签名版预览；保存时后端会把签名剥回裸 URL 入库。
  */
 
 const props = defineProps<{
@@ -57,7 +58,8 @@ async function uploadToOss(policy: OssPolicy, file: UploadRawFile) {
   }
   // 拼接可访问 URL
   const host = policy.host.replace(/\/$/, '')
-  return `${host}/${key}`
+  const signed = await getOssSignedUrl(`${host}/${key}`)
+  return signed.url
 }
 
 function beforeUpload(file: UploadRawFile) {

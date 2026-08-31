@@ -23,7 +23,7 @@ export const getUploadToken = (dir: string): Promise<OssUploadToken> => {
  * 将本地文件直传到阿里云 OSS
  * @param filePath 本地文件临时路径（wx.chooseImage 返回的 tempFilePath）
  * @param dir 上传到 OSS 的目录，如 'dishes'、'avatars'、'foods'
- * @returns OSS 文件的裸 URL（bucket 私有读，展示时由后端加签名）
+ * @returns OSS 文件的签名 URL（bucket 私有读，裸 URL 展示不了；保存时后端会把签名剥回裸 URL 入库）
  */
 export const uploadToOSS = async (filePath: string, dir: string): Promise<string> => {
   const token = await getUploadToken(dir)
@@ -34,7 +34,7 @@ export const uploadToOSS = async (filePath: string, dir: string): Promise<string
   const fileName = `${Date.now()}_${random}.${ext}`
   const ossKey = `${dir}/${fileName}`
 
-  return new Promise((resolve, reject) => {
+  await new Promise<void>((resolve, reject) => {
     uni.uploadFile({
       url: token.host,
       filePath,
@@ -54,13 +54,17 @@ export const uploadToOSS = async (filePath: string, dir: string): Promise<string
           reject(new Error(`图片上传失败（${res.statusCode}）`))
           return
         }
-        // 入库存裸 URL，bucket 私有读，展示时由后端加签名
-        const url = `${token.host}/${ossKey}`
-        resolve(url)
+        resolve()
       },
       fail: (err) => {
         reject(new Error(err.errMsg || '图片上传失败'))
       }
     })
   })
+
+  const signed = await request<{ url: string }>({
+    url: '/oss/signed-url',
+    query: { url: `${token.host}/${ossKey}` }
+  })
+  return signed.url
 }
