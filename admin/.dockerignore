@@ -3,6 +3,8 @@ node_modules
 **/node_modules
 **/dist
 **/dist-*
+# 镜像直接使用本地构建好的产物，必须放行
+!apps/core-element-plus/dist
 .git
 .vscode
 .DS_Store

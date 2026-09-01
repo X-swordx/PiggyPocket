@@ -197,6 +197,10 @@ docker compose -p piggy-pocket up -d --build
 > API 容器启动时会自动执行数据库迁移，**无需手动跑 migration**。
 > 如果 api 起不来，先看日志确认是不是迁移失败：
 > `docker compose -p piggy-pocket logs api`
+>
+> 上面的 `--build` 会连 admin 一起重建，而 admin 镜像依赖服务器上已存在的
+> `admin/apps/core-element-plus/dist`（不进 git）。前端有改动时，先按
+> [14.1](#141-构建方式本地构建产物服务器只跑-nginx) 本地构建并上传产物。
 
 ### 4.6 只有后端接口修改时的快速部署
 
@@ -232,7 +236,7 @@ curl http://127.0.0.1:3000/api
 | 新增了 `.env` 环境变量                  | 先编辑 `.env`，再执行上面的 `up -d --build api`（会重建容器生效）|
 | 新增了 migration（表结构变更）          | 同样用上面的命令即可，启动时自动迁移；建议先 `./backup.sh` 备份 |
 | 改了 `docker-compose.yml`               | 用 `docker compose -p piggy-pocket up -d` 让所有受影响服务生效  |
-| 只改了 `admin` 前端                     | `docker compose -p piggy-pocket up -d --build admin`            |
+| 只改了 `admin` 前端                     | 需先本地构建并上传 `dist`，见 [14.1](#141-构建方式本地构建产物服务器只跑-nginx) |
 
 回滚到上一个版本：
 
@@ -437,13 +441,56 @@ docker compose -p piggy-pocket exec mysql mysql -uroot -p
 
 后台是与小程序共用同一台服务器的静态站点，使用 nginx 提供，`/api/*` 反代到 `api:3000`。
 
-### 14.1 首次部署
+### 14.1 构建方式：本地构建产物，服务器只跑 nginx
 
-> 前置：admin 镜像构建阶段基于 `node:22-alpine`，国内直连 Docker Hub 常超时。
-> 若 `docker build` 报 `failed to resolve source metadata for docker.io/library/node`，
-> 先按 [3.1 配置 Docker 镜像加速](#31-配置-docker-镜像加速) 配好加速再重试。
+admin 的静态产物**在本地构建**，服务器上的 admin 镜像只做一件事：把 `dist` 塞进 nginx。
 
-1. `deploy.sh` 已自动启动 admin 容器；若单独构建：`docker compose -p piggy-pocket up -d --build admin`。
+原因：`@iconify/json` 这一个依赖解压后就有 **437MB**，pnpm 需要把它整块读进内存。服务器总内存 1.7G，4 个容器常态占用 ~900M，剩余不足以完成分配，`pnpm install` 会卡在重试上（10 秒 → 1 分钟）然后失败：
+
+```text
+[ERR_PNPM_TARBALL_EXTRACT] Failed to add tarball from
+  ".../@iconify/json/-/json-2.2.500.tgz" to store: Array buffer allocation failed
+```
+
+注意这**不是带宽问题**（日志里 30 秒就下完了 1030 个包），也不是加 swap 能解决的——`ArrayBuffer` 分配失败是硬性上限。本地构建只要 30 秒左右。
+
+**第 1 步**，本地构建（在项目根目录）：
+
+```bash
+cd admin
+pnpm --filter @fantastic-admin/core-element-plus run build
+```
+
+产物生成在 `admin/apps/core-element-plus/dist`。
+
+**第 2 步**，上传到服务器的同一相对路径：
+
+> 注意用**公网 IP**（本项目为 `8.138.163.42`，也可直接用 `api.piggy-pocket.xyz`）。
+> 阿里云控制台上还会显示一个 `172.x.x.x` 的**私网 IP**，那是 VPC 内网地址，
+> 从本地连它只会得到 `ssh: connect to host 172.x.x.x port 22: Connection timed out`。
+
+```bash
+# 先删掉服务器上的旧产物，否则 scp -r 会把新目录套成 dist/dist
+ssh <SSH用户>@8.138.163.42 'rm -rf /home/admin/PiggyPocket/admin/apps/core-element-plus/dist'
+
+# 在本地项目根目录执行
+scp -r admin/apps/core-element-plus/dist \
+  <SSH用户>@8.138.163.42:/home/admin/PiggyPocket/admin/apps/core-element-plus/
+```
+
+**第 3 步**，服务器上重建容器（秒级完成）：
+
+```bash
+cd /home/admin/PiggyPocket/deploy/cloud
+docker compose -p piggy-pocket up -d --build admin
+```
+
+> `dist` 已被 `admin/.gitignore` 忽略，**服务器上 `git pull` 拿不到产物**，每次前端有改动都必须重新走上面三步。
+> 若服务器上缺少 `dist`，构建会直接失败并提示 `"/apps/core-element-plus/dist": not found`——补传产物即可。
+
+### 14.2 首次部署
+
+1. 按 14.1 构建并上传 `dist`，再启动 admin 容器。
 2. admin 相关 migration（含默认超管账号）在 api 容器启动时已自动执行。
    默认账号：`superadmin / admin123456`（**上线后立即改密码**）。
 3. 在 NPM（Nginx Proxy Manager）中新增站点，例如 `admin.yourdomain.com`：
@@ -455,7 +502,7 @@ docker compose -p piggy-pocket exec mysql mysql -uroot -p
 
 > admin 容器内 nginx 已经把 `/api/*` 反代到 `api:3000`，所以前端只需要访问 `https://admin.yourdomain.com/api/*`，无需额外配置 CORS。
 
-### 14.2 环境变量
+### 14.3 环境变量
 
 后台 nest-service 端建议在 `.env` 中显式设置 JWT 密钥，避免使用默认值：
 
