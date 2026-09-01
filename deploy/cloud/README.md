@@ -465,24 +465,44 @@ pnpm --filter @fantastic-admin/core-element-plus run build
 
 **第 2 步**，上传到服务器的同一相对路径：
 
-> 注意用**公网 IP**（本项目为 `8.138.163.42`，也可直接用 `api.piggy-pocket.xyz`）。
+> 用**公网 IP** `8.138.163.42`（或域名 `api.piggy-pocket.xyz`），登录用户 `root`。
 > 阿里云控制台上还会显示一个 `172.x.x.x` 的**私网 IP**，那是 VPC 内网地址，
 > 从本地连它只会得到 `ssh: connect to host 172.x.x.x port 22: Connection timed out`。
 
 ```bash
-# 先删掉服务器上的旧产物，否则 scp -r 会把新目录套成 dist/dist
-ssh <SSH用户>@8.138.163.42 'rm -rf /home/admin/PiggyPocket/admin/apps/core-element-plus/dist'
+# 在本地 admin/apps/core-element-plus 目录下执行
+cd admin/apps/core-element-plus
 
-# 在本地项目根目录执行
-scp -r admin/apps/core-element-plus/dist \
-  <SSH用户>@8.138.163.42:/home/admin/PiggyPocket/admin/apps/core-element-plus/
+tar -czf - dist | ssh root@8.138.163.42 \
+  'cd /home/admin/PiggyPocket/admin/apps/core-element-plus \
+   && rm -rf dist && tar -xzf - && chown -R admin:admin dist'
 ```
+
+> 这里**不要用 `scp -r`**。OpenSSH 9.x 的 scp 默认走 SFTP 协议，上传目录时不会自动创建目标目录，会报
+> `path canonicalization failed` / `realpath ...: No such file`。tar over ssh 没有这个问题，4.5MB 秒传。
+>
+> `chown -R admin:admin` 是必要的：仓库属主是 `admin`，而我们以 `root` 上传，
+> 不改回去会让 `admin` 用户后续无法覆盖产物。
 
 **第 3 步**，服务器上重建容器（秒级完成）：
 
 ```bash
+# 若 Dockerfile 等代码有更新，git 必须以 admin 身份执行
+# （GitHub 部署密钥在 /home/admin/.ssh/，root 下没有私钥会报 Permission denied）
+su - admin -c 'cd /home/admin/PiggyPocket && git pull'
+
 cd /home/admin/PiggyPocket/deploy/cloud
 docker compose -p piggy-pocket up -d --build admin
+```
+
+验证：
+
+```bash
+# 容器内自测，注意用 127.0.0.1——nginx 只监听 IPv4，localhost 会解析到 ::1 而被拒
+docker exec piggy_admin wget -qS -O /dev/null http://127.0.0.1/ 2>&1 | head -3
+
+# 从本地核对公网返回的资源指纹是否与本地产物一致
+curl -sk https://admin.piggy-pocket.xyz/ | grep -o 'assets/[a-zA-Z0-9-]*\.js' | head -3
 ```
 
 > `dist` 已被 `admin/.gitignore` 忽略，**服务器上 `git pull` 拿不到产物**，每次前端有改动都必须重新走上面三步。
