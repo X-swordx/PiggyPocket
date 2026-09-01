@@ -49,7 +49,7 @@ export class AiController {
     } catch (error) {
       this.logger.error(`生成菜谱失败: ${dto.name}`, error as Error);
       if (!clientGone) {
-        res.write(`data: ${JSON.stringify({ error: 'AI 生成失败，请重试' })}\n\n`);
+        res.write(`data: ${JSON.stringify({ error: '生成失败，请重试' })}\n\n`);
       }
     } finally {
       if (!clientGone) res.end();

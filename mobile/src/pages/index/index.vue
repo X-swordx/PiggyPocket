@@ -42,7 +42,7 @@
           <view class="card-content">
             <text class="card-title">美食菜单</text>
             <view class="card-footer">
-              <text class="card-desc">上传家常菜谱，AI匹配做菜信息，和饭搭子共享美食</text>
+              <text class="card-desc">上传家常菜谱，自动匹配做菜信息，和饭搭子共享美食</text>
               <view class="card-btn">
                 <text>探索</text>
               </view>

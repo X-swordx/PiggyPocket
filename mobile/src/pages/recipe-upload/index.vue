@@ -39,7 +39,7 @@
         />
         <view class="ai-search-btn" :class="{ disabled: !recipeName.trim() }" @click="openAiSearch">
           <uni-icons type="search" size="16" :color="recipeName.trim() ? '#fff' : '#bbb'" />
-          <text>AI 搜索用料和步骤</text>
+          <text>搜索用料和步骤</text>
         </view>
       </view>
 

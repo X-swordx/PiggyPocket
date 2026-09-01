@@ -2,7 +2,7 @@
   <view v-if="visible" class="ai-mask" :style="themeStyle" @click="close">
     <view class="ai-modal" @click.stop>
       <view class="ai-header">
-        <text class="ai-title">AI 菜谱 · {{ dishName }}</text>
+        <text class="ai-title">菜谱参考 · {{ dishName }}</text>
         <view class="ai-close" @click="close">
           <uni-icons type="closeempty" size="20" color="#999" />
         </view>
@@ -15,7 +15,7 @@
           </view>
 
           <view v-else-if="status === 'loading' && !hasContent" class="ai-loading">
-            <text class="ai-loading-text">AI 正在翻菜谱...</text>
+            <text class="ai-loading-text">正在翻菜谱...</text>
           </view>
 
           <template v-else>

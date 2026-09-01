@@ -137,7 +137,7 @@ export const streamRecipe = (
       // H5 分支：没有 chunk 回调，这里一次性拿到完整响应体
       if (finished || aborted) return
       if (res.statusCode < 200 || res.statusCode >= 300) {
-        fail(typeof res.data === 'string' ? 'AI 生成失败，请重试' : res.data?.message || 'AI 生成失败，请重试')
+        fail(typeof res.data === 'string' ? '生成失败，请重试' : res.data?.message || '生成失败，请重试')
         return
       }
       if (typeof res.data === 'string' && res.data) consume(res.data)

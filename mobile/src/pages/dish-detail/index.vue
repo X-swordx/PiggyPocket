@@ -147,7 +147,7 @@
           <input v-else class="edit-input name-input" v-model="editForm.name" placeholder="菜品名称" />
           <view v-if="editing" class="ai-search-btn" :class="{ disabled: !editForm.name.trim() }" @click="openAiSearch">
             <uni-icons type="search" size="16" :color="editForm.name.trim() ? '#fff' : '#bbb'" />
-            <text>AI 搜索用料和步骤</text>
+            <text>搜索用料和步骤</text>
           </view>
         </view>
 
