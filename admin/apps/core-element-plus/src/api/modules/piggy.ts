@@ -285,6 +285,7 @@ export interface AdminOrder {
   cookDate?: string | null
   rating?: number | null
   ratedAt?: string | null
+  ratingImage?: string | null
   items: AdminOrderItem[]
   itemCount: number
   userNickname: string | null

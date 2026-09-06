@@ -2,7 +2,7 @@
 import { reactive, ref, onMounted } from 'vue'
 import {
   ElButton, ElInput, ElSelect, ElOption, ElTable, ElTableColumn,
-  ElPagination, ElTag, ElPopconfirm, ElMessage, ElDatePicker, ElRate,
+  ElPagination, ElTag, ElPopconfirm, ElMessage, ElDatePicker, ElRate, ElImage,
 } from 'element-plus'
 import {
   listOrders, removeOrder,
@@ -183,9 +183,19 @@ onMounted(fetchData)
           {{ new Date(row.createdAt).toLocaleString() }}
         </template>
       </ElTableColumn>
-      <ElTableColumn label="评价" width="140">
+      <ElTableColumn label="评价" width="190">
         <template #default="{ row }">
-          <ElRate v-if="row.rating" :model-value="row.rating" disabled />
+          <div v-if="row.rating || row.ratingImage" class="flex items-center gap-2">
+            <ElRate v-if="row.rating" :model-value="row.rating" disabled />
+            <ElImage
+              v-if="row.ratingImage"
+              :src="row.ratingImage"
+              :preview-src-list="[row.ratingImage]"
+              preview-teleported
+              fit="cover"
+              style="width: 32px; height: 32px; border-radius: 4px"
+            />
+          </div>
           <span v-else class="text-sm text-muted-foreground">-</span>
         </template>
       </ElTableColumn>

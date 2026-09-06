@@ -127,13 +127,23 @@ async function onRevert(target: OrderStatus) {
             {{ new Date(order.createdAt).toLocaleString() }}
           </ElDescriptionsItem>
           <ElDescriptionsItem label="评价">
-            <ElRate
-              v-if="order.rating"
-              :model-value="order.rating"
-              disabled
-              show-score
-              score-template="{value} 星"
-            />
+            <div v-if="order.rating || order.ratingImage" class="flex items-center gap-3">
+              <ElRate
+                v-if="order.rating"
+                :model-value="order.rating"
+                disabled
+                show-score
+                score-template="{value} 星"
+              />
+              <ElImage
+                v-if="order.ratingImage"
+                :src="order.ratingImage"
+                :preview-src-list="[order.ratingImage]"
+                preview-teleported
+                fit="cover"
+                style="width: 64px; height: 64px; border-radius: 4px"
+              />
+            </div>
             <span v-else class="text-sm text-muted-foreground">未评价</span>
           </ElDescriptionsItem>
         </ElDescriptions>
