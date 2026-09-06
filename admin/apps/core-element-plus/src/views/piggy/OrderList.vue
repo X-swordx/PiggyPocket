@@ -1,8 +1,19 @@
 <script setup lang="ts">
 import { reactive, ref, onMounted } from 'vue'
 import {
-  ElButton, ElInput, ElSelect, ElOption, ElTable, ElTableColumn,
-  ElPagination, ElTag, ElPopconfirm, ElMessage, ElDatePicker, ElRate, ElImage,
+  ElButton,
+  ElDatePicker,
+  ElImage,
+  ElInput,
+  ElMessage,
+  ElOption,
+  ElPagination,
+  ElPopconfirm,
+  ElRate,
+  ElSelect,
+  ElTable,
+  ElTableColumn,
+  ElTag,
 } from 'element-plus'
 import {
   listOrders, removeOrder,
@@ -185,7 +196,7 @@ onMounted(fetchData)
       </ElTableColumn>
       <ElTableColumn label="评价" width="190">
         <template #default="{ row }">
-          <div v-if="row.rating || row.ratingImage" class="flex items-center gap-2">
+          <div v-if="row.rating || row.ratingImage" class="flex gap-2 items-center">
             <ElRate v-if="row.rating" :model-value="row.rating" disabled />
             <ElImage
               v-if="row.ratingImage"

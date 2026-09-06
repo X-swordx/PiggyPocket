@@ -127,7 +127,7 @@ async function onRevert(target: OrderStatus) {
             {{ new Date(order.createdAt).toLocaleString() }}
           </ElDescriptionsItem>
           <ElDescriptionsItem label="评价">
-            <div v-if="order.rating || order.ratingImage" class="flex items-center gap-3">
+            <div v-if="order.rating || order.ratingImage" class="flex gap-3 items-center">
               <ElRate
                 v-if="order.rating"
                 :model-value="order.rating"
