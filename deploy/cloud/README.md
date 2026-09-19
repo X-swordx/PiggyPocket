@@ -638,5 +638,8 @@ docker compose -p piggy-pocket exec mysql \
 4. 集合 `expiry_items` 由 API 启动时自动创建（`AUTOINDEX` + `COSINE`），无需手工建表。
 5. 历史数据补向量：后台「到期管家」列表页点 **重建向量索引**，或调
    `POST /api/admin/expiry-items/reindex`。
+6. 到期物品支持共享到饭搭子组后，集合 payload 新增了 `groupId` 标量字段（私人物品存 `0`）。
+   **旧集合没有这一列，需在 Zilliz 控制台手动 drop 集合 `expiry_items` → 重启 api（启动时按新 schema 自动重建）
+   → 后台点「重建向量索引」全量重灌**。重建完成前语义搜索会自动降级为关键词匹配（共享可见范围仍由 MySQL 兜底，不受影响）。
 
 > 维度填错会导致建集合失败并降级，`logs api` 里会有 warn；改对后重启 api 容器即可。

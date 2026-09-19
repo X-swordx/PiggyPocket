@@ -19,6 +19,15 @@ export class ExpiryItem {
   @Column({ type: 'int', comment: '用户ID' })
   userId: number;
 
+  @ApiProperty({ description: '所属饭搭子组ID，为空表示仅自己可见的私人物品', required: false })
+  @Index()
+  @Column({
+    type: 'int',
+    nullable: true,
+    comment: '所属饭搭子组ID，为空表示私有',
+  })
+  groupId?: number | null;
+
   @ApiProperty({ description: '物品名称' })
   @Column({ type: 'varchar', length: 100, comment: '物品名称' })
   name: string;
@@ -38,14 +47,6 @@ export class ExpiryItem {
   @ApiProperty({ description: '提前多少天提醒' })
   @Column({ type: 'int', default: 3, comment: '提前多少天提醒' })
   remindDays: number;
-
-  @ApiProperty({ description: '已推送提醒的日期，非空即不再重复推送' })
-  @Column({
-    type: 'date',
-    nullable: true,
-    comment: '已推送提醒的日期',
-  })
-  notifiedAt?: string | null;
 
   @ApiProperty({
     description: '存放位置：fridge/freezer/pantry/cabinet/other',

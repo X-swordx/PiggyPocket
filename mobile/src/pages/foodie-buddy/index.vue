@@ -5,7 +5,7 @@
         <button class="icon-button back-button" @click="goBack">
           <text class="icon-text primary-icon">‹</text>
         </button>
-        <text class="page-title">饭搭子管理</text>
+        <text class="page-title">搭伙管理</text>
         <button class="icon-button" @click="showMore">
           <text class="icon-text">⋯</text>
         </button>
@@ -16,13 +16,13 @@
       <view class="summary-card soft-glow">
         <view class="summary-text">
           <view class="summary-title-row">
-            <text class="summary-title">饭搭子队友</text>
+            <text class="summary-title">搭伙伙伴</text>
             <text class="small-icon">✎</text>
           </view>
           <view class="summary-count">
             <text>你当前拥有</text>
             <text class="count-number">{{ buddyCount }}</text>
-            <text>位饭搭子</text>
+            <text>位伙伴</text>
           </view>
         </view>
         <view class="summary-icon-wrap">
@@ -34,7 +34,7 @@
       <view class="section">
         <view class="section-title-row">
           <text class="section-symbol">群</text>
-          <text class="section-title">我的饭搭子</text>
+          <text class="section-title">我的搭伙</text>
         </view>
 
         <view class="buddy-list">
@@ -61,7 +61,7 @@
           <text class="invite-symbol">+</text>
         </view>
         <view class="invite-copy">
-          <text class="invite-title">发现新的饭搭子</text>
+          <text class="invite-title">发现新伙伴</text>
           <text class="invite-desc">分享美食乐趣，一起开启省钱之旅</text>
         </view>
         <button class="invite-button" open-type="share">
@@ -100,7 +100,7 @@ const loading = ref(false)
 const buddyMembers = computed(() => members.value.filter((member) => member.userId !== currentUser.value?.id))
 const buddyCount = computed(() => buddyMembers.value.length)
 
-const memberName = (member: DiningGroupMember) => member.nickname || member.user?.nickname || member.user?.name || '饭搭子'
+const memberName = (member: DiningGroupMember) => member.nickname || member.user?.nickname || member.user?.name || '伙伴'
 
 const loadGroup = async (groupId?: number) => {
   const user = currentUser.value || await getCurrentUser()
@@ -116,13 +116,13 @@ const loadGroup = async (groupId?: number) => {
       joined = true
     } catch (err: any) {
       if (!String(err.message || '').includes('已在组内')) {
-        uni.showToast({ title: err.message || '加入饭搭子失败', icon: 'none' })
+        uni.showToast({ title: err.message || '加入搭伙失败', icon: 'none' })
       }
     }
     currentGroup.value = await getDiningGroup(groupId)
     if (joined && currentGroup.value) {
       const host = currentGroup.value.creator?.nickname || currentGroup.value.creator?.name || currentGroup.value.name
-      uni.showToast({ title: `已加入${host}的饭搭子`, icon: 'none' })
+      uni.showToast({ title: `已加入${host}的搭伙`, icon: 'none' })
     }
     // 加入过邀请群后，本次会话不再重复处理，避免下次 onShow 反复弹 toast
     inviteGroupId.value = null
@@ -130,7 +130,7 @@ const loadGroup = async (groupId?: number) => {
     const groups = await getMyDiningGroups(user.id)
     if (groups.length === 0) {
       // 没有群时自动建一个默认群，保证分享链接一定带 groupId
-      currentGroup.value = await createDiningGroup({ name: '我的饭搭子', creatorId: user.id })
+      currentGroup.value = await createDiningGroup({ name: '我的搭伙', creatorId: user.id })
     } else {
       currentGroup.value = groups[0]
     }
@@ -150,7 +150,7 @@ const refresh = async () => {
   try {
     await loadGroup(inviteGroupId.value || undefined)
   } catch (err: any) {
-    uni.showToast({ title: err.message || '饭搭子加载失败', icon: 'none' })
+    uni.showToast({ title: err.message || '搭伙加载失败', icon: 'none' })
   } finally {
     loading.value = false
   }
@@ -192,7 +192,7 @@ onLoad((options: any) => {
 onShow(refresh)
 
 onShareAppMessage(() => ({
-  title: '邀请你成为我的饭搭子',
+  title: '邀请你和我搭伙',
   path: currentGroup.value ? `/pages/foodie-buddy/index?groupId=${currentGroup.value.id}` : '/pages/foodie-buddy/index',
   imageUrl: '/static/logo.png'
 }))

@@ -10,6 +10,7 @@ import {
 } from '@/api/modules/piggy'
 import { STORAGE_OPTIONS, ITEM_CATEGORY_OPTIONS } from './options'
 import UserSelect from './components/UserSelect.vue'
+import GroupSelect from './components/GroupSelect.vue'
 import ImageUpload from './components/ImageUpload.vue'
 
 const props = defineProps<{
@@ -27,6 +28,7 @@ const submitting = ref(false)
 
 const form = reactive<Partial<AdminExpiryItem>>({
   userId: undefined,
+  groupId: null,
   name: '',
   imageUrl: '',
   expiryDate: '',
@@ -55,6 +57,7 @@ watch(
       const item = await getExpiryItem(id)
       Object.assign(form, {
         userId: item.userId,
+        groupId: item.groupId ?? null,
         name: item.name,
         imageUrl: item.imageUrl ?? '',
         expiryDate: item.expiryDate,
@@ -73,6 +76,7 @@ watch(
 
 function resetForm() {
   form.userId = undefined
+  form.groupId = null
   form.name = ''
   form.imageUrl = ''
   form.expiryDate = ''
@@ -131,6 +135,12 @@ function onClose() {
           v-model="form.userId"
           :disabled="!!id"
           :initial-label="initialUserNickname"
+        />
+      </ElFormItem>
+      <ElFormItem label="共享分组">
+        <GroupSelect
+          v-model="form.groupId"
+          placeholder="不选 = 仅本人可见"
         />
       </ElFormItem>
       <ElFormItem label="名称" prop="name">

@@ -87,7 +87,7 @@
 		{
 			"path": "pages/foodie-buddy/index",
 			"style": {
-				"navigationBarTitleText": "饭搭子管理",
+				"navigationBarTitleText": "搭伙管理",
 				"navigationStyle": "custom",
 				"backgroundColor": "#F8F5F6"
 			},

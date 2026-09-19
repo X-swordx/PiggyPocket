@@ -29,6 +29,15 @@ export class CreateExpiryItemDto {
   @IsInt()
   userId: number;
 
+  @ApiPropertyOptional({
+    description: '共享到的饭搭子组ID；不传或传 null 表示仅自己可见',
+  })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  groupId?: number | null;
+
   @ApiProperty({ description: '物品名称' })
   @IsNotEmpty({ message: '物品名称不能为空' })
   @IsString()

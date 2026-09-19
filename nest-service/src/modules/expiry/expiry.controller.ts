@@ -73,22 +73,32 @@ export class ExpiryController {
 
   @Get(':id')
   @ApiOperation({ summary: '获取单个物品' })
-  findOne(@Param('id', ParseIntPipe) id: number) {
-    return this.expiryService.findOne(id);
+  @ApiQuery({ name: 'userId', required: true, description: '当前用户ID' })
+  findOne(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('userId', ParseIntPipe) userId: number,
+  ) {
+    return this.expiryService.findOne(id, userId);
   }
 
   @Put(':id')
   @ApiOperation({ summary: '更新物品' })
+  @ApiQuery({ name: 'userId', required: true, description: '当前用户ID' })
   update(
     @Param('id', ParseIntPipe) id: number,
+    @Query('userId', ParseIntPipe) userId: number,
     @Body() updateDto: UpdateExpiryItemDto,
   ) {
-    return this.expiryService.update(id, updateDto);
+    return this.expiryService.update(id, userId, updateDto);
   }
 
   @Delete(':id')
   @ApiOperation({ summary: '删除物品' })
-  remove(@Param('id', ParseIntPipe) id: number) {
-    return this.expiryService.remove(id);
+  @ApiQuery({ name: 'userId', required: true, description: '当前用户ID' })
+  remove(
+    @Param('id', ParseIntPipe) id: number,
+    @Query('userId', ParseIntPipe) userId: number,
+  ) {
+    return this.expiryService.remove(id, userId);
   }
 }

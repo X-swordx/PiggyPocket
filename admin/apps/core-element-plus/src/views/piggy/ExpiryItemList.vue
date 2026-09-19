@@ -14,6 +14,7 @@ import {
   STORAGE_OPTIONS, ITEM_CATEGORY_OPTIONS, labelOf,
 } from './options'
 import UserSelect from './components/UserSelect.vue'
+import GroupSelect from './components/GroupSelect.vue'
 import ExpiryItemEditor from './ExpiryItemEditor.vue'
 import { usePiggyAuth } from './usePiggyAuth'
 
@@ -31,6 +32,7 @@ const query = reactive<Required<Pick<ExpiryListQuery, 'page' | 'pageSize'>> & Ex
   keyword: '',
   status: undefined,
   userId: undefined,
+  groupId: undefined,
 })
 
 async function fetchData() {
@@ -42,6 +44,7 @@ async function fetchData() {
       keyword: query.keyword || undefined,
       status: query.status,
       userId: query.userId,
+      groupId: query.groupId,
     })
     list.value = res.list
     total.value = res.total
@@ -60,6 +63,7 @@ function onReset() {
   query.keyword = ''
   query.status = undefined
   query.userId = undefined
+  query.groupId = undefined
   onSearch()
 }
 
@@ -168,6 +172,9 @@ onMounted(fetchData)
       <div style="width: 220px">
         <UserSelect v-model="query.userId" placeholder="按用户过滤" />
       </div>
+      <div style="width: 220px">
+        <GroupSelect v-model="query.groupId" placeholder="按共享分组过滤" />
+      </div>
       <ElButton type="primary" @click="onSearch">
         搜索
       </ElButton>
@@ -218,6 +225,11 @@ onMounted(fetchData)
           {{ row.userNickname ?? `#${row.userId}` }}
         </template>
       </ElTableColumn>
+      <ElTableColumn label="共享分组" width="110" show-overflow-tooltip>
+        <template #default="{ row }">
+          {{ row.groupId ? (row.groupName ?? `#${row.groupId}`) : '仅本人' }}
+        </template>
+      </ElTableColumn>
       <ElTableColumn label="数量" prop="quantity" width="64" />
       <ElTableColumn label="存放" width="120">
         <template #default="{ row }">
@@ -230,13 +242,10 @@ onMounted(fetchData)
         </template>
       </ElTableColumn>
       <ElTableColumn label="到期日" prop="expiryDate" width="105" />
-      <ElTableColumn label="提醒" width="150">
+      <ElTableColumn label="提醒" width="100">
         <template #default="{ row }">
           <div class="text-xs">
             {{ row.remindDays > 0 ? `提前 ${row.remindDays} 天` : '当天提醒' }}
-          </div>
-          <div class="text-xs text-muted-foreground">
-            {{ row.notifiedAt ? `已推送 ${row.notifiedAt}` : '未推送' }}
           </div>
         </template>
       </ElTableColumn>

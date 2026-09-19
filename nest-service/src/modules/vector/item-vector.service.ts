@@ -54,6 +54,8 @@ export class ItemVectorService implements OnModuleInit {
               autoID: false,
             },
             { name: 'userId', data_type: DataType.Int64 },
+            // 共享物品存所属组ID，私人物品存 0（组ID 从 1 开始自增，不会冲突）
+            { name: 'groupId', data_type: DataType.Int64 },
             { name: 'vector', data_type: DataType.FloatVector, dim: this.dim },
           ],
         });
@@ -77,13 +79,18 @@ export class ItemVectorService implements OnModuleInit {
   }
 
   /** 写入/更新单个物品的向量。text 由调用方拼好（名称+分类+位置+备注）。 */
-  async upsert(id: number, userId: number, text: string): Promise<void> {
+  async upsert(
+    id: number,
+    userId: number,
+    text: string,
+    groupId: number | null = null,
+  ): Promise<void> {
     if (!this.enabled) return;
     try {
       const [vector] = await this.embeddings!.embedDocuments([text]);
       await this.client!.upsert({
         collection_name: COLLECTION,
-        data: [{ id, userId, vector }],
+        data: [{ id, userId, groupId: groupId ?? 0, vector }],
       });
     } catch (error) {
       this.logger.warn(`物品 ${id} 向量写入失败：${(error as Error).message}`);
@@ -92,7 +99,12 @@ export class ItemVectorService implements OnModuleInit {
 
   /** 批量写入，供后台重建索引使用。返回成功条数。 */
   async upsertMany(
-    items: Array<{ id: number; userId: number; text: string }>,
+    items: Array<{
+      id: number;
+      userId: number;
+      text: string;
+      groupId?: number | null;
+    }>,
   ): Promise<number> {
     if (!this.enabled || !items.length) return 0;
     try {
@@ -104,6 +116,7 @@ export class ItemVectorService implements OnModuleInit {
         data: items.map((item, index) => ({
           id: item.id,
           userId: item.userId,
+          groupId: item.groupId ?? 0,
           vector: vectors[index],
         })),
       });
@@ -123,19 +136,26 @@ export class ItemVectorService implements OnModuleInit {
     }
   }
 
-  /** 语义检索。返回 null 表示向量检索不可用，调用方需降级。 */
+  /**
+   * 语义检索。返回 null 表示向量检索不可用，调用方需降级。
+   * 命中范围 = 我自己的物品（含私有）+ 共享到我所在组的物品。
+   */
   async search(
     userId: number,
+    groupIds: number[],
     keyword: string,
     topK: number,
   ): Promise<VectorHit[] | null> {
     if (!this.enabled) return null;
     try {
       const vector = await this.embeddings!.embedQuery(keyword);
+      const filter = groupIds.length
+        ? `userId == ${userId} || groupId in [${groupIds.join(',')}]`
+        : `userId == ${userId}`;
       const res = await this.client!.search({
         collection_name: COLLECTION,
         data: [vector],
-        filter: `userId == ${userId}`,
+        filter,
         limit: topK,
         output_fields: ['id'],
       });

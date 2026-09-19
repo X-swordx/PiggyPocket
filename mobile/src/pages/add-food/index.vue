@@ -141,6 +141,26 @@
           </view>
         </view>
 
+        <!-- Share to dining group -->
+        <view class="form-item">
+          <view class="label">
+            <text>共享范围</text>
+          </view>
+          <view class="input-wrapper">
+            <uni-icons type="staff" size="20" color="var(--theme-primary)" class="input-icon" />
+            <picker
+              :value="shareIndex"
+              :range="shareOptions"
+              @change="onShareChange"
+              class="picker-wrapper"
+            >
+              <view class="picker-display">
+                <text>{{ shareOptions[shareIndex] }}</text>
+              </view>
+            </picker>
+          </view>
+        </view>
+
         <!-- Notes Section -->
         <view class="notes-card">
           <view class="notes-header">
@@ -185,6 +205,7 @@ import {
   getExpiryItem,
   ensureSubscribe
 } from '@/services/expiry'
+import { getMyDiningGroups, getCurrentUser, type DiningGroup } from '@/services/foodieBuddy'
 import { themeStyle } from '@/utils/theme'
 
 interface FormData {
@@ -196,6 +217,7 @@ interface FormData {
   category: string
   notes: string
   imageUrl: string
+  groupId: number | null
 }
 
 const formData = ref<FormData>({
@@ -206,8 +228,31 @@ const formData = ref<FormData>({
   storage: 'fridge',
   category: 'food',
   notes: '',
-  imageUrl: ''
+  imageUrl: '',
+  groupId: null
 })
+
+// 共享范围：第 0 项固定为「仅自己」，其余是我加入的搭伙小组
+const groups = ref<DiningGroup[]>([])
+const shareOptions = computed(() => ['仅自己', ...groups.value.map((g) => g.name)])
+const shareIndex = computed(() => {
+  if (!formData.value.groupId) return 0
+  const idx = groups.value.findIndex((g) => g.id === formData.value.groupId)
+  return idx >= 0 ? idx + 1 : 0
+})
+const onShareChange = (e: any) => {
+  const idx = Number(e.detail.value)
+  formData.value.groupId = idx === 0 ? null : groups.value[idx - 1]?.id ?? null
+}
+
+const loadGroups = async () => {
+  try {
+    const user = await getCurrentUser()
+    groups.value = await getMyDiningGroups(user.id)
+  } catch (err) {
+    groups.value = []
+  }
+}
 
 const editingId = ref(0)
 const isEditing = ref(false)
@@ -296,6 +341,7 @@ const getRandomBgColor = () => {
 }
 
 onLoad(async (options: any) => {
+  loadGroups()
   if (options?.id) {
     editingId.value = Number(options.id)
     isEditing.value = true
@@ -309,7 +355,8 @@ onLoad(async (options: any) => {
         storage: item.storage || 'fridge',
         category: item.category || 'food',
         notes: item.notes || '',
-        imageUrl: item.imageUrl || ''
+        imageUrl: item.imageUrl || '',
+        groupId: item.groupId ?? null
       }
     } catch (err: any) {
       uni.showToast({ title: err.message || '加载失败', icon: 'none' })
@@ -361,7 +408,8 @@ const submitForm = async () => {
     storage: formData.value.storage,
     category: formData.value.category,
     notes: formData.value.notes || undefined,
-    imageUrl: formData.value.imageUrl || undefined
+    imageUrl: formData.value.imageUrl || undefined,
+    groupId: formData.value.groupId
   }
 
   submitting.value = true

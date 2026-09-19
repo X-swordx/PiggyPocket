@@ -280,6 +280,7 @@ const capture = async (): Promise<ScoreMatrix> => {
     for (let attempt = 1; ; attempt += 1) {
       const probe = await vectorService.search(
         EVAL_USER_ID,
+        [],
         "牛奶",
         DISTRIBUTION_LIMIT
       );
@@ -297,6 +298,7 @@ const capture = async (): Promise<ScoreMatrix> => {
       const hits =
         (await vectorService.search(
           EVAL_USER_ID,
+          [],
           testCase.query,
           DISTRIBUTION_LIMIT
         )) ?? [];

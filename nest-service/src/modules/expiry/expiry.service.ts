@@ -1,8 +1,15 @@
-import { Injectable, Inject, NotFoundException } from "@nestjs/common";
+import {
+  Injectable,
+  Inject,
+  NotFoundException,
+  ForbiddenException,
+} from "@nestjs/common";
 import { InjectRepository } from "@nestjs/typeorm";
 import { In, Repository, SelectQueryBuilder } from "typeorm";
 import { ChatOpenAI } from "@langchain/openai";
 import { ExpiryItem } from "./entities/expiry-item.entity";
+import { ExpiryItemNotification } from "./entities/expiry-item-notification.entity";
+import { DiningGroupMember } from "../foodie-buddy/dining-group/entities/dining-group-member.entity";
 import { CreateExpiryItemDto } from "./dto/create-expiry-item.dto";
 import { UpdateExpiryItemDto } from "./dto/update-expiry-item.dto";
 import {
@@ -87,18 +94,64 @@ export class ExpiryService {
   constructor(
     @InjectRepository(ExpiryItem)
     private readonly itemRepository: Repository<ExpiryItem>,
+    @InjectRepository(ExpiryItemNotification)
+    private readonly notificationRepository: Repository<ExpiryItemNotification>,
+    @InjectRepository(DiningGroupMember)
+    private readonly memberRepository: Repository<DiningGroupMember>,
     private readonly vectorService: ItemVectorService,
     @Inject(RERANK_MODEL)
     private readonly rerankModel: ChatOpenAI | null
   ) {}
 
+  /** 用户所在的全部饭搭子组ID，决定共享物品的可见范围。 */
+  private async findUserGroupIds(userId: number): Promise<number[]> {
+    const members = await this.memberRepository.find({ where: { userId } });
+    return members.map((m) => m.groupId);
+  }
+
+  private async ensureGroupMembership(
+    userId: number,
+    groupId: number
+  ): Promise<void> {
+    const member = await this.memberRepository.findOne({
+      where: { userId, groupId },
+    });
+    if (!member) {
+      throw new ForbiddenException("用户不在该饭搭子组内，无权操作");
+    }
+  }
+
+  /**
+   * 可见范围：我自己的物品（共享/私有都含，userId 命中）+ 共享到我所在组的物品。
+   * 整体加括号，避免和调用方随后 andWhere 的状态过滤在 OR/AND 优先级上出错。
+   */
+  private applyVisibility<T>(
+    qb: SelectQueryBuilder<T>,
+    alias: string,
+    userId: number,
+    groupIds: number[]
+  ): void {
+    const own = `${alias}.userId = :visibleUserId`;
+    const params: Record<string, unknown> = { visibleUserId: userId };
+    let clause = own;
+    if (groupIds.length) {
+      clause += ` OR ${alias}.groupId IN (:...visibleGroupIds)`;
+      params.visibleGroupIds = groupIds;
+    }
+    qb.andWhere(`(${clause})`, params);
+  }
+
   async create(createDto: CreateExpiryItemDto) {
+    if (createDto.groupId) {
+      await this.ensureGroupMembership(createDto.userId, createDto.groupId);
+    }
     const item = this.itemRepository.create(createDto);
     const saved = await this.itemRepository.save(item);
     await this.vectorService.upsert(
       saved.id,
       saved.userId,
-      buildSearchText(saved)
+      buildSearchText(saved),
+      saved.groupId
     );
     return this.toResponse(saved);
   }
@@ -109,13 +162,14 @@ export class ExpiryService {
     status?: ExpiryStatus
   ) {
     const { page, pageSize } = paginationDto;
+    const groupIds = await this.findUserGroupIds(userId);
 
     const qb = this.itemRepository
       .createQueryBuilder("item")
-      .where("item.userId = :userId", { userId })
       .orderBy("item.expiryDate", "ASC")
       .skip((page - 1) * pageSize)
       .take(pageSize);
+    this.applyVisibility(qb, "item", userId, groupIds);
     applyStatusFilter(qb, "item", status);
 
     const [list, total] = await qb.getManyAndCount();
@@ -136,11 +190,11 @@ export class ExpiryService {
   async search(searchDto: SearchExpiryItemDto) {
     const { userId, keyword, topK = 10, status } = searchDto;
     const statusIntent = status ?? detectStatusIntent(keyword);
+    const groupIds = await this.findUserGroupIds(userId);
 
     if (statusIntent) {
-      const qb = this.itemRepository
-        .createQueryBuilder("item")
-        .where("item.userId = :userId", { userId });
+      const qb = this.itemRepository.createQueryBuilder("item");
+      this.applyVisibility(qb, "item", userId, groupIds);
       applyStatusFilter(qb, "item", statusIntent);
       const list = await qb
         .orderBy("item.expiryDate", "ASC")
@@ -154,19 +208,20 @@ export class ExpiryService {
 
     const hits = await this.vectorService.search(
       userId,
+      groupIds,
       keyword,
       DISTRIBUTION_LIMIT
     );
     if (!hits) {
-      const list = await this.itemRepository
+      const qb = this.itemRepository
         .createQueryBuilder("item")
-        .where("item.userId = :userId", { userId })
         .andWhere("(item.name LIKE :kw OR item.notes LIKE :kw)", {
           kw: `%${keyword}%`,
         })
         .orderBy("item.expiryDate", "ASC")
-        .take(topK)
-        .getMany();
+        .take(topK);
+      this.applyVisibility(qb, "item", userId, groupIds);
+      const list = await qb.getMany();
       return {
         list: list.map((item) => this.toResponse(item)),
         semantic: false,
@@ -175,12 +230,15 @@ export class ExpiryService {
 
     if (!hits.length) return { list: [], semantic: true };
 
-    // 向量库可能存有已删物品的残留 id，所以仍按 userId 兜一层
+    // 向量库可能存有已删物品的残留 id，再按可见范围兜一层过滤
     const candidates = hits.slice(0, RERANK_TOP_K);
-    const found = await this.itemRepository.findBy({
-      id: In(candidates.map((hit) => hit.id)),
-      userId,
-    });
+    const verifyQb = this.itemRepository
+      .createQueryBuilder("item")
+      .where("item.id IN (:...candidateIds)", {
+        candidateIds: candidates.map((hit) => hit.id),
+      });
+    this.applyVisibility(verifyQb, "item", userId, groupIds);
+    const found = await verifyQb.getMany();
     const byId = new Map(found.map((item) => [item.id, item]));
     const ordered = candidates
       .map((hit) => byId.get(hit.id))
@@ -222,42 +280,75 @@ export class ExpiryService {
     }
   }
 
-  async findOne(id: number) {
-    return this.toResponse(await this.getOrFail(id));
+  async findOne(id: number, userId: number) {
+    return this.toResponse(await this.getAccessibleOrFail(id, userId));
   }
 
-  async update(id: number, updateDto: UpdateExpiryItemDto) {
-    const item = await this.getOrFail(id);
-    // 到期日或提醒天数变了，之前的推送记录就作废，让它重新进提醒队列
-    const resetNotified =
+  async update(id: number, userId: number, updateDto: UpdateExpiryItemDto) {
+    const item = await this.getAccessibleOrFail(id, userId);
+
+    // 改挂到的新组必须是操作者所在组；显式传 null 表示改回私有
+    if (updateDto.groupId) {
+      await this.ensureGroupMembership(userId, updateDto.groupId);
+    }
+    const groupChanged =
+      updateDto.groupId !== undefined &&
+      (updateDto.groupId ?? null) !== (item.groupId ?? null);
+    // 到期日或提醒天数变了，之前的推送记录作废，让它重新进提醒队列
+    const windowChanged =
       (updateDto.expiryDate !== undefined &&
         updateDto.expiryDate !== item.expiryDate) ||
       (updateDto.remindDays !== undefined &&
         updateDto.remindDays !== item.remindDays);
 
     Object.assign(item, updateDto);
-    if (resetNotified) item.notifiedAt = null;
-
     const saved = await this.itemRepository.save(item);
+
+    if (windowChanged) {
+      await this.notificationRepository.delete({ itemId: id });
+    } else if (groupChanged) {
+      // 只改共享范围：清掉已不在接收范围内的非所有者记录；
+      // 新加入的成员本就没有记录，会自然进入推送队列
+      await this.notificationRepository
+        .createQueryBuilder()
+        .delete()
+        .where("itemId = :itemId AND userId != :ownerId", {
+          itemId: id,
+          ownerId: saved.userId,
+        })
+        .execute();
+    }
+
     await this.vectorService.upsert(
       saved.id,
       saved.userId,
-      buildSearchText(saved)
+      buildSearchText(saved),
+      saved.groupId
     );
     return this.toResponse(saved);
   }
 
-  async remove(id: number) {
-    const item = await this.getOrFail(id);
+  async remove(id: number, userId: number) {
+    const item = await this.getAccessibleOrFail(id, userId);
     await this.itemRepository.remove(item);
+    await this.notificationRepository.delete({ itemId: id });
     await this.vectorService.remove(id);
     return { success: true };
   }
 
-  private async getOrFail(id: number) {
+  /**
+   * 私人物品仅所有者可访问；共享物品要求操作者在所属组内。
+   * 顺带补上历史上缺失的归属校验。
+   */
+  private async getAccessibleOrFail(id: number, userId: number) {
     const item = await this.itemRepository.findOne({ where: { id } });
     if (!item) {
       throw new NotFoundException(`物品 ID ${id} 不存在`);
+    }
+    if (item.groupId) {
+      await this.ensureGroupMembership(userId, item.groupId);
+    } else if (item.userId !== userId) {
+      throw new ForbiddenException("无权操作他人物品");
     }
     return item;
   }

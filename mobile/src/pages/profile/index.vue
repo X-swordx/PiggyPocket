@@ -45,7 +45,7 @@
       <view class="stats-grid">
         <view class="stat-card" @click="goToFoodieBuddy">
           <text class="stat-value">{{ stats.orders }}</text>
-          <text class="stat-label">饭搭子</text>
+          <text class="stat-label">搭伙</text>
         </view>
         <view class="stat-card" @click="goToHistoryMenu">
           <text class="stat-value">{{ stats.recipes }}</text>

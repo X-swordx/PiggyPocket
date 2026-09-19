@@ -28,6 +28,12 @@ export class AdminListQueryDto {
   @IsInt()
   userId?: number;
 
+  @ApiPropertyOptional({ description: '按饭搭子组 ID 过滤（可选，到期物品用）' })
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  groupId?: number;
+
   @ApiPropertyOptional({ description: '关键字（作用在名称/标题）' })
   @IsOptional()
   @IsString()

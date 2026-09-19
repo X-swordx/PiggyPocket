@@ -6,6 +6,8 @@ import { ExpiryController } from "./expiry.controller";
 import { ExpiryService } from "./expiry.service";
 import { ExpiryReminderService } from "./expiry-reminder.service";
 import { ExpiryItem } from "./entities/expiry-item.entity";
+import { ExpiryItemNotification } from "./entities/expiry-item-notification.entity";
+import { DiningGroupMember } from "../foodie-buddy/dining-group/entities/dining-group-member.entity";
 import { User } from "../foodie-buddy/user/entities/user.entity";
 import { VectorModule } from "../vector/vector.module";
 import { WechatModule } from "../wechat/wechat.module";
@@ -14,7 +16,12 @@ import { RERANK_MODEL } from "./expiry-search-rerank";
 @Module({
   imports: [
     ConfigModule,
-    TypeOrmModule.forFeature([ExpiryItem, User]),
+    TypeOrmModule.forFeature([
+      ExpiryItem,
+      ExpiryItemNotification,
+      DiningGroupMember,
+      User,
+    ]),
     VectorModule,
     WechatModule,
   ],

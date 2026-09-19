@@ -23,6 +23,7 @@ import { AdminOperationLogService } from './admin-operation-log.service';
 import { AdminDashboardService } from './admin-dashboard.service';
 import { AdminRolePermissionService } from './admin-role-permission.service';
 import { ExpiryItem } from '../expiry/entities/expiry-item.entity';
+import { ExpiryItemNotification } from '../expiry/entities/expiry-item-notification.entity';
 import { Wish } from '../wish/entities/wish.entity';
 import { Dish } from '../foodie-buddy/dish/entities/dish.entity';
 import { DishCategory } from '../foodie-buddy/dish/entities/dish-category.entity';
@@ -45,6 +46,7 @@ import { ExpiryModule } from '../expiry/expiry.module';
       AdminOperationLog,
       AdminRolePermission,
       ExpiryItem,
+      ExpiryItemNotification,
       Wish,
       Dish,
       DishCategory,

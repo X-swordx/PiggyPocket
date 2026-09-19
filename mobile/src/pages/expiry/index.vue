@@ -70,6 +70,13 @@
             <view class="status-badge" :class="item.status">
               <text>{{ item.statusText }}</text>
             </view>
+            <view
+              v-if="item.groupId"
+              style="display: flex; align-items: center; gap: 2px; margin-left: 6px; padding: 2px 8px; border-radius: 999px; background: #8aa6cb;"
+            >
+              <uni-icons type="staff" size="11" color="#fff" />
+              <text style="color: #fff; font-size: 10px;">共享</text>
+            </view>
             <text class="days-text">{{ item.daysText }}</text>
           </view>
           <text class="item-name">{{ item.name }}</text>

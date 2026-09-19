@@ -63,12 +63,12 @@ export type ExpiryStatus = 'fresh' | 'expiring' | 'expired'
 export interface AdminExpiryItem {
   id: number
   userId: number
+  groupId?: number | null
   name: string
   imageUrl?: string
   expiryDate: string
   quantity: number
   remindDays: number
-  notifiedAt?: string | null
   storage?: string
   category?: string
   notes?: string
@@ -78,6 +78,7 @@ export interface AdminExpiryItem {
   daysRemaining: number
   daysText: string
   userNickname: string | null
+  groupName?: string | null
   createdAt: string
   updatedAt: string
 }
@@ -86,6 +87,7 @@ export interface ExpiryListQuery {
   page?: number
   pageSize?: number
   userId?: number
+  groupId?: number
   keyword?: string
   status?: ExpiryStatus
 }

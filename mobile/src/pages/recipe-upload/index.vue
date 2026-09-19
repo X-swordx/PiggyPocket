@@ -121,7 +121,7 @@
 
       <!-- Dining Group Selector -->
       <view class="group-section" v-if="groupsLoaded">
-        <text class="section-title">分享到饭搭子</text>
+        <text class="section-title">分享到搭伙</text>
         <picker
           v-if="groups.length > 0"
           mode="selector"
@@ -135,7 +135,7 @@
           </view>
         </picker>
         <view v-else class="group-empty">
-          <text>暂无饭搭子组，创建或加入后才能发布菜谱</text>
+          <text>暂无搭伙小组，创建或加入后才能发布菜谱</text>
         </view>
       </view>
 
@@ -206,7 +206,7 @@ const loadCategories = async () => {
 }
 
 const groupNames = computed(() =>
-  groups.value.map((g) => g.name || `饭搭子 ${g.id}`)
+  groups.value.map((g) => g.name || `搭伙 ${g.id}`)
 )
 
 const loadUserAndGroups = async () => {
@@ -217,7 +217,7 @@ const loadUserAndGroups = async () => {
     groups.value = myGroups
     selectedGroupIndex.value = 0
   } catch (err: any) {
-    uni.showToast({ title: err.message || '加载饭搭子组失败', icon: 'none' })
+    uni.showToast({ title: err.message || '加载搭伙小组失败', icon: 'none' })
   } finally {
     groupsLoaded.value = true
   }
@@ -449,7 +449,7 @@ const publishRecipe = async () => {
   }
 
   if (groups.value.length === 0) {
-    uni.showToast({ title: '请先创建或加入饭搭子组', icon: 'none' })
+    uni.showToast({ title: '请先创建或加入搭伙小组', icon: 'none' })
     return
   }
 

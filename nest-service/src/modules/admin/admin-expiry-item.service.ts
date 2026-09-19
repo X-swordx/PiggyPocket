@@ -2,7 +2,9 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository, LessThan, In } from 'typeorm';
 import { ExpiryItem } from '../expiry/entities/expiry-item.entity';
+import { ExpiryItemNotification } from '../expiry/entities/expiry-item-notification.entity';
 import { User } from '../foodie-buddy/user/entities/user.entity';
+import { DiningGroup } from '../foodie-buddy/dining-group/entities/dining-group.entity';
 import { CreateExpiryItemDto } from '../expiry/dto/create-expiry-item.dto';
 import { UpdateExpiryItemDto } from '../expiry/dto/update-expiry-item.dto';
 import { ExpiryStatus, applyStatusFilter } from '../expiry/expiry.service';
@@ -27,15 +29,19 @@ export class AdminExpiryItemService {
   constructor(
     @InjectRepository(ExpiryItem)
     private readonly itemRepo: Repository<ExpiryItem>,
+    @InjectRepository(ExpiryItemNotification)
+    private readonly notificationRepo: Repository<ExpiryItemNotification>,
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
+    @InjectRepository(DiningGroup)
+    private readonly groupRepo: Repository<DiningGroup>,
     private readonly vectorService: ItemVectorService,
     private readonly reminderService: ExpiryReminderService,
     private readonly opLog: AdminOperationLogService,
   ) {}
 
   async findAll(query: AdminListQueryDto & { status?: ExpiryStatus }) {
-    const { page, pageSize, userId, keyword, status } = query;
+    const { page, pageSize, userId, groupId, keyword, status } = query;
 
     const qb = this.itemRepo
       .createQueryBuilder('item')
@@ -43,14 +49,19 @@ export class AdminExpiryItemService {
       .skip((page - 1) * pageSize)
       .take(pageSize);
     if (userId) qb.andWhere('item.userId = :userId', { userId });
+    if (groupId) qb.andWhere('item.groupId = :groupId', { groupId });
     if (keyword) qb.andWhere('item.name LIKE :kw', { kw: `%${keyword}%` });
     applyStatusFilter(qb, 'item', status);
 
     const [rows, total] = await qb.getManyAndCount();
     const users = await this.loadUserMap(rows.map((r) => r.userId));
+    const groups = await this.loadGroupMap(
+      rows.map((r) => r.groupId).filter((g): g is number => !!g),
+    );
 
     return {
-      list: rows.map((r) => this.toResponse(r, users.get(r.userId))),
+      list: rows.map((r) =>
+        this.toResponse(r, users.get(r.userId), groups.get(r.groupId ?? -1))),
       total,
       page,
       pageSize,
@@ -60,7 +71,10 @@ export class AdminExpiryItemService {
   async findOne(id: number) {
     const item = await this.getOrFail(id);
     const user = await this.userRepo.findOne({ where: { id: item.userId } });
-    return this.toResponse(item, user ?? null);
+    const group = item.groupId
+      ? await this.groupRepo.findOne({ where: { id: item.groupId } })
+      : null;
+    return this.toResponse(item, user ?? null, group);
   }
 
   async create(ctx: LogContext, dto: CreateExpiryItemDto) {
@@ -69,6 +83,7 @@ export class AdminExpiryItemService {
       saved.id,
       saved.userId,
       buildSearchText(saved),
+      saved.groupId,
     );
     await this.opLog.record(ctx, 'create', 'expiry_item', saved.id, { name: saved.name });
     return this.findOne(saved.id);
@@ -76,18 +91,35 @@ export class AdminExpiryItemService {
 
   async update(ctx: LogContext, id: number, dto: UpdateExpiryItemDto) {
     const item = await this.getOrFail(id);
-    const resetNotified =
+    const windowChanged =
       (dto.expiryDate !== undefined && dto.expiryDate !== item.expiryDate) ||
       (dto.remindDays !== undefined && dto.remindDays !== item.remindDays);
+    const groupChanged =
+      dto.groupId !== undefined &&
+      (dto.groupId ?? null) !== (item.groupId ?? null);
 
     Object.assign(item, dto);
-    if (resetNotified) item.notifiedAt = null;
-
     const saved = await this.itemRepo.save(item);
+
+    // 提醒窗口变了：所有人重新推；只改共享范围：清掉非所有者的旧记录
+    if (windowChanged) {
+      await this.notificationRepo.delete({ itemId: id });
+    } else if (groupChanged) {
+      await this.notificationRepo
+        .createQueryBuilder()
+        .delete()
+        .where('itemId = :itemId AND userId != :ownerId', {
+          itemId: id,
+          ownerId: saved.userId,
+        })
+        .execute();
+    }
+
     await this.vectorService.upsert(
       saved.id,
       saved.userId,
       buildSearchText(saved),
+      saved.groupId,
     );
     await this.opLog.record(ctx, 'update', 'expiry_item', id, dto as any);
     return this.findOne(id);
@@ -96,6 +128,7 @@ export class AdminExpiryItemService {
   async remove(ctx: LogContext, id: number) {
     const item = await this.getOrFail(id);
     await this.itemRepo.remove(item);
+    await this.notificationRepo.delete({ itemId: id });
     await this.vectorService.remove(id);
     await this.opLog.record(ctx, 'delete', 'expiry_item', id, { name: item.name });
     return { success: true };
@@ -109,6 +142,10 @@ export class AdminExpiryItemService {
 
     const doomed = await this.itemRepo.find({ where, select: ['id'] });
     const result = await this.itemRepo.delete(where);
+    const doomedIds = doomed.map((item) => item.id);
+    if (doomedIds.length) {
+      await this.notificationRepo.delete({ itemId: In(doomedIds) });
+    }
     for (const item of doomed) {
       await this.vectorService.remove(item.id);
     }
@@ -141,6 +178,7 @@ export class AdminExpiryItemService {
         rows.map((item) => ({
           id: item.id,
           userId: item.userId,
+          groupId: item.groupId,
           text: buildSearchText(item),
         })),
       );
@@ -173,7 +211,18 @@ export class AdminExpiryItemService {
     return new Map(users.map((u) => [u.id, u]));
   }
 
-  private toResponse(item: ExpiryItem, user: User | null | undefined) {
+  private async loadGroupMap(groupIds: number[]) {
+    const uniq = Array.from(new Set(groupIds)).filter(Boolean);
+    if (uniq.length === 0) return new Map<number, DiningGroup>();
+    const groups = await this.groupRepo.find({ where: { id: In(uniq) } });
+    return new Map(groups.map((g) => [g.id, g]));
+  }
+
+  private toResponse(
+    item: ExpiryItem,
+    user: User | null | undefined,
+    group?: DiningGroup | null,
+  ) {
     const days = this.daysRemaining(item.expiryDate);
     const status: ExpiryStatus =
       days < 0 ? 'expired' : days <= item.remindDays ? 'expiring' : 'fresh';
@@ -192,6 +241,7 @@ export class AdminExpiryItemService {
       daysRemaining: days,
       daysText,
       userNickname: user?.nickname ?? user?.name ?? null,
+      groupName: group?.name ?? null,
     };
   }
 

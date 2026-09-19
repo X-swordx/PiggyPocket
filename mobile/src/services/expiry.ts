@@ -6,6 +6,8 @@ export type ExpiryStatus = 'fresh' | 'expiring' | 'expired'
 export interface ExpiryItem {
   id: number
   userId?: number
+  /** 共享到的搭伙小组ID；为空表示仅自己可见 */
+  groupId?: number | null
   name: string
   imageUrl?: string
   expiryDate: string
@@ -61,11 +63,14 @@ export const getExpiryItems = async (query: {
   })
 }
 
-export const getExpiryItem = (id: number) =>
-  request<ExpiryItem>({ url: `/expiry-items/${id}` })
+export const getExpiryItem = async (id: number) => {
+  const userId = await getUserId()
+  return request<ExpiryItem>({ url: `/expiry-items/${id}`, query: { userId } })
+}
 
 export const createExpiryItem = (data: {
   userId: number
+  groupId?: number | null
   name: string
   expiryDate: string
   quantity?: number
@@ -82,18 +87,27 @@ export const createExpiryItem = (data: {
     data
   })
 
-export const updateExpiryItem = (id: number, data: Partial<Omit<ExpiryItem, 'id' | 'userId'>>) =>
-  request<ExpiryItem>({
+export const updateExpiryItem = async (
+  id: number,
+  data: Partial<Omit<ExpiryItem, 'id' | 'userId'>>
+) => {
+  const userId = await getUserId()
+  return request<ExpiryItem>({
     url: `/expiry-items/${id}`,
     method: 'PUT',
+    query: { userId },
     data
   })
+}
 
-export const removeExpiryItem = (id: number) =>
-  request<{ success: boolean }>({
+export const removeExpiryItem = async (id: number) => {
+  const userId = await getUserId()
+  return request<{ success: boolean }>({
     url: `/expiry-items/${id}`,
-    method: 'DELETE'
+    method: 'DELETE',
+    query: { userId }
   })
+}
 
 const getUserId = async () => {
   const user = await getCurrentUser()
@@ -123,6 +137,7 @@ export const getExpiredItems = async () => {
 
 /** 新增物品（自动注入 userId） */
 export const addExpiryItem = async (data: {
+  groupId?: number | null
   name: string
   expiryDate: string
   quantity?: number
