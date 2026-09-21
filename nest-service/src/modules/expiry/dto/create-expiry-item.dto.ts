@@ -11,6 +11,7 @@ import {
 } from 'class-validator';
 
 const STORAGE_VALUES = ['fridge', 'freezer', 'pantry', 'cabinet', 'other'];
+const SHELF_LIFE_UNITS = ['day', 'month'];
 const CATEGORY_VALUES = [
   'food',
   'medicine',
@@ -43,10 +44,31 @@ export class CreateExpiryItemDto {
   @IsString()
   name: string;
 
-  @ApiProperty({ description: '到期日期，如 2026-07-05' })
-  @IsNotEmpty({ message: '到期日期不能为空' })
+  @ApiProperty({ description: '生产日期，如 2026-07-05' })
+  @IsNotEmpty({ message: '生产日期不能为空' })
   @IsString()
-  expiryDate: string;
+  productionDate: string;
+
+  @ApiProperty({
+    description: '保质期数值，到期日 = 生产日期 + 保质期',
+    example: 7,
+  })
+  @IsNotEmpty({ message: '保质期数值不能为空' })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  shelfLifeValue: number;
+
+  @ApiProperty({
+    description: '保质期单位：day=天，month=月',
+    enum: SHELF_LIFE_UNITS,
+    example: 'day',
+  })
+  @IsNotEmpty()
+  @IsIn(SHELF_LIFE_UNITS, {
+    message: '保质期单位只能是：day、month',
+  })
+  shelfLifeUnit: string;
 
   @ApiPropertyOptional({ description: '数量', default: 1 })
   @IsOptional()

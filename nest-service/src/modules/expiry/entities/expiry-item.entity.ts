@@ -36,8 +36,28 @@ export class ExpiryItem {
   @Column({ type: 'varchar', length: 255, nullable: true, comment: '图片URL' })
   imageUrl?: string;
 
-  @ApiProperty({ description: '到期日期' })
-  @Column({ type: 'date', comment: '到期日期' })
+  @ApiProperty({ description: '生产日期', required: false })
+  @Column({ type: 'date', nullable: true, comment: '生产日期' })
+  productionDate?: string | null;
+
+  @ApiProperty({ description: '保质期数值', required: false })
+  @Column({ type: 'int', nullable: true, comment: '保质期数值' })
+  shelfLifeValue?: number | null;
+
+  @ApiProperty({ description: '保质期单位：day/month', required: false })
+  @Column({
+    type: 'varchar',
+    length: 10,
+    nullable: true,
+    comment: '保质期单位：day/month',
+  })
+  shelfLifeUnit?: string | null;
+
+  @ApiProperty({ description: '到期日期（生产日期 + 保质期，服务端计算）' })
+  @Column({
+    type: 'date',
+    comment: '到期日期（生产日期 + 保质期，服务端计算）',
+  })
   expiryDate: string;
 
   @ApiProperty({ description: '数量' })

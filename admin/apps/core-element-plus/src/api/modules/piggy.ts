@@ -66,6 +66,13 @@ export interface AdminExpiryItem {
   groupId?: number | null
   name: string
   imageUrl?: string
+  /** 生产日期 */
+  productionDate?: string | null
+  /** 保质期数值 */
+  shelfLifeValue?: number | null
+  /** 保质期单位：day=天，month=月 */
+  shelfLifeUnit?: 'day' | 'month' | null
+  /** 到期日期（生产日期 + 保质期，后端计算，只读） */
   expiryDate: string
   quantity: number
   remindDays: number

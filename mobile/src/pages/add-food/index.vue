@@ -43,23 +43,24 @@
           </view>
         </view>
 
-        <!-- Expiry Date & Quantity Grid -->
+        <!-- Production Date & Quantity Grid -->
         <view class="form-grid">
           <view class="form-item">
             <view class="label">
-              <text>到期日期</text>
+              <text>生产日期</text>
             </view>
             <view class="input-wrapper">
               <uni-icons type="calendar" size="20" color="var(--theme-primary)" class="input-icon" />
               <picker
                 mode="date"
-                :value="formData.expiryDate"
+                :value="formData.productionDate"
+                :end="todayStr"
                 @change="onDateChange"
                 class="picker-wrapper"
               >
                 <view class="picker-display">
-                  <text :class="!formData.expiryDate ? 'placeholder-text' : ''">
-                    {{ formData.expiryDate || '选择日期' }}
+                  <text :class="!formData.productionDate ? 'placeholder-text' : ''">
+                    {{ formData.productionDate || '选择日期' }}
                   </text>
                 </view>
               </picker>
@@ -81,6 +82,44 @@
               />
             </view>
           </view>
+        </view>
+
+        <!-- Shelf Life -->
+        <view class="form-item">
+          <view class="label">
+            <text>保质期</text>
+          </view>
+          <view class="shelf-life-row">
+            <view class="input-wrapper shelf-life-input">
+              <uni-icons type="clock" size="20" color="var(--theme-primary)" class="input-icon" />
+              <input
+                class="form-input"
+                v-model.number="formData.shelfLifeValue"
+                type="number"
+                placeholder="请输入保质期"
+                placeholder-class="placeholder"
+              />
+            </view>
+            <view class="unit-toggle">
+              <view
+                class="unit-item"
+                :class="{ active: formData.shelfLifeUnit === 'day' }"
+                @click="formData.shelfLifeUnit = 'day'"
+              >
+                <text>天</text>
+              </view>
+              <view
+                class="unit-item"
+                :class="{ active: formData.shelfLifeUnit === 'month' }"
+                @click="formData.shelfLifeUnit = 'month'"
+              >
+                <text>月</text>
+              </view>
+            </view>
+          </view>
+          <text v-if="computedExpiryDate" class="shelf-life-hint">
+            到期日期：{{ computedExpiryDate }}
+          </text>
         </view>
 
         <!-- Remind Ahead -->
@@ -207,10 +246,13 @@ import {
 } from '@/services/expiry'
 import { getMyDiningGroups, getCurrentUser, type DiningGroup } from '@/services/foodieBuddy'
 import { themeStyle } from '@/utils/theme'
+import { addShelfLife, type ShelfLifeUnit } from '@/utils/shelfLife'
 
 interface FormData {
   name: string
-  expiryDate: string
+  productionDate: string
+  shelfLifeValue: number | null
+  shelfLifeUnit: ShelfLifeUnit
   quantity: number
   remindDays: number
   storage: string
@@ -222,7 +264,9 @@ interface FormData {
 
 const formData = ref<FormData>({
   name: '',
-  expiryDate: '',
+  productionDate: '',
+  shelfLifeValue: null,
+  shelfLifeUnit: 'day',
   quantity: 1,
   remindDays: 3,
   storage: 'fridge',
@@ -230,6 +274,19 @@ const formData = ref<FormData>({
   notes: '',
   imageUrl: '',
   groupId: null
+})
+
+/** 生产日期不能晚于今天，取东八区当地日期作为选择上限 */
+const now = new Date()
+const todayStr = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(
+  now.getDate()
+).padStart(2, '0')}`
+
+/** 按生产日期 + 保质期实时算出到期日，填表时给用户预览 */
+const computedExpiryDate = computed(() => {
+  const v = formData.value
+  if (!v.productionDate || !v.shelfLifeValue || v.shelfLifeValue < 1) return ''
+  return addShelfLife(v.productionDate, Number(v.shelfLifeValue), v.shelfLifeUnit)
 })
 
 // 共享范围：第 0 项固定为「仅自己」，其余是我加入的搭伙小组
@@ -298,7 +355,7 @@ const onRemindChange = (e: any) => {
 }
 
 const onDateChange = (e: any) => {
-  formData.value.expiryDate = e.detail.value
+  formData.value.productionDate = e.detail.value
 }
 
 const uploadImage = async () => {
@@ -349,7 +406,9 @@ onLoad(async (options: any) => {
       const item = await getExpiryItem(editingId.value)
       formData.value = {
         name: item.name,
-        expiryDate: item.expiryDate,
+        productionDate: item.productionDate || '',
+        shelfLifeValue: item.shelfLifeValue ?? null,
+        shelfLifeUnit: item.shelfLifeUnit || 'day',
         quantity: item.quantity || 1,
         remindDays: item.remindDays ?? 3,
         storage: item.storage || 'fridge',
@@ -395,14 +454,20 @@ const submitForm = async () => {
     uni.showToast({ title: '请输入物品名称', icon: 'none' })
     return
   }
-  if (!formData.value.expiryDate) {
-    uni.showToast({ title: '请选择到期日期', icon: 'none' })
+  if (!formData.value.productionDate) {
+    uni.showToast({ title: '请选择生产日期', icon: 'none' })
+    return
+  }
+  if (!formData.value.shelfLifeValue || formData.value.shelfLifeValue < 1) {
+    uni.showToast({ title: '请填写保质期', icon: 'none' })
     return
   }
 
   const payload = {
     name: formData.value.name.trim(),
-    expiryDate: formData.value.expiryDate,
+    productionDate: formData.value.productionDate,
+    shelfLifeValue: Number(formData.value.shelfLifeValue),
+    shelfLifeUnit: formData.value.shelfLifeUnit,
     quantity: formData.value.quantity || 1,
     remindDays: formData.value.remindDays,
     storage: formData.value.storage,
@@ -633,6 +698,54 @@ const submitForm = async () => {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+}
+
+/* Shelf Life: number input + day/month toggle */
+.shelf-life-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.shelf-life-input {
+  flex: 1;
+}
+
+.unit-toggle {
+  flex-shrink: 0;
+  display: flex;
+  border: 1px solid rgba(var(--theme-primary-rgb), 0.2);
+  border-radius: 12px;
+  overflow: hidden;
+}
+
+.unit-item {
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: #ffffff;
+}
+
+.unit-item.active {
+  background: rgba(var(--theme-primary-rgb), 0.2);
+}
+
+.unit-item text {
+  font-size: 16px;
+  font-weight: 600;
+  color: #504445;
+}
+
+.unit-item.active text {
+  color: #653a43;
+}
+
+.shelf-life-hint {
+  padding-left: 4px;
+  font-size: 12px;
+  color: var(--theme-primary);
 }
 
 /* Storage Location Selection */

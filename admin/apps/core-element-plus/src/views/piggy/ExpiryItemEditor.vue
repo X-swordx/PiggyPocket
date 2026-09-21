@@ -31,7 +31,9 @@ const form = reactive<Partial<AdminExpiryItem>>({
   groupId: null,
   name: '',
   imageUrl: '',
-  expiryDate: '',
+  productionDate: '',
+  shelfLifeValue: undefined,
+  shelfLifeUnit: 'day',
   quantity: 1,
   remindDays: 3,
   storage: undefined,
@@ -45,7 +47,13 @@ const initialUserNickname = ref<string | null>(null)
 const rules = {
   userId: [{ required: true, message: '请选择所属用户', trigger: 'change' }],
   name: [{ required: true, message: '请输入物品名称', trigger: 'blur' }],
-  expiryDate: [{ required: true, message: '请选择到期日期', trigger: 'change' }],
+  productionDate: [{ required: true, message: '请选择生产日期', trigger: 'change' }],
+  shelfLifeValue: [{ required: true, message: '请填写保质期', trigger: 'change' }],
+}
+
+/** 生产日期不能选未来日期 */
+function disableFutureDate(date: Date) {
+  return date.getTime() > Date.now()
 }
 
 watch(
@@ -60,7 +68,9 @@ watch(
         groupId: item.groupId ?? null,
         name: item.name,
         imageUrl: item.imageUrl ?? '',
-        expiryDate: item.expiryDate,
+        productionDate: item.productionDate ?? '',
+        shelfLifeValue: item.shelfLifeValue ?? undefined,
+        shelfLifeUnit: item.shelfLifeUnit ?? 'day',
         quantity: item.quantity,
         remindDays: item.remindDays,
         storage: item.storage,
@@ -79,7 +89,9 @@ function resetForm() {
   form.groupId = null
   form.name = ''
   form.imageUrl = ''
-  form.expiryDate = ''
+  form.productionDate = ''
+  form.shelfLifeValue = undefined
+  form.shelfLifeUnit = 'day'
   form.quantity = 1
   form.remindDays = 3
   form.storage = undefined
@@ -149,14 +161,23 @@ function onClose() {
       <ElFormItem label="图片">
         <ImageUpload v-model="form.imageUrl" dir="admin/expiry" />
       </ElFormItem>
-      <ElFormItem label="到期日期" prop="expiryDate">
+      <ElFormItem label="生产日期" prop="productionDate">
         <ElDatePicker
-          v-model="form.expiryDate"
+          v-model="form.productionDate"
           type="date"
           value-format="YYYY-MM-DD"
-          placeholder="选择到期日"
+          :disabled-date="disableFutureDate"
+          placeholder="选择生产日期"
           style="width: 100%"
         />
+      </ElFormItem>
+      <ElFormItem label="保质期" prop="shelfLifeValue">
+        <ElInputNumber v-model="form.shelfLifeValue" :min="1" :max="3650" />
+        <ElSelect v-model="form.shelfLifeUnit" class="ml-2 w-24">
+          <ElOption label="天" value="day" />
+          <ElOption label="月" value="month" />
+        </ElSelect>
+        <span class="ml-2 text-xs text-muted-foreground">到期日 = 生产日期 + 保质期，自动计算</span>
       </ElFormItem>
       <ElFormItem label="数量">
         <ElInputNumber v-model="form.quantity" :min="1" :max="999" />

@@ -27,6 +27,11 @@ import {
 } from "./expiry-search-rerank";
 import { ItemVectorService } from "../vector/item-vector.service";
 import { PaginationDto } from "../../common/dto/pagination.dto";
+import {
+  addShelfLife,
+  resolveExpiryDate,
+  ShelfLifeUnit,
+} from "./shelf-life";
 
 /**
  * 取分数分布用的检索宽度。要判断「某条是否显著高于其他」就得先看到整个分布，
@@ -145,7 +150,14 @@ export class ExpiryService {
     if (createDto.groupId) {
       await this.ensureGroupMembership(createDto.userId, createDto.groupId);
     }
-    const item = this.itemRepository.create(createDto);
+    const item = this.itemRepository.create({
+      ...createDto,
+      expiryDate: addShelfLife(
+        createDto.productionDate,
+        createDto.shelfLifeValue,
+        createDto.shelfLifeUnit as ShelfLifeUnit,
+      ),
+    });
     const saved = await this.itemRepository.save(item);
     await this.vectorService.upsert(
       saved.id,
@@ -294,14 +306,16 @@ export class ExpiryService {
     const groupChanged =
       updateDto.groupId !== undefined &&
       (updateDto.groupId ?? null) !== (item.groupId ?? null);
-    // 到期日或提醒天数变了，之前的推送记录作废，让它重新进提醒队列
+    // 生产日期/保质期变了要重算到期日；到期日或提醒天数变了，
+    // 之前的推送记录作废，让它重新进提醒队列
+    const resolved = resolveExpiryDate(item, updateDto);
     const windowChanged =
-      (updateDto.expiryDate !== undefined &&
-        updateDto.expiryDate !== item.expiryDate) ||
+      (resolved?.changed ?? false) ||
       (updateDto.remindDays !== undefined &&
         updateDto.remindDays !== item.remindDays);
 
     Object.assign(item, updateDto);
+    if (resolved) item.expiryDate = resolved.expiryDate;
     const saved = await this.itemRepository.save(item);
 
     if (windowChanged) {

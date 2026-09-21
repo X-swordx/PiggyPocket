@@ -9,6 +9,11 @@ import { CreateExpiryItemDto } from '../expiry/dto/create-expiry-item.dto';
 import { UpdateExpiryItemDto } from '../expiry/dto/update-expiry-item.dto';
 import { ExpiryStatus, applyStatusFilter } from '../expiry/expiry.service';
 import { buildSearchText } from '../expiry/expiry-labels';
+import {
+  addShelfLife,
+  resolveExpiryDate,
+  ShelfLifeUnit,
+} from '../expiry/shelf-life';
 import { ExpiryReminderService } from '../expiry/expiry-reminder.service';
 import { ItemVectorService } from '../vector/item-vector.service';
 import { AdminListQueryDto } from './dto/admin-list-query.dto';
@@ -78,7 +83,16 @@ export class AdminExpiryItemService {
   }
 
   async create(ctx: LogContext, dto: CreateExpiryItemDto) {
-    const saved = await this.itemRepo.save(this.itemRepo.create(dto));
+    const saved = await this.itemRepo.save(
+      this.itemRepo.create({
+        ...dto,
+        expiryDate: addShelfLife(
+          dto.productionDate,
+          dto.shelfLifeValue,
+          dto.shelfLifeUnit as ShelfLifeUnit,
+        ),
+      }),
+    );
     await this.vectorService.upsert(
       saved.id,
       saved.userId,
@@ -91,14 +105,16 @@ export class AdminExpiryItemService {
 
   async update(ctx: LogContext, id: number, dto: UpdateExpiryItemDto) {
     const item = await this.getOrFail(id);
+    const resolved = resolveExpiryDate(item, dto);
     const windowChanged =
-      (dto.expiryDate !== undefined && dto.expiryDate !== item.expiryDate) ||
+      (resolved?.changed ?? false) ||
       (dto.remindDays !== undefined && dto.remindDays !== item.remindDays);
     const groupChanged =
       dto.groupId !== undefined &&
       (dto.groupId ?? null) !== (item.groupId ?? null);
 
     Object.assign(item, dto);
+    if (resolved) item.expiryDate = resolved.expiryDate;
     const saved = await this.itemRepo.save(item);
 
     // 提醒窗口变了：所有人重新推；只改共享范围：清掉非所有者的旧记录

@@ -10,6 +10,13 @@ export interface ExpiryItem {
   groupId?: number | null
   name: string
   imageUrl?: string
+  /** 生产日期 */
+  productionDate?: string | null
+  /** 保质期数值，与 shelfLifeUnit 搭配；到期日由二者计算 */
+  shelfLifeValue?: number | null
+  /** 保质期单位：day=天，month=月 */
+  shelfLifeUnit?: 'day' | 'month' | null
+  /** 到期日期（生产日期 + 保质期，后端计算） */
   expiryDate: string
   quantity: number
   remindDays: number
@@ -72,7 +79,9 @@ export const createExpiryItem = (data: {
   userId: number
   groupId?: number | null
   name: string
-  expiryDate: string
+  productionDate: string
+  shelfLifeValue: number
+  shelfLifeUnit: 'day' | 'month'
   quantity?: number
   remindDays?: number
   storage?: string
@@ -139,7 +148,9 @@ export const getExpiredItems = async () => {
 export const addExpiryItem = async (data: {
   groupId?: number | null
   name: string
-  expiryDate: string
+  productionDate: string
+  shelfLifeValue: number
+  shelfLifeUnit: 'day' | 'month'
   quantity?: number
   remindDays?: number
   storage?: string
