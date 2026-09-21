@@ -216,7 +216,7 @@ export class AdminExpiryItemService {
 
   private async getOrFail(id: number) {
     const item = await this.itemRepo.findOne({ where: { id } });
-    if (!item) throw new NotFoundException(`物品 ID $416775509376_AWS_us-west-1 不存在`);
+    if (!item) throw new NotFoundException(`物品 ID ${id} 不存在`);
     return item;
   }
 
