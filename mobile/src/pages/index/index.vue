@@ -68,6 +68,25 @@
             </view>
           </view>
         </view>
+        <!-- Poop Card -->
+        <view class="card" @click="navigateTo('/pages/poop/index')">
+          <view class="card-image">
+            <view class="card-gradient"></view>
+            <text class="card-emoji">💩</text>
+            <view class="card-icon-overlay">
+              <uni-icons type="staff" size="24" color="var(--theme-primary)" />
+            </view>
+          </view>
+          <view class="card-content">
+            <text class="card-title">拉粑粑么</text>
+            <view class="card-footer">
+              <text class="card-desc">记录每天粑粑的数量和形态，月历回看，AI 帮你解读肠道状态</text>
+              <view class="card-btn">
+                <text>开记</text>
+              </view>
+            </view>
+          </view>
+        </view>
         <!-- Bucket List Card -->
         <view class="card" @click="navigateTo('/pages/wishlist/index')">
           <view class="card-image">
@@ -361,6 +380,15 @@ const clearAllNotifications = () => {
   width: 100%;
   height: 100%;
   background: linear-gradient(135deg, rgba(var(--theme-primary-rgb), 0.3) 0%, var(--theme-primary-lighter) 100%);
+  z-index: 1;
+}
+
+.card-emoji {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 72px;
   z-index: 1;
 }
 

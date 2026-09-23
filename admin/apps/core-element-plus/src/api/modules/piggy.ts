@@ -135,6 +135,49 @@ export const runExpiryReminder = () =>
     api.post('admin/expiry-items/reminder/run'),
   )
 
+// ============================ 拉粑粑么 ============================
+
+export interface AdminPoopRecord {
+  id: number
+  userId: number
+  /** 东八区日历日 YYYY-MM-DD */
+  recordDate: string
+  occurredAt: string
+  /** 布里斯托分型 1-7 */
+  bristolType: number
+  notes?: string
+  userNickname: string | null
+  createdAt: string
+  updatedAt: string
+}
+
+export interface PoopListQuery {
+  page?: number
+  pageSize?: number
+  userId?: number
+  keyword?: string
+  bristolType?: number
+  startDate?: string
+  endDate?: string
+}
+
+export const listPoopRecords = (query: PoopListQuery) =>
+  unwrap<PageResult<AdminPoopRecord>>(
+    api.get('admin/poop-records', { params: query }),
+  )
+
+export const getPoopRecord = (id: number) =>
+  unwrap<AdminPoopRecord>(api.get(`admin/poop-records/${id}`))
+
+export const createPoopRecord = (data: Partial<AdminPoopRecord>) =>
+  unwrap<AdminPoopRecord>(api.post('admin/poop-records', data))
+
+export const updatePoopRecord = (id: number, data: Partial<AdminPoopRecord>) =>
+  unwrap<AdminPoopRecord>(api.put(`admin/poop-records/${id}`, data))
+
+export const removePoopRecord = (id: number) =>
+  unwrap<{ success: boolean }>(api.delete(`admin/poop-records/${id}`))
+
 // ============================ 心愿 ============================
 
 export interface AdminWish {

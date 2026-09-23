@@ -51,6 +51,9 @@ export const buildExpiryData = (item: {
   };
 };
 
+/** 订阅消息模板类型，额度按类型分别累计。 */
+export type QuotaTemplateType = 'expiry' | 'poop';
+
 @Injectable()
 export class WechatService {
   private readonly logger = new Logger(WechatService.name);
@@ -64,6 +67,10 @@ export class WechatService {
 
   get expiryTemplateId(): string | undefined {
     return this.configService.get<string>('WECHAT_EXPIRY_TEMPLATE_ID');
+  }
+
+  get poopTemplateId(): string | undefined {
+    return this.configService.get<string>('WECHAT_POOP_TEMPLATE_ID');
   }
 
   /** 微信 access_token 有日调用限额，必须缓存；提前 5 分钟过期留出时钟偏差余量。 */
@@ -100,10 +107,11 @@ export class WechatService {
     openid: string,
     data: Record<string, { value: string }>,
     page?: string,
+    templateId?: string,
   ): Promise<boolean> {
-    const templateId = this.expiryTemplateId;
-    if (!templateId) {
-      this.logger.warn('未配置 WECHAT_EXPIRY_TEMPLATE_ID，跳过订阅消息推送');
+    const resolvedTemplateId = templateId || this.expiryTemplateId;
+    if (!resolvedTemplateId) {
+      this.logger.warn('未配置订阅消息模板 ID，跳过订阅消息推送');
       return false;
     }
 
@@ -115,7 +123,7 @@ export class WechatService {
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
             touser: openid,
-            template_id: templateId,
+            template_id: resolvedTemplateId,
             page,
             data,
           }),
@@ -143,28 +151,43 @@ export class WechatService {
     }
   }
 
-  /** 用户每次点击授权后累加一次推送额度。 */
-  async addQuota(userId: number, count = 1): Promise<void> {
+  /** 用户每次点击授权后累加一次推送额度，按模板类型分别累计。 */
+  async addQuota(
+    userId: number,
+    count = 1,
+    templateType: QuotaTemplateType = 'expiry',
+  ): Promise<void> {
     await this.quotaRepository.query(
-      'INSERT INTO `wechat_subscribe_quotas` (`userId`, `remaining`) VALUES (?, ?) ' +
+      'INSERT INTO `wechat_subscribe_quotas` (`userId`, `templateType`, `remaining`) VALUES (?, ?, ?) ' +
         'ON DUPLICATE KEY UPDATE `remaining` = `remaining` + ?',
-      [userId, count, count],
+      [userId, templateType, count, count],
     );
   }
 
   /** 剩余可推送次数，供小程序判断是否还要提示用户去授权。 */
-  async getQuota(userId: number): Promise<number> {
-    const row = await this.quotaRepository.findOne({ where: { userId } });
+  async getQuota(
+    userId: number,
+    templateType: QuotaTemplateType = 'expiry',
+  ): Promise<number> {
+    const row = await this.quotaRepository.findOne({
+      where: { userId, templateType },
+    });
     return row?.remaining ?? 0;
   }
 
   /** 原子扣减一次额度。返回 false 表示该用户已无额度可推。 */
-  async consumeQuota(userId: number): Promise<boolean> {
+  async consumeQuota(
+    userId: number,
+    templateType: QuotaTemplateType = 'expiry',
+  ): Promise<boolean> {
     const result = await this.quotaRepository
       .createQueryBuilder()
       .update(WechatSubscribeQuota)
       .set({ remaining: () => '`remaining` - 1' })
-      .where('userId = :userId AND remaining > 0', { userId })
+      .where('userId = :userId AND templateType = :templateType AND remaining > 0', {
+        userId,
+        templateType,
+      })
       .execute();
     return (result.affected ?? 0) > 0;
   }

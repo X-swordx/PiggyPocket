@@ -100,6 +100,22 @@
 				"navigationStyle": "custom",
 				"backgroundColor": "#F8F5F6"
 			}
+		},
+		{
+			"path": "pages/poop/index",
+			"style": {
+				"navigationBarTitleText": "拉粑粑么",
+				"navigationStyle": "custom",
+				"backgroundColor": "#F8F5F6"
+			}
+		},
+		{
+			"path": "pages/poop/add",
+			"style": {
+				"navigationBarTitleText": "记一笔",
+				"navigationStyle": "custom",
+				"backgroundColor": "#F8F5F6"
+			}
 		}
 	],
 	"globalStyle": {

@@ -32,6 +32,37 @@ export const EXPIRY_STATUS_TAG_TYPE: Record<string, 'success' | 'warning' | 'dan
   expired: 'danger',
 }
 
+export const BRISTOL_OPTIONS = [
+  { label: '1型 坚硬小球', value: 1 },
+  { label: '2型 干硬长条', value: 2 },
+  { label: '3型 裂纹长条', value: 3 },
+  { label: '4型 光滑长条', value: 4 },
+  { label: '5型 柔软小块', value: 5 },
+  { label: '6型 蓬松糊状', value: 6 },
+  { label: '7型 水状', value: 7 },
+]
+
+export const BRISTOL_EMOJI: Record<number, string> = {
+  1: '🌰',
+  2: '🪵',
+  3: '🟫',
+  4: '💩',
+  5: '🍫',
+  6: '🥣',
+  7: '💧',
+}
+
+/** 1-2 偏硬（warning），3-5 正常（success），6-7 偏稀（danger） */
+export const BRISTOL_TAG_TYPE: Record<number, 'warning' | 'success' | 'danger'> = {
+  1: 'warning',
+  2: 'warning',
+  3: 'success',
+  4: 'success',
+  5: 'success',
+  6: 'danger',
+  7: 'danger',
+}
+
 export const WISH_CATEGORY_OPTIONS = [
   { label: '旅行', value: '旅行' },
   { label: '技能', value: '技能' },

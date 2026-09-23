@@ -14,6 +14,10 @@ function ExpiryItemList() {
   return import('@/views/piggy/ExpiryItemList.vue')
 }
 
+function PoopRecordList() {
+  return import('@/views/piggy/PoopRecordList.vue')
+}
+
 function WishList() {
   return import('@/views/piggy/WishList.vue')
 }
@@ -112,6 +116,30 @@ const content: RouteRecordMainRaw = {
             menu: false,
             breadcrumb: false,
             activeMenu: '/expiry-item',
+          },
+        },
+      ],
+    },
+    {
+      path: '/poop-record',
+      component: Layout,
+      redirect: '/poop-record/list',
+      name: 'poopRecord',
+      meta: {
+        title: '拉粑粑么',
+        icon: 'i-lucide:heart-pulse',
+        auth: 'admin.poop:view',
+      },
+      children: [
+        {
+          path: 'list',
+          name: 'poopRecordList',
+          component: PoopRecordList,
+          meta: {
+            title: '拉粑粑么',
+            menu: false,
+            breadcrumb: false,
+            activeMenu: '/poop-record',
           },
         },
       ],

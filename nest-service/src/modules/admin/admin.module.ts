@@ -12,6 +12,7 @@ import { AdminRoleGuard } from './admin-role.guard';
 import { AdminResourceController } from './admin-resource.controller';
 import { AdminSystemController } from './admin-system.controller';
 import { AdminExpiryItemService } from './admin-expiry-item.service';
+import { AdminPoopService } from './admin-poop.service';
 import { AdminWishService } from './admin-wish.service';
 import { AdminDishService } from './admin-dish.service';
 import { AdminDishCategoryService } from './admin-dish-category.service';
@@ -24,6 +25,7 @@ import { AdminDashboardService } from './admin-dashboard.service';
 import { AdminRolePermissionService } from './admin-role-permission.service';
 import { ExpiryItem } from '../expiry/entities/expiry-item.entity';
 import { ExpiryItemNotification } from '../expiry/entities/expiry-item-notification.entity';
+import { PoopRecord } from '../poop/entities/poop-record.entity';
 import { Wish } from '../wish/entities/wish.entity';
 import { Dish } from '../foodie-buddy/dish/entities/dish.entity';
 import { DishCategory } from '../foodie-buddy/dish/entities/dish-category.entity';
@@ -47,6 +49,7 @@ import { ExpiryModule } from '../expiry/expiry.module';
       AdminRolePermission,
       ExpiryItem,
       ExpiryItemNotification,
+      PoopRecord,
       Wish,
       Dish,
       DishCategory,
@@ -79,6 +82,7 @@ import { ExpiryModule } from '../expiry/expiry.module';
     AdminAuthGuard,
     AdminRoleGuard,
     AdminExpiryItemService,
+    AdminPoopService,
     AdminWishService,
     AdminDishService,
     AdminDishCategoryService,

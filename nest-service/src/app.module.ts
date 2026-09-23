@@ -6,6 +6,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { FoodieBuddyModule } from './modules/foodie-buddy/foodie-buddy.module';
 import { WishModule } from './modules/wish/wish.module';
 import { ExpiryModule } from './modules/expiry/expiry.module';
+import { PoopModule } from './modules/poop/poop.module';
 import { OssModule } from './modules/oss/oss.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { AiModule } from './modules/ai/ai.module';
@@ -39,6 +40,7 @@ import { OssUrlMiddleware } from './common/middleware/oss-url.middleware';
     FoodieBuddyModule,
     WishModule,
     ExpiryModule,
+    PoopModule,
     OssModule,
     AdminModule,
     AiModule,

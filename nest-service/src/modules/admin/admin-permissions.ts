@@ -27,6 +27,13 @@ export const ALL_PERMISSIONS: Array<{
     ],
   },
   {
+    group: '健康记录',
+    items: [
+      { code: 'admin.poop:view', label: '查看排便记录' },
+      { code: 'admin.poop:edit', label: '增删改排便记录' },
+    ],
+  },
+  {
     group: '心愿清单',
     items: [
       { code: 'admin.wish:view', label: '查看心愿' },
@@ -78,6 +85,8 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<AdminRole, string[]> = {
     'admin.user:edit',
     'admin.expiryFood:view',
     'admin.expiryFood:edit',
+    'admin.poop:view',
+    'admin.poop:edit',
     'admin.wish:view',
     'admin.wish:edit',
     'admin.dish:view',
@@ -93,6 +102,7 @@ export const DEFAULT_ROLE_PERMISSIONS: Record<AdminRole, string[]> = {
     'admin.dashboard:view',
     'admin.user:view',
     'admin.expiryFood:view',
+    'admin.poop:view',
     'admin.wish:view',
     'admin.dish:view',
     'admin.dishCategory:view',

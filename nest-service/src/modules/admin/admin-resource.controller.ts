@@ -20,6 +20,7 @@ import { AdminRoleGuard } from './admin-role.guard';
 import { AdminResponseInterceptor } from './admin-response.interceptor';
 import { AdminListQueryDto } from './dto/admin-list-query.dto';
 import { AdminExpiryItemService } from './admin-expiry-item.service';
+import { AdminPoopService } from './admin-poop.service';
 import { AdminWishService } from './admin-wish.service';
 import { AdminDishService } from './admin-dish.service';
 import { AdminDishCategoryService } from './admin-dish-category.service';
@@ -29,6 +30,8 @@ import { AdminDiningGroupService } from './admin-dining-group.service';
 import { OssService } from '../oss/oss.service';
 import { CreateExpiryItemDto } from '../expiry/dto/create-expiry-item.dto';
 import { UpdateExpiryItemDto } from '../expiry/dto/update-expiry-item.dto';
+import { CreatePoopRecordDto } from '../poop/dto/create-poop-record.dto';
+import { UpdatePoopRecordDto } from '../poop/dto/update-poop-record.dto';
 import { CreateWishDto } from '../wish/dto/create-wish.dto';
 import { UpdateWishDto } from '../wish/dto/update-wish.dto';
 import { CreateDishDto } from '../foodie-buddy/dish/dto/create-dish.dto';
@@ -161,6 +164,21 @@ class MemberUpdateDto {
   nickname?: string;
 }
 
+class PoopQueryDto extends AdminListQueryDto {
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  bristolType?: number;
+
+  @IsOptional()
+  @IsString()
+  startDate?: string;
+
+  @IsOptional()
+  @IsString()
+  endDate?: string;
+}
+
 class UserUpdateDto {
   @IsOptional()
   @IsString()
@@ -178,6 +196,7 @@ class UserUpdateDto {
 export class AdminResourceController {
   constructor(
     private readonly expiryService: AdminExpiryItemService,
+    private readonly poopService: AdminPoopService,
     private readonly wishService: AdminWishService,
     private readonly dishService: AdminDishService,
     private readonly dishCategoryService: AdminDishCategoryService,
@@ -305,6 +324,38 @@ export class AdminResourceController {
   @ApiOperation({ summary: '立即执行一次到期提醒扫描' })
   runItemReminder(@Req() req: any) {
     return this.expiryService.runReminder(this.ctx(req));
+  }
+
+  // ================== 拉粑粑么 ==================
+
+  @Get('poop-records')
+  @ApiOperation({ summary: '排便记录列表' })
+  listPoopRecords(@Query() query: PoopQueryDto) {
+    return this.poopService.findAll(query);
+  }
+
+  @Get('poop-records/:id')
+  getPoopRecord(@Param('id', ParseIntPipe) id: number) {
+    return this.poopService.findOne(id);
+  }
+
+  @Post('poop-records')
+  createPoopRecord(@Req() req: any, @Body() dto: CreatePoopRecordDto) {
+    return this.poopService.create(this.ctx(req), dto);
+  }
+
+  @Put('poop-records/:id')
+  updatePoopRecord(
+    @Req() req: any,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: UpdatePoopRecordDto,
+  ) {
+    return this.poopService.update(this.ctx(req), id, dto);
+  }
+
+  @Delete('poop-records/:id')
+  removePoopRecord(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
+    return this.poopService.remove(this.ctx(req), id);
   }
 
   // ================== 心愿 ==================
