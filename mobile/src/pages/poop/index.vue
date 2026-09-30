@@ -71,16 +71,16 @@
       <!-- AI 建议 -->
       <view class="advice-card">
         <view class="advice-header">
-          <text class="card-title">🩺 AI 健康建议</text>
+          <text class="card-title">🩺 健康建议</text>
           <text v-if="advice" class="regen-btn" @click="fetchAdvice">重新生成</text>
         </view>
 
         <view v-if="adviceLoading" class="advice-loading">
-          <text>AI 正在分析最近 30 天的记录…</text>
+          <text>正在分析最近 30 天的记录…</text>
         </view>
         <text v-else-if="advice" class="advice-text">{{ advice }}</text>
         <view v-else class="advice-empty">
-          <text class="advice-desc">根据最近 30 天的排便记录，AI 帮你解读肠道状态、给出饮食和生活习惯建议</text>
+          <text class="advice-desc">根据最近 30 天的排便记录，帮你解读肠道状态、给出饮食和生活习惯建议</text>
           <view class="primary-btn" @click="fetchAdvice">
             <text>获取健康建议</text>
           </view>
@@ -118,6 +118,7 @@ import { ref, computed } from 'vue'
 import { onShow } from '@dcloudio/uni-app'
 import TabBar from '@/components/TabBar.vue'
 import PoopCalendar from '@/components/PoopCalendar.vue'
+import uniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
 import {
   getMonth,
   getDayRecords,
@@ -129,7 +130,7 @@ import {
   type PoopRecord,
   type MonthDay,
 } from '@/services/poop'
-import { beijingToday } from '@/utils/date'
+import { beijingToday, beijingWall } from '@/utils/date'
 import { themeStyle } from '@/utils/theme'
 
 const today = beijingToday()
@@ -162,12 +163,7 @@ const selectedLabel = computed(() => {
 
 /** UTC 时间字符串转东八区 HH:mm 展示。 */
 const beijingTime = (utc: string) =>
-  new Intl.DateTimeFormat('zh-CN', {
-    timeZone: 'Asia/Shanghai',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).format(new Date(utc.replace(' ', 'T')))
+  beijingWall(new Date(utc)).slice(11)
 
 const loadMonth = async () => {
   monthDays.value = await getMonth(month.value)

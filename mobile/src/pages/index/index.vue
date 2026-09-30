@@ -80,7 +80,7 @@
           <view class="card-content">
             <text class="card-title">拉粑粑么</text>
             <view class="card-footer">
-              <text class="card-desc">记录每天粑粑的数量和形态，月历回看，AI 帮你解读肠道状态</text>
+              <text class="card-desc">记录每天粑粑的数量和形态，月历回看，帮你解读肠道状态</text>
               <view class="card-btn">
                 <text>开记</text>
               </view>

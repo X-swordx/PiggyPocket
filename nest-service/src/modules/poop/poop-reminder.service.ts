@@ -35,7 +35,7 @@ const buildPoopReminderData = () => {
         now.getDate(),
       ).padStart(2, '0')} 21:00`,
     },
-    thing10: { value: '记一笔，AI 帮你看看肠道状态' },
+    thing10: { value: '记一笔，帮你看看肠道状态' },
   };
 };
 

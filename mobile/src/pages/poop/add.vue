@@ -34,12 +34,16 @@
       <!-- 时间 -->
       <view class="section-card">
         <text class="section-title">排便时间</text>
-        <uni-datetime-picker
-          type="datetime"
-          :value="datetime"
-          :max="nowMax"
+        <picker
+          mode="time"
+          :value="time"
+          :end="isToday ? maxTime : undefined"
           @change="onTimeChange"
-        />
+        >
+          <view class="time-row">
+            <text class="time-text">{{ time }}</text>
+          </view>
+        </picker>
       </view>
 
       <!-- 备注 -->
@@ -63,6 +67,7 @@
 <script setup lang="ts">
 import { ref, computed } from 'vue'
 import { onLoad } from '@dcloudio/uni-app'
+import uniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
 import {
   addPoop,
   updatePoop,
@@ -70,58 +75,29 @@ import {
   BRISTOL_TYPES,
   BRISTOL_BY_TYPE,
 } from '@/services/poop'
-import { beijingToday } from '@/utils/date'
+import { beijingToday, beijingWall } from '@/utils/date'
 import { themeStyle } from '@/utils/theme'
 
 const editId = ref<number | null>(null)
 const isEdit = computed(() => editId.value !== null)
 
 const bristolType = ref<number | null>(null)
-const datetime = ref('')
+/** 日期固定为记录当天（新建=今天，编辑保留原日期），只选时分。 */
+const date = ref(beijingToday())
+const time = ref(beijingWall().slice(11))
 const notes = ref('')
 const saving = ref(false)
 
-const nowMax = computed(() => {
-  const now = new Date()
-  return `${beijingToday()} ${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`
-})
+const isToday = computed(() => date.value === beijingToday())
+/** 今天不能选还没到的时间。 */
+const maxTime = computed(() => beijingWall().slice(11))
 
 const selectedMeta = computed(() =>
   bristolType.value ? BRISTOL_BY_TYPE[bristolType.value] : null,
 )
 
-/** 当前东八区墙时间，填充给 picker。 */
-const nowBeijingWall = () => {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Shanghai',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).formatToParts(new Date())
-  const map = Object.fromEntries(parts.map((p) => [p.type, p.value]))
-  return `${map.year}-${map.month}-${map.day} ${map.hour}:${map.minute}`
-}
-
-/** UTC 字符串转东八区墙时间，供编辑态回填。 */
-const toBeijingWall = (utc: string) => {
-  const parts = new Intl.DateTimeFormat('en-CA', {
-    timeZone: 'Asia/Shanghai',
-    year: 'numeric',
-    month: '2-digit',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: false,
-  }).formatToParts(new Date(utc.replace(' ', 'T')))
-  const map = Object.fromEntries(parts.map((p) => [p.type, p.value]))
-  return `${map.year}-${map.month}-${map.day} ${map.hour}:${map.minute}`
-}
-
-const onTimeChange = (value: string) => {
-  datetime.value = value
+const onTimeChange = (e: { detail: { value: string } }) => {
+  time.value = e.detail.value
 }
 
 const save = async () => {
@@ -130,13 +106,9 @@ const save = async () => {
     uni.showToast({ title: '请选择粑粑形态', icon: 'none' })
     return
   }
-  if (!datetime.value) {
-    uni.showToast({ title: '请选择时间', icon: 'none' })
-    return
-  }
 
-  // picker 的值是设备本地（东八区）墙时间，转成带时区的 ISO 字符串
-  const occurredAt = new Date(datetime.value.replace(' ', 'T')).toISOString()
+  // 显式带上 +08:00 偏移，与设备本地时区无关
+  const occurredAt = new Date(`${date.value}T${time.value}:00+08:00`).toISOString()
   if (Number.isNaN(new Date(occurredAt).getTime())) {
     uni.showToast({ title: '时间格式有误', icon: 'none' })
     return
@@ -167,14 +139,15 @@ const save = async () => {
 }
 
 onLoad(async (options) => {
-  datetime.value = nowBeijingWall()
   if (!options?.id) return
 
   editId.value = Number(options.id)
   try {
     const record = await getPoopRecord(editId.value)
+    const wall = beijingWall(new Date(record.occurredAt))
+    date.value = wall.slice(0, 10)
+    time.value = wall.slice(11)
     bristolType.value = record.bristolType
-    datetime.value = toBeijingWall(record.occurredAt)
     notes.value = record.notes ?? ''
   } catch (err: any) {
     uni.showToast({ title: err.message || '加载失败', icon: 'none' })
@@ -298,6 +271,17 @@ const goBack = () => {
   margin-top: 10px;
   font-size: 12px;
   color: #777;
+}
+
+.time-row {
+  padding: 10px 12px;
+  border-radius: 10px;
+  background: #faf8f8;
+}
+
+.time-text {
+  font-size: 15px;
+  color: #333;
 }
 
 .notes-input {

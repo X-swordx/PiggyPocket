@@ -138,7 +138,7 @@ export class PoopService {
    */
   async getAdvice(userId: number, days = 30): Promise<{ advice: string }> {
     if (!this.chatModel) {
-      throw new BadRequestException('AI 模型未配置，请检查 OPENAI_API_KEY');
+      throw new BadRequestException('健康建议暂时不可用，请稍后再试');
     }
 
     const start = beijingDateOf(new Date(Date.now() - (days - 1) * 86400000));
