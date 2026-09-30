@@ -84,7 +84,7 @@ export class PoopService {
     const rows = await this.recordRepository
       .createQueryBuilder('record')
       .select([
-        'record.recordDate AS recordDate',
+        "DATE_FORMAT(record.recordDate, '%Y-%m-%d') AS recordDate",
         'COUNT(record.id) AS count',
         'GROUP_CONCAT(record.bristolType ORDER BY record.occurredAt SEPARATOR \',\') AS types',
       ])
