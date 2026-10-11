@@ -149,31 +149,26 @@
       <view style="height: 140px;"></view>
     </scroll-view>
 
-    <!-- ============ 推荐结果 ============ -->
+    <!-- ============ 推荐结果（流式逐张出现） ============ -->
     <scroll-view v-else scroll-y class="content">
-      <view v-if="generating" class="loading-box">
-        <uni-icons type="spinner-cycle" size="36" color="var(--theme-primary)" />
-        <text class="loading-text">正在翻冰箱、搭菜谱…</text>
-        <text class="loading-sub">一次生成多道菜的用料和步骤，约需 30 秒</text>
+      <view class="result-head">
+        <text class="result-title">
+          {{ generating ? '正在为你配菜…' : `为你推荐 ${dishes.filter((d) => d.name).length} 道菜` }}
+        </text>
+        <view class="regenerate-btn" :class="{ disabled: generating }" @click="generate">
+          <uni-icons type="refresh" size="14" color="#333" />
+          <text>{{ generating ? '生成中' : '换一批' }}</text>
+        </view>
       </view>
 
-      <template v-else>
-        <view class="result-head">
-          <text class="result-title">为你推荐 {{ dishes.length }} 道菜</text>
-          <view class="regenerate-btn" @click="generate">
-            <uni-icons type="refresh" size="14" color="#333" />
-            <text>换一批</text>
-          </view>
-        </view>
-
-        <view class="dish-list">
+      <view class="dish-list">
+        <template v-for="(dish, index) in dishes" :key="index">
           <view
-            v-for="(dish, index) in dishes"
-            :key="index"
+            v-if="dish.name"
             class="dish-card"
             :class="{ selected: chosenIndexs.includes(index) }"
           >
-            <view class="dish-main" @click="toggleDish(index)">
+            <view class="dish-main" @click="!generating && toggleDish(index)">
               <view class="dish-check" :class="{ checked: chosenIndexs.includes(index) }">
                 <uni-icons
                   v-if="chosenIndexs.includes(index)"
@@ -189,14 +184,14 @@
               </view>
             </view>
             <view class="dish-detail-toggle" @click="toggleExpand(index)">
-              <text>{{ expandedIndexs.includes(index) ? '收起做法' : '看用料和做法' }}</text>
+              <text>{{ isExpanded(index) ? '收起做法' : '看用料和做法' }}</text>
               <uni-icons
-                :type="expandedIndexs.includes(index) ? 'up' : 'down'"
+                :type="isExpanded(index) ? 'up' : 'down'"
                 size="14"
                 color="#777"
               />
             </view>
-            <view v-if="expandedIndexs.includes(index)" class="dish-detail">
+            <view v-if="isExpanded(index)" class="dish-detail">
               <view v-if="dish.ingredients?.length" class="detail-block">
                 <text class="detail-label">用料（{{ people }} 人份）</text>
                 <view class="ingredient-grid">
@@ -214,15 +209,20 @@
               </view>
             </view>
           </view>
-        </view>
+        </template>
 
-        <view class="back-form-btn" @click="viewMode = 'form'">
-          <uni-icons type="compose" size="14" color="#777" />
-          <text>调整食材和口味</text>
+        <view v-if="generating" class="streaming-tip">
+          <uni-icons type="spinner-cycle" size="18" color="var(--theme-primary)" />
+          <text class="streaming-text">{{ streamTipText }}</text>
         </view>
+      </view>
 
-        <view style="height: 180px;"></view>
-      </template>
+      <view v-if="!generating" class="back-form-btn" @click="viewMode = 'form'">
+        <uni-icons type="compose" size="14" color="#777" />
+        <text>调整食材和口味</text>
+      </view>
+
+      <view style="height: 180px;"></view>
     </scroll-view>
 
     <!-- ============ 底部操作 ============ -->
@@ -230,10 +230,16 @@
       <template v-if="viewMode === 'form'">
         <view class="primary-bar-btn" :class="{ disabled: generating }" @click="generate">
           <uni-icons type="fire-filled" size="18" color="#111" />
-          <text>{{ generating ? '生成中…' : '生成推荐菜' }}</text>
+          <text>生成推荐菜</text>
         </view>
       </template>
-      <template v-else-if="!generating">
+      <template v-else-if="generating">
+        <view class="cancel-bar-btn" @click="cancelGenerate">
+          <uni-icons type="closeempty" size="18" color="#777" />
+          <text>取消生成</text>
+        </view>
+      </template>
+      <template v-else>
         <picker
           mode="selector"
           :range="groupNames"
@@ -260,15 +266,16 @@
 </template>
 
 <script setup lang="ts">
-import { ref } from 'vue'
-import { onLoad } from '@dcloudio/uni-app'
+import { computed, ref } from 'vue'
+import { onLoad, onUnload } from '@dcloudio/uni-app'
 import uniIcons from '@dcloudio/uni-ui/lib/uni-icons/uni-icons.vue'
 import {
   getRecipeInspirationOptions,
-  generateInspiredRecipes,
+  streamInspiredRecipes,
   saveInspiredDishes,
   type RecipeOptionGroups,
-  type InspiredDish
+  type InspiredDish,
+  type StreamInspirationTask
 } from '@/services/recipeInspiration'
 import { getCurrentUser, getMyDiningGroups, type DiningGroup } from '@/services/foodieBuddy'
 import { themeStyle } from '@/utils/theme'
@@ -340,34 +347,88 @@ const changePeople = (delta: number) => {
   if (next >= 1 && next <= 20) people.value = next
 }
 
-const generate = async () => {
+let streamTask: StreamInspirationTask | null = null
+
+const streamTipText = computed(() => {
+  const count = dishes.value.filter((d) => d.name).length
+  if (count === 0) return '正在构思菜单，菜马上出锅…'
+  const last = dishes.value[count - 1]
+  if (last && (!last.ingredients?.length || !last.steps?.length)) return '正在补全用料和做法…'
+  return `正在准备第 ${count + 1} 道菜…`
+})
+
+const generate = () => {
   if (generating.value) return
   if (selectedIngredients.value.length === 0) {
     uni.showToast({ title: '至少选一种手头食材', icon: 'none' })
     return
   }
 
+  streamTask?.abort()
   generating.value = true
   viewMode.value = 'result'
+  dishes.value = []
+  chosenIndexs.value = []
   expandedIndexs.value = []
-  try {
-    const result = await generateInspiredRecipes({
+
+  streamTask = streamInspiredRecipes(
+    {
       ingredients: selectedIngredients.value,
       people: people.value,
       spicy: selectedSpicy.value || undefined,
       preferences: selectedPreferences.value,
       taboos: selectedTaboos.value,
       notes: notes.value.trim() || undefined
-    })
-    dishes.value = result.dishes
-    chosenIndexs.value = result.dishes.map((_, i) => i)
-  } catch (err: any) {
-    viewMode.value = 'form'
-    uni.showToast({ title: err.message || '生成失败，请重试', icon: 'none' })
-  } finally {
-    generating.value = false
-  }
+    },
+    {
+      onPartial: (list) => {
+        dishes.value = list
+      },
+      onDone: () => {
+        generating.value = false
+        streamTask = null
+        const valid = dishes.value
+          .map((d, i) => (d.name ? i : -1))
+          .filter((i) => i >= 0)
+        if (valid.length === 0) {
+          viewMode.value = 'form'
+          uni.showToast({ title: '没有生成合适的菜，调整食材再试', icon: 'none' })
+          return
+        }
+        // 默认全选且保持展开，用户可自行取消勾选/折叠
+        chosenIndexs.value = valid
+        expandedIndexs.value = [...valid]
+      },
+      onError: (message) => {
+        generating.value = false
+        streamTask = null
+        const valid = dishes.value
+          .map((d, i) => (d.name ? i : -1))
+          .filter((i) => i >= 0)
+        if (valid.length === 0) {
+          viewMode.value = 'form'
+          uni.showToast({ title: message, icon: 'none' })
+          return
+        }
+        // 已有部分菜生成成功则保留，让用户可以直接加入这几道菜
+        chosenIndexs.value = valid
+        expandedIndexs.value = [...valid]
+        uni.showToast({ title: message, icon: 'none' })
+      }
+    }
+  )
 }
+
+const cancelGenerate = () => {
+  streamTask?.abort()
+  streamTask = null
+  generating.value = false
+  viewMode.value = 'form'
+}
+
+// 生成中全部展开，让用料/步骤逐字补全的过程可见；结束后以 expandedIndexs 为准
+const isExpanded = (index: number) =>
+  generating.value || expandedIndexs.value.includes(index)
 
 const toggleDish = (index: number) => {
   toggleInList(chosenIndexs.value, index)
@@ -423,6 +484,10 @@ const save = async () => {
 const goBack = () => {
   uni.navigateBack()
 }
+
+onUnload(() => {
+  streamTask?.abort()
+})
 
 onLoad(async () => {
   try {
@@ -608,23 +673,17 @@ onLoad(async () => {
   box-sizing: border-box;
 }
 
-.loading-box {
-  padding: 96px 32px;
+.streaming-tip {
   display: flex;
-  flex-direction: column;
   align-items: center;
-  gap: 16px;
+  justify-content: center;
+  gap: 8px;
+  padding: 20px;
 }
 
-.loading-text {
-  font-size: 17px;
-  font-weight: 700;
-  color: #111;
-}
-
-.loading-sub {
-  font-size: 13px;
-  color: #999;
+.streaming-text {
+  font-size: 14px;
+  color: #888;
 }
 
 .result-head {
@@ -834,6 +893,20 @@ onLoad(async () => {
 
 .primary-bar-btn.disabled {
   opacity: 0.5;
+}
+
+.cancel-bar-btn {
+  flex: 1;
+  height: 48px;
+  background: #fff;
+  border-radius: 12px;
+  border: 1px solid #ddd;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  font-size: 16px;
+  color: #555;
 }
 
 .group-picker {

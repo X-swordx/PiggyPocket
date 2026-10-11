@@ -26,7 +26,7 @@ export interface StreamRecipeTask {
  * 两个 chunk 之间，所以要把不完整的多字节序列留在缓冲区里等下一个 chunk。
  * 返回解码出的字符串和未消费的尾部字节。
  */
-const decodeUtf8 = (bytes: Uint8Array): { text: string; rest: Uint8Array } => {
+export const decodeUtf8 = (bytes: Uint8Array): { text: string; rest: Uint8Array } => {
   let i = 0
   let text = ''
   while (i < bytes.length) {
@@ -61,7 +61,7 @@ const decodeUtf8 = (bytes: Uint8Array): { text: string; rest: Uint8Array } => {
   return { text, rest: bytes.subarray(i) }
 }
 
-const concatBytes = (a: Uint8Array, b: Uint8Array) => {
+export const concatBytes = (a: Uint8Array, b: Uint8Array) => {
   const merged = new Uint8Array(a.length + b.length)
   merged.set(a, 0)
   merged.set(b, a.length)

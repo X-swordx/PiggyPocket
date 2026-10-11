@@ -111,24 +111,28 @@ export class RecipeInspirationService {
     return groups;
   }
 
-  async generate(dto: GenerateRecipesDto): Promise<{ dishes: InspiredDish[] }> {
+  /**
+   * 流式生成推荐菜。JsonOutputParser 是累积式解析，每个 chunk 吐出"当前已补全"
+   * 的对象，最后一帧才保证完整，调用方可直接做渐进渲染。
+   */
+  async *stream(
+    dto: GenerateRecipesDto,
+  ): AsyncGenerator<{ dishes: Array<Partial<InspiredDish> & { name: string }> }> {
     if (!this.chain) {
       throw new BadRequestException('灵感菜谱暂时不可用，请稍后再试');
     }
 
-    const result = await this.chain.invoke({ input: this.buildInput(dto) });
-    const rawDishes = Array.isArray((result as any)?.dishes)
-      ? (result as any).dishes
-      : [];
-    const dishes = rawDishes
-      .map((raw) => this.normalizeDish(raw))
-      .filter((dish): dish is InspiredDish => dish !== null)
-      .slice(0, 3);
-
-    if (dishes.length === 0) {
-      throw new BadRequestException('没有生成合适的菜品，请调整食材后重试');
+    const stream = await this.chain.stream({ input: this.buildInput(dto) });
+    for await (const partial of stream) {
+      const rawDishes = Array.isArray((partial as any)?.dishes)
+        ? (partial as any).dishes
+        : [];
+      const dishes = rawDishes
+        .map((raw) => this.normalizePartialDish(raw))
+        .filter((dish): dish is Partial<InspiredDish> & { name: string } => !!dish)
+        .slice(0, 3);
+      if (dishes.length) yield { dishes };
     }
-    return { dishes };
   }
 
   /** 勾选的推荐菜批量加入指定饭搭子组的菜谱（菜品库）。 */
@@ -171,11 +175,12 @@ export class RecipeInspirationService {
     return lines.join('\n');
   }
 
-  /** 模型输出不可信，逐字段清洗；没有合法菜名的直接丢弃。 */
-  private normalizeDish(raw: any): InspiredDish | null {
+  /**
+   * 流式中间帧的字段可能只补全了一半：菜名允许为空串（前端先不渲染该卡片），
+   * 数组元素做防御性清洗。最后一帧与完整 JSON 结构一致。
+   */
+  private normalizePartialDish(raw: any): { name: string } & Partial<InspiredDish> | null {
     if (!raw || typeof raw !== 'object') return null;
-    const name = this.cleanString(raw.name, 100);
-    if (!name) return null;
 
     const ingredients = Array.isArray(raw.ingredients)
       ? raw.ingredients
@@ -183,7 +188,7 @@ export class RecipeInspirationService {
             if (!item || typeof item !== 'object') return null;
             const ingName = this.cleanString(item.name, 50);
             if (!ingName) return null;
-            return { name: ingName, amount: this.cleanString(item.amount, 50) || '适量' };
+            return { name: ingName, amount: this.cleanString(item.amount, 50) };
           })
           .filter((item): item is { name: string; amount: string } => item !== null)
           .slice(0, 12)
@@ -197,7 +202,7 @@ export class RecipeInspirationService {
       : [];
 
     return {
-      name,
+      name: this.cleanString(raw.name, 100),
       reason: this.cleanString(raw.reason, 200) || undefined,
       description: this.cleanString(raw.description, 200) || undefined,
       cookingTime: this.cleanString(raw.cookingTime, 50) || undefined,
