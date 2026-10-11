@@ -28,6 +28,9 @@ function DishList() {
 function DishCategoryList() {
   return import('@/views/piggy/DishCategoryList.vue')
 }
+function RecipeOptionList() {
+  return import('@/views/piggy/RecipeOptionList.vue')
+}
 
 function OrderList() {
   return import('@/views/piggy/OrderList.vue')
@@ -195,6 +198,15 @@ const content: RouteRecordMainRaw = {
           meta: {
             title: '菜品分类',
             auth: 'admin.dishCategory:view',
+          },
+        },
+        {
+          path: 'recipe-options',
+          name: 'recipeOptionList',
+          component: RecipeOptionList,
+          meta: {
+            title: '灵感菜谱配置',
+            auth: 'admin.recipeOption:view',
           },
         },
       ],

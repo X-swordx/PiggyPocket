@@ -309,6 +309,41 @@ export const setDishCategoryEnabled = (id: number, enabled: number) =>
 export const removeDishCategory = (id: number) =>
   unwrap<{ success: boolean }>(api.delete(`admin/dish-categories/${id}`))
 
+// ============================ 灵感菜谱选项 ============================
+
+export type RecipeOptionType = 'ingredient' | 'spicy' | 'preference' | 'taboo'
+
+export interface RecipeOption {
+  id: number
+  type: RecipeOptionType
+  name: string
+  sort: number
+  enabled: number
+  createdAt: string
+  updatedAt: string
+}
+
+export const listRecipeOptions = (type?: RecipeOptionType) =>
+  unwrap<{ list: RecipeOption[], total: number }>(
+    api.get('admin/recipe-options', { params: { type } }),
+  )
+
+export const createRecipeOption = (data: {
+  type: RecipeOptionType
+  name: string
+  sort?: number
+  enabled?: number
+}) => unwrap<RecipeOption>(api.post('admin/recipe-options', data))
+
+export const updateRecipeOption = (id: number, data: { name?: string, sort?: number, enabled?: number }) =>
+  unwrap<RecipeOption>(api.put(`admin/recipe-options/${id}`, data))
+
+export const setRecipeOptionEnabled = (id: number, enabled: number) =>
+  unwrap<RecipeOption>(api.put(`admin/recipe-options/${id}/enabled`, { enabled }))
+
+export const removeRecipeOption = (id: number) =>
+  unwrap<{ success: boolean }>(api.delete(`admin/recipe-options/${id}`))
+
 // ============================ 订单 ============================
 
 export type OrderStatus = 'pending' | 'confirming' | 'cooking' | 'completed'

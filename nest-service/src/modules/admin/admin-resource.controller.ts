@@ -24,6 +24,7 @@ import { AdminPoopService } from './admin-poop.service';
 import { AdminWishService } from './admin-wish.service';
 import { AdminDishService } from './admin-dish.service';
 import { AdminDishCategoryService } from './admin-dish-category.service';
+import { AdminRecipeOptionService } from './admin-recipe-option.service';
 import { AdminUserService } from './admin-user.service';
 import { AdminOrderService, OrderStatus } from './admin-order.service';
 import { AdminDiningGroupService } from './admin-dining-group.service';
@@ -82,6 +83,46 @@ class DishCategoryCreateDto {
 }
 
 class DishCategoryUpdateDto {
+  @IsOptional()
+  @IsString()
+  name?: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  sort?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsIn([0, 1])
+  enabled?: number;
+}
+
+class RecipeOptionQueryDto {
+  @IsOptional()
+  @IsIn(['ingredient', 'spicy', 'preference', 'taboo'])
+  type?: string;
+}
+
+class RecipeOptionCreateDto {
+  @IsIn(['ingredient', 'spicy', 'preference', 'taboo'])
+  type: 'ingredient' | 'spicy' | 'preference' | 'taboo';
+
+  @IsString()
+  name: string;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsInt()
+  sort?: number;
+
+  @IsOptional()
+  @Type(() => Number)
+  @IsIn([0, 1])
+  enabled?: number;
+}
+
+class RecipeOptionUpdateDto {
   @IsOptional()
   @IsString()
   name?: string;
@@ -200,6 +241,7 @@ export class AdminResourceController {
     private readonly wishService: AdminWishService,
     private readonly dishService: AdminDishService,
     private readonly dishCategoryService: AdminDishCategoryService,
+    private readonly recipeOptionService: AdminRecipeOptionService,
     private readonly userService: AdminUserService,
     private readonly orderService: AdminOrderService,
     private readonly groupService: AdminDiningGroupService,
@@ -475,6 +517,41 @@ export class AdminResourceController {
   @Delete('dish-categories/:id')
   removeDishCategory(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
     return this.dishCategoryService.remove(this.ctx(req), id);
+  }
+
+  // ================== 灵感菜谱选项 ==================
+
+  @Get('recipe-options')
+  listRecipeOptions(@Query() query: RecipeOptionQueryDto) {
+    return this.recipeOptionService.findAll(query.type);
+  }
+
+  @Post('recipe-options')
+  createRecipeOption(@Req() req: any, @Body() dto: RecipeOptionCreateDto) {
+    return this.recipeOptionService.create(this.ctx(req), dto);
+  }
+
+  @Put('recipe-options/:id')
+  updateRecipeOption(
+    @Req() req: any,
+    @Param('id', ParseIntPipe) id: number,
+    @Body() dto: RecipeOptionUpdateDto,
+  ) {
+    return this.recipeOptionService.update(this.ctx(req), id, dto);
+  }
+
+  @Put('recipe-options/:id/enabled')
+  setRecipeOptionEnabled(
+    @Req() req: any,
+    @Param('id', ParseIntPipe) id: number,
+    @Body('enabled') enabled: number,
+  ) {
+    return this.recipeOptionService.setEnabled(this.ctx(req), id, enabled);
+  }
+
+  @Delete('recipe-options/:id')
+  removeRecipeOption(@Req() req: any, @Param('id', ParseIntPipe) id: number) {
+    return this.recipeOptionService.remove(this.ctx(req), id);
   }
 
   // ================== 订单 ==================

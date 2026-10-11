@@ -11,6 +11,7 @@ interface RequestOptions {
   method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
   data?: any
   query?: Record<string, any>
+  timeout?: number
 }
 
 const buildUrl = (url: string, query?: Record<string, any>) => {
@@ -31,6 +32,7 @@ export const request = <T>(options: RequestOptions): Promise<T> => {
       url: buildUrl(options.url, options.query),
       method: options.method || 'GET',
       data: options.data,
+      timeout: options.timeout,
       success: (res) => {
         const response = res.data as ApiResponse<T> | undefined
         if (res.statusCode < 200 || res.statusCode >= 300) {

@@ -1,5 +1,7 @@
-import { Module } from '@nestjs/common';
+import { Logger, Module } from '@nestjs/common';
+import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
+import { ChatOpenAI } from '@langchain/openai';
 
 // User
 import { UserController } from './user/user.controller';
@@ -28,8 +30,14 @@ import { MessageRead } from './message/entities/message-read.entity';
 import { MessageController } from './message/message.controller';
 import { MessageService } from './message/message.service';
 
+// Recipe Inspiration
+import { RecipeInspirationController } from './recipe-inspiration/recipe-inspiration.controller';
+import { RecipeInspirationService } from './recipe-inspiration/recipe-inspiration.service';
+import { RecipeOption } from './recipe-inspiration/entities/recipe-option.entity';
+
 @Module({
   imports: [
+    ConfigModule,
     TypeOrmModule.forFeature([
       User,
       Dish,
@@ -40,6 +48,7 @@ import { MessageService } from './message/message.service';
       OrderItem,
       Message,
       MessageRead,
+      RecipeOption,
     ]),
   ],
   controllers: [
@@ -48,6 +57,7 @@ import { MessageService } from './message/message.service';
     DiningGroupController,
     OrderController,
     MessageController,
+    RecipeInspirationController,
   ],
   providers: [
     UserService,
@@ -55,6 +65,32 @@ import { MessageService } from './message/message.service';
     DiningGroupService,
     OrderService,
     MessageService,
+    RecipeInspirationService,
+    {
+      provide: 'INSPIRE_CHAT_MODEL',
+      useFactory: (configService: ConfigService) => {
+        const apiKey = configService.get<string>('OPENAI_API_KEY');
+        if (!apiKey) {
+          // 缺配置只让灵感推荐失效，不阻断启动
+          new Logger('FoodieBuddyModule').warn(
+            '未配置 OPENAI_API_KEY，灵感菜谱生成接口将返回错误',
+          );
+          return null;
+        }
+        return new ChatOpenAI({
+          model: configService.get('MODEL_NAME'),
+          apiKey,
+          // 略高的温度让"换一批"能产出不同的搭配
+          temperature: 0.8,
+          timeout: 60000,
+          maxRetries: 1,
+          configuration: {
+            baseURL: configService.get('OPENAI_BASE_URL'),
+          },
+        });
+      },
+      inject: [ConfigService],
+    },
   ],
 })
 export class FoodieBuddyModule {}

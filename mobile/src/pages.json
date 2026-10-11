@@ -45,6 +45,14 @@
 			}
 		},
 		{
+			"path": "pages/recipe-inspiration/index",
+			"style": {
+				"navigationBarTitleText": "灵感菜谱",
+				"navigationStyle": "custom",
+				"backgroundColor": "#F8F5F6"
+			}
+		},
+		{
 			"path": "pages/dish-detail/index",
 			"style": {
 				"navigationBarTitleText": "菜品详情",

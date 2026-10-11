@@ -30,6 +30,18 @@
             <text>上传图片</text>
           </view>
         </view>
+
+        <!-- 灵感菜谱入口 -->
+        <view class="inspire-card" @click="goToInspiration">
+          <view class="inspire-icon">
+            <uni-icons type="fire-filled" size="28" color="#fff" />
+          </view>
+          <view class="inspire-text">
+            <text class="inspire-title">灵感菜谱</text>
+            <text class="inspire-desc">手头食材随便选，帮你想今晚做什么</text>
+          </view>
+          <uni-icons type="right" size="18" color="#999" />
+        </view>
       </view>
 
       <!-- Menu Section -->
@@ -211,6 +223,10 @@ const goToUpload = () => {
   uni.navigateTo({ url: '/pages/recipe-upload/index' })
 }
 
+const goToInspiration = () => {
+  uni.navigateTo({ url: '/pages/recipe-inspiration/index' })
+}
+
 const toggleDish = (index: number) => {
   const dish = dishes.value[index]
   dish.selected = !dish.selected
@@ -344,6 +360,45 @@ const handleTabChange = (index: number) => {
   border-radius: 12px;
   font-weight: 600;
   font-size: 16px;
+}
+
+.inspire-card {
+  margin-top: 16px;
+  padding: 16px;
+  background: linear-gradient(135deg, var(--theme-primary), var(--theme-primary-light));
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.inspire-icon {
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.15);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.inspire-text {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.inspire-title {
+  font-size: 17px;
+  font-weight: 700;
+  color: #111;
+}
+
+.inspire-desc {
+  font-size: 13px;
+  color: rgba(0, 0, 0, 0.6);
 }
 
 .menu-section {

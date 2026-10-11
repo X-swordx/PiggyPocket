@@ -16,6 +16,7 @@ import { AdminPoopService } from './admin-poop.service';
 import { AdminWishService } from './admin-wish.service';
 import { AdminDishService } from './admin-dish.service';
 import { AdminDishCategoryService } from './admin-dish-category.service';
+import { AdminRecipeOptionService } from './admin-recipe-option.service';
 import { AdminUserService } from './admin-user.service';
 import { AdminOrderService } from './admin-order.service';
 import { AdminDiningGroupService } from './admin-dining-group.service';
@@ -29,6 +30,7 @@ import { PoopRecord } from '../poop/entities/poop-record.entity';
 import { Wish } from '../wish/entities/wish.entity';
 import { Dish } from '../foodie-buddy/dish/entities/dish.entity';
 import { DishCategory } from '../foodie-buddy/dish/entities/dish-category.entity';
+import { RecipeOption } from '../foodie-buddy/recipe-inspiration/entities/recipe-option.entity';
 import { User } from '../foodie-buddy/user/entities/user.entity';
 import { Order } from '../foodie-buddy/order/entities/order.entity';
 import { OrderItem } from '../foodie-buddy/order/entities/order-item.entity';
@@ -53,6 +55,7 @@ import { ExpiryModule } from '../expiry/expiry.module';
       Wish,
       Dish,
       DishCategory,
+      RecipeOption,
       User,
       Order,
       OrderItem,
@@ -86,6 +89,7 @@ import { ExpiryModule } from '../expiry/expiry.module';
     AdminWishService,
     AdminDishService,
     AdminDishCategoryService,
+    AdminRecipeOptionService,
     AdminUserService,
     AdminOrderService,
     AdminDiningGroupService,
