@@ -87,6 +87,12 @@ import { RecipeOption } from './recipe-inspiration/entities/recipe-option.entity
           configuration: {
             baseURL: configService.get('OPENAI_BASE_URL'),
           },
+          // ark-code-latest 默认先输出 4000+ 思考 token，非流式一次要 160 秒，
+          // 必然超过网关 60 秒超时。关闭思考 + 强制 JSON 后约 20-30 秒
+          modelKwargs: {
+            thinking: { type: 'disabled' },
+            response_format: { type: 'json_object' },
+          },
         });
       },
       inject: [ConfigService],
