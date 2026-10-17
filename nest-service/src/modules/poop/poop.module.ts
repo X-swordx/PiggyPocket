@@ -47,6 +47,11 @@ import { WechatModule } from '../wechat/wechat.module';
           configuration: {
             baseURL: configService.get('OPENAI_BASE_URL'),
           },
+          // ark-code-latest 默认先输出 4000+ 思考 token，非流式一次要 160 秒，
+          // 超过 30 秒客户端超时；关闭思考后约 10-20 秒
+          modelKwargs: {
+            thinking: { type: 'disabled' },
+          },
         });
       },
       inject: [ConfigService],
