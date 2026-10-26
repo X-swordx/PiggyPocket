@@ -9,8 +9,8 @@ paths = [
   '''admin/pnpm-lock\.yaml''',
   '''nest-service/package-lock\.json''',
   '''admin/apps/core-element-plus/src/iconify/data\.json''',
-  '''**/node_modules/**''',
-  '''**/dist/**''',
-  '''**/dist-*/**''',
-  '''deploy/cloud/releases/**''',
+  '''(^|/)node_modules/''',
+  '''(^|/)dist/''',
+  '''(^|/)dist-[^/]+/''',
+  '''deploy/cloud/releases/''',
 ]
