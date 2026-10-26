@@ -50,7 +50,7 @@ rm -rf "$WORKTREE/admin/apps/core-element-plus/dist"
 tar -xzf "$ARTIFACT" -C "$WORKTREE/admin/apps/core-element-plus"
 
 echo "[INFO] 开始回滚部署 $TAG ..."
-ENV_FILE="$ENV_FILE" PROJECT_NAME="$PROJECT_NAME" "$WORKTREE/deploy/cloud/deploy.sh"
+ENV_FILE="$ENV_FILE" PROJECT_NAME="$PROJECT_NAME" bash "$WORKTREE/deploy/cloud/deploy.sh"
 
 echo "[INFO] 回滚完成：$TAG"
 echo "[WARN] 代码回滚不会自动回滚数据库 migration；生产 migration 必须是 expand/contract 兼容的"
