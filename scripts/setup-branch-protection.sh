@@ -44,8 +44,8 @@ protect() {
 JSON
 }
 
-protect main 1
-protect production 1
+protect main 0
+protect production 0
 protect develop 0
 protect stage 0
 
