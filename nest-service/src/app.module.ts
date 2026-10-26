@@ -10,6 +10,7 @@ import { PoopModule } from './modules/poop/poop.module';
 import { OssModule } from './modules/oss/oss.module';
 import { AdminModule } from './modules/admin/admin.module';
 import { AiModule } from './modules/ai/ai.module';
+import { HealthModule } from './modules/health/health.module';
 import { OssSignInterceptor } from './common/interceptors/oss-sign.interceptor';
 import { OssUrlMiddleware } from './common/middleware/oss-url.middleware';
 
@@ -31,7 +32,11 @@ import { OssUrlMiddleware } from './common/middleware/oss-url.middleware';
         database: configService.get('DB_DATABASE', 'nest_demo'),
         entities: [__dirname + '/**/*.entity{.ts,.js}'],
         synchronize: false,
-        logging: true,
+        // 生产默认关闭 SQL 日志，避免日志量过大和敏感参数落盘；需要排查时显式设 DB_LOGGING=true。
+        logging:
+          configService.get('DB_LOGGING') !== undefined
+            ? configService.get('DB_LOGGING') === 'true'
+            : configService.get('NODE_ENV') !== 'production',
         // 全链路 UTC：MySQL 以 UTC 生成 CURRENT_TIMESTAMP，客户端也按 UTC 解析
         timezone: 'Z',
       }),
@@ -44,6 +49,7 @@ import { OssUrlMiddleware } from './common/middleware/oss-url.middleware';
     OssModule,
     AdminModule,
     AiModule,
+    HealthModule,
   ],
   providers: [
     // 私有 bucket：响应里的 OSS URL 统一加临时读取签名

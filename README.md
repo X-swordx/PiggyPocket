@@ -49,6 +49,14 @@ PiggyPocket/
 
 提交信息遵循 Conventional Commits（如 feat: 添加心愿清单模块）
 
+## 🚦 交付与发布
+
+- 分支模型与单 feature 发布：[docs/branching.md](docs/branching.md)
+- 需求 spec / AC / BOT 模板：[docs/specs/README.md](docs/specs/README.md)
+- 生产发布、健康检查、回滚：[deploy/cloud/README.md](deploy/cloud/README.md)
+- 告警值班手册：[docs/runbooks/health.md](docs/runbooks/health.md)
+- Stage 环境：[deploy/stage/README.md](deploy/stage/README.md)
+- 密钥泄露处置：[docs/security/secret-rotation.md](docs/security/secret-rotation.md)
 
 ## 📄 License
 MIT

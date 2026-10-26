@@ -13,3 +13,11 @@ nest-service/.env.*
 # 本地专用配置（含真实凭据，勿提交）
 **/.env.local
 deploy/cloud/docker-compose.override.yml
+
+# Stage 环境变量与运行数据
+deploy/stage/.env.stage
+deploy/stage/data/
+deploy/stage/backup/
+
+# 发布产物（保留目录，忽略内容）
+deploy/cloud/releases/

@@ -56,5 +56,86 @@
 
 强大的成功标准让你能独立循环。薄弱的标准（"让它工作"）需要不断澄清。
 
+## 5. 项目交付流程（P0 必读）
+
+### 5.1 开工前
+
+- 读 `docs/specs/README.md`，按改动大小选择模板：
+  - 新页面/新组件/接口契约变更 → `docs/specs/templates/spec.md`
+  - 小功能 → `docs/specs/templates/feature-card.md`
+  - Bug → `docs/specs/templates/bugfix.md`
+- 每条 AC 必须有「怎么验」；需要真实全栈才能判定的 AC 必须有 BOT 用例。
+- Spec/理解卡/复现契约确认后才能写代码。
+
+### 5.2 分支与环境
+
+```
+feature/<task>  →  develop  →  stage  →  production
+```
+
+- `feature/*` 从 `develop` 切；AI 在独立 worktree 里改，不直接改 main/develop 主检出。
+- `develop` 只做集成；`stage` 做预演，允许混多个未验收任务。
+- `production` 只接收**单个已验收**的 `feature/<task>`。
+- **禁止 `stage → production`**。发布前检查：
+
+```bash
+git log --oneline production..feature/<task>
+git log --oneline production..stage
+```
+
+第二条里出现不属于本任务的提交，就不能把 stage 合进 production。
+
+### 5.3 常用命令
+
+```bash
+# 后端
+cd nest-service
+npm ci
+npm run build
+npm test
+
+# 管理后台
+cd admin
+corepack pnpm install --frozen-lockfile
+corepack pnpm --filter @fantastic-admin/core-element-plus build
+
+# 本地健康检查（API 已启动时）
+curl -fsS http://127.0.0.1:3000/api/health/ready
+
+# Stage 部署（必须在 stage 分支）
+cd deploy/stage
+./deploy.sh
+
+# Production 发布（必须在 production 分支；会构建 admin、打 tag、备份、部署、健康检查）
+cd deploy/cloud
+./release.sh v2026.10.25-<feature>
+
+# 回滚到某个已发布 tag
+cd deploy/cloud
+./rollback.sh v2026.10.24-<previous-feature>
+
+# 手动健康检查 + 告警
+cd deploy/cloud
+./healthcheck.sh
+```
+
+### 5.4 完成定义（DoD）
+
+- [ ] AC 全部有「怎么验」，并且实际通过
+- [ ] BOT/人工走查有截图或记录
+- [ ] 后端 build/test、admin build 通过
+- [ ] 已部署到 stage，并完成 stage 人工验收
+- [ ] production 只合并了本次已验收的 feature 分支
+- [ ] 发布后 `/api/health/ready` 通过，观察日志/错误率
+- [ ] 有 release tag、release manifest 和可回滚目标
+
+### 5.5 硬性禁止
+
+- 不直接 push `main` / `production`；不 force push。
+- 不把 `stage` 合进 `production`。
+- 不提交 `.env`、token、密钥、真实模板 ID；`.env.example` 只能放占位符。
+- 不在没有测试/没有复现的情况下声称修完。
+- 不在 production 验证通过前删除 feature 分支/worktree。
+
 ---
 

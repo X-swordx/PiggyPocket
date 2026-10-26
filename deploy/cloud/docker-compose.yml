@@ -1,9 +1,9 @@
-name: piggy-pocket
+name: ${COMPOSE_PROJECT_NAME:-piggy-pocket}
 
 services:
   mysql:
     image: mysql:8.0
-    container_name: piggy_mysql
+    container_name: ${CONTAINER_PREFIX:-piggy}_mysql
     restart: always
     environment:
       MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD}
@@ -16,12 +16,17 @@ services:
     networks:
       - piggy-network
     ports:
-      - "127.0.0.1:3306:3306"
+      - "127.0.0.1:${MYSQL_BIND_PORT:-3306}:3306"
     command: --default-authentication-plugin=mysql_native_password
     deploy:
       resources:
         limits:
           memory: 1G
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
     healthcheck:
       test:
         [
@@ -43,8 +48,9 @@ services:
     build:
       context: ../../nest-service
       dockerfile: Dockerfile
-    container_name: piggy_api
+    container_name: ${CONTAINER_PREFIX:-piggy}_api
     restart: always
+    stop_grace_period: 30s
     environment:
       NODE_ENV: production
       PORT: 3000
@@ -53,6 +59,7 @@ services:
       DB_USERNAME: ${DB_USERNAME}
       DB_PASSWORD: ${DB_PASSWORD}
       DB_DATABASE: ${DB_DATABASE}
+      DB_LOGGING: ${DB_LOGGING:-false}
       WECHAT_APPID: ${WECHAT_APPID}
       WECHAT_SECRET: ${WECHAT_SECRET}
       ADMIN_JWT_SECRET: ${ADMIN_JWT_SECRET}
@@ -80,38 +87,74 @@ services:
       resources:
         limits:
           memory: 512M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "node",
+          "-e",
+          "fetch('http://127.0.0.1:3000/api/health/ready').then(r => process.exit(r.ok ? 0 : 1)).catch(() => process.exit(1))",
+        ]
+      interval: 15s
+      timeout: 5s
+      retries: 5
+      start_period: 90s
 
   admin:
     build:
       context: ../../admin
       dockerfile: Dockerfile
-    container_name: piggy_admin
+    container_name: ${CONTAINER_PREFIX:-piggy}_admin
     restart: always
     networks:
       - piggy-network
     depends_on:
-      - api
+      api:
+        condition: service_healthy
     deploy:
       resources:
         limits:
           memory: 128M
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
+    healthcheck:
+      test: ["CMD-SHELL", "wget -qO- http://127.0.0.1/ >/dev/null || exit 1"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 10s
 
   npm:
     image: jc21/nginx-proxy-manager:latest
-    container_name: piggy_npm
+    container_name: ${CONTAINER_PREFIX:-piggy}_npm
     restart: unless-stopped
     ports:
-      - "80:80"
-      - "81:81"
-      - "443:443"
+      - "${NPM_HTTP_PORT:-80}:80"
+      - "${NPM_ADMIN_PORT:-81}:81"
+      - "${NPM_HTTPS_PORT:-443}:443"
     volumes:
       - ${DATA_DIR}/npm-data:/data
       - ${DATA_DIR}/npm-letsencrypt:/etc/letsencrypt
     networks:
       - piggy-network
     depends_on:
-      - api
-      - admin
+      api:
+        condition: service_healthy
+      admin:
+        condition: service_healthy
+    logging:
+      driver: json-file
+      options:
+        max-size: "10m"
+        max-file: "3"
 
 networks:
   piggy-network:
