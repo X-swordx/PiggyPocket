@@ -1,0 +1,17 @@
+#!/usr/bin/env bash
+
+set -euo pipefail
+
+protected="refs/heads/main refs/heads/production"
+
+while read -r local_ref local_sha remote_ref remote_sha; do
+  case " $protected " in
+    *" $remote_ref "*)
+      echo "[BLOCKED] 禁止直接 push $remote_ref" >&2
+      echo "请走 feature/<task> → develop → stage → production 的 PR 流程。" >&2
+      exit 1
+      ;;
+  esac
+done
+
+# 密钥扫描交给 CI 的 secret-scan job；本地 .env 不应被 pre-push 误扫。

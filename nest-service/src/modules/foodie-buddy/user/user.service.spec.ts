@@ -19,6 +19,7 @@ describe('UserService', () => {
     name: '测试用户',
     nickname: '昵称',
     avatar: 'http://example.com/avatar.jpg',
+    status: 1,
     createdAt: new Date(),
     updatedAt: new Date(),
     orders: [],

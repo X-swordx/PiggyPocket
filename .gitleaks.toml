@@ -1,0 +1,16 @@
+title = "piggy-pocket secret scan"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "依赖锁文件和图标数据里是哈希/图标内容，不是密钥"
+paths = [
+  '''admin/pnpm-lock\.yaml''',
+  '''nest-service/package-lock\.json''',
+  '''admin/apps/core-element-plus/src/iconify/data\.json''',
+  '''**/node_modules/**''',
+  '''**/dist/**''',
+  '''**/dist-*/**''',
+  '''deploy/cloud/releases/**''',
+]

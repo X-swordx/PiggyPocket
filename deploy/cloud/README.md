@@ -8,9 +8,13 @@
 deploy/cloud/
 ├── README.md              # 本文件
 ├── docker-compose.yml     # Docker 服务编排
-├── .env.example           # 环境变量模板
-├── deploy.sh              # 一键部署脚本
-└── backup.sh              # 数据库备份脚本
+├── .env.example           # 环境变量模板（只能放占位符）
+├── deploy.sh              # 部署脚本（含部署前备份 + 健康检查）
+├── backup.sh              # 数据库备份脚本
+├── healthcheck.sh         # 健康检查 + 可选 webhook 告警
+├── release.sh             # production 发布：构建 admin、打 tag、留 manifest、部署
+├── rollback.sh            # 按 tag 回滚（临时 worktree，不切换当前分支）
+└── releases/              # 发布产物（gitignored）
 ```
 
 ## 架构说明
@@ -24,6 +28,47 @@ api.yourdomain.com（阿里云域名）
 ```
 
 所有服务都运行在同一台阿里云服务器上，无需内网穿透，架构简单稳定。
+
+## P0 发布与回滚（先读这一节）
+
+生产发布必须从 `production` 分支执行，并且只包含**单个已验收的 feature 分支**：
+
+```bash
+git switch production
+git merge --no-ff feature/<task>
+cd deploy/cloud
+./release.sh v2026.10.25-<task>
+```
+
+`release.sh` 会：
+
+1. 检查工作区干净、当前在 `production`；
+2. 构建 admin 产物并打包到 `releases/<tag>/`；
+3. 写 `manifest.json`（commit、tag、admin 产物 sha256）；
+4. 打 tag；
+5. 调用 `deploy.sh`：部署前备份 → 启动 → 等 `/api/health/ready` → 检查 admin 静态站点。
+
+回滚：
+
+```bash
+cd deploy/cloud
+./rollback.sh v2026.10.24-<previous-task>
+```
+
+回滚会在临时 worktree 里检出目标 tag，恢复当时的 admin 产物，再重新部署；不会切换你当前的分支。
+
+> 代码回滚不会自动回滚数据库 migration。生产 migration 必须按 expand/contract 写：先加兼容字段，再迁数据，最后删旧字段；破坏性变更前必须备份并人工确认。
+
+健康检查/告警：
+
+```bash
+cd deploy/cloud
+./healthcheck.sh
+# 可选：crontab 每 5 分钟跑一次
+cat healthcheck.cron.example
+```
+
+> **安全警告**：`.env.example` 只能是占位符。不要把真实 token、AppSecret、模板 ID 写进去。若曾提交过真实密钥，按 `docs/security/secret-rotation.md` 先轮换再清理历史。
 
 ## 前置条件
 
