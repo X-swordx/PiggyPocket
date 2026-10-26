@@ -49,8 +49,18 @@ echo "[INFO] 恢复 admin 产物 ..."
 rm -rf "$WORKTREE/admin/apps/core-element-plus/dist"
 tar -xzf "$ARTIFACT" -C "$WORKTREE/admin/apps/core-element-plus"
 
+# 只构建 admin 静态镜像；不要用 up --build，避免连带重建 API 依赖导致小内存服务器 OOM。
+echo "[INFO] 构建 admin 镜像 ..."
+docker compose -p "$PROJECT_NAME" --env-file "$ENV_FILE" \
+  -f "$WORKTREE/deploy/cloud/docker-compose.yml" build admin
+
 echo "[INFO] 开始回滚部署 $TAG ..."
 ENV_FILE="$ENV_FILE" PROJECT_NAME="$PROJECT_NAME" bash "$WORKTREE/deploy/cloud/deploy.sh"
+
+# 强制重建 admin，确保容器真正使用刚构建的回滚产物，而不是继续运行旧容器层。
+echo "[INFO] 强制重建 admin 容器 ..."
+docker compose -p "$PROJECT_NAME" --env-file "$ENV_FILE" \
+  -f "$WORKTREE/deploy/cloud/docker-compose.yml" up -d --no-deps --force-recreate admin
 
 echo "[INFO] 回滚完成：$TAG"
 echo "[WARN] 代码回滚不会自动回滚数据库 migration；生产 migration 必须是 expand/contract 兼容的"
