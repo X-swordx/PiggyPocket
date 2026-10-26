@@ -17,4 +17,4 @@ export PROJECT_NAME="${PROJECT_NAME:-piggy-pocket-stage}"
 export COMPOSE_FILE="${COMPOSE_FILE:-$SCRIPT_DIR/../cloud/docker-compose.yml}"
 export ENV_NAME="${ENV_NAME:-stage}"
 
-exec "$SCRIPT_DIR/../cloud/deploy.sh"
+exec bash "$SCRIPT_DIR/../cloud/deploy.sh"
