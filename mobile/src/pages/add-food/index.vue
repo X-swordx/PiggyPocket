@@ -25,6 +25,36 @@
         </view>
       </view>
 
+      <!-- Photo Recognition -->
+      <view class="recognize-row">
+        <view
+          class="recognize-btn"
+          :class="{ disabled: recognizing }"
+          @click="recognizeFromPhoto"
+        >
+          <uni-icons type="camera" size="18" color="var(--theme-primary)" />
+          <text>{{ recognizing ? '识别中...' : '拍照识别' }}</text>
+        </view>
+        <text class="recognize-hint">请拍清商品名称和日期喷码</text>
+      </view>
+
+      <view
+        v-if="recognitionApplied || recognitionWarnings.length"
+        class="recognize-warnings"
+      >
+        <view class="warn-head">
+          <text class="warn-title">
+            {{ recognitionApplied ? 'AI 识别结果，请核对后保存' : '识别提示' }}
+          </text>
+          <text class="warn-close" @click="clearRecognitionTip">关闭</text>
+        </view>
+        <text
+          v-for="(warning, index) in recognitionWarnings"
+          :key="index"
+          class="warn-item"
+        >· {{ warning }}</text>
+      </view>
+
       <!-- Form Section -->
       <view class="form-section">
         <!-- Item Name Input -->
@@ -242,7 +272,8 @@ import {
   addExpiryItem,
   editExpiryItem,
   getExpiryItem,
-  ensureSubscribe
+  ensureSubscribe,
+  recognizeExpiryLabel
 } from '@/services/expiry'
 import { getMyDiningGroups, getCurrentUser, type DiningGroup } from '@/services/foodieBuddy'
 import { themeStyle } from '@/utils/theme'
@@ -314,6 +345,9 @@ const loadGroups = async () => {
 const editingId = ref(0)
 const isEditing = ref(false)
 const submitting = ref(false)
+const recognizing = ref(false)
+const recognitionApplied = ref(false)
+const recognitionWarnings = ref<string[]>([])
 const privacyModal = ref<InstanceType<typeof PrivacyModal>>()
 
 const storageOptions = [
@@ -378,6 +412,103 @@ const uploadImage = async () => {
         uni.showToast({ title: err.message || '上传失败', icon: 'none' })
       } finally {
         uni.hideLoading()
+      }
+    },
+    fail: (err) => {
+      console.error('chooseMedia fail', err)
+      if (err.errMsg?.includes('cancel')) return
+      uni.showToast({ title: err.errMsg || '选择图片失败', icon: 'none' })
+    }
+  })
+}
+
+/** 表单里已有内容时先确认，避免识别结果覆盖手填值 */
+const confirmOverwrite = (): Promise<boolean> => {
+  const hasContent = Boolean(
+    formData.value.name ||
+    formData.value.productionDate ||
+    formData.value.shelfLifeValue ||
+    formData.value.imageUrl
+  )
+  if (!hasContent) return Promise.resolve(true)
+
+  return new Promise((resolve) => {
+    uni.showModal({
+      title: '覆盖已填写内容',
+      content: '识别结果会覆盖名称、生产日期、保质期和图片，是否继续？',
+      confirmText: '继续',
+      cancelText: '取消',
+      success: (res) => resolve(res.confirm),
+      fail: () => resolve(false)
+    })
+  })
+}
+
+const clearRecognitionTip = () => {
+  recognitionApplied.value = false
+  recognitionWarnings.value = []
+}
+
+/**
+ * 拍一张包含名称和日期喷码的照片，上传后交给后端识别。
+ * 识别结果只预填表单，用户点「确认添加」才入库。
+ */
+const recognizeFromPhoto = async () => {
+  if (recognizing.value) return
+  const agreed = await privacyModal.value?.ensurePrivacyAgreement()
+  if (!agreed) return
+
+  uni.chooseMedia({
+    count: 1,
+    mediaType: ['image'],
+    sourceType: ['camera', 'album'],
+    sizeType: ['compressed'],
+    success: async (res) => {
+      const tempFilePath = res.tempFiles?.[0]?.tempFilePath
+      if (!tempFilePath) return
+
+      recognizing.value = true
+      uni.showLoading({ title: '识别中...', mask: true })
+      try {
+        const imageUrl = await uploadToOSS(tempFilePath, 'items')
+        const result = await recognizeExpiryLabel(imageUrl)
+        uni.hideLoading()
+
+        const hasField = Boolean(
+          result.name ||
+            result.productionDate ||
+            (result.shelfLifeValue && result.shelfLifeUnit)
+        )
+        if (!result.recognized || !hasField) {
+          recognitionApplied.value = false
+          recognitionWarnings.value = result.warnings
+          uni.showToast({ title: '未识别到完整信息，请手动填写', icon: 'none' })
+          return
+        }
+
+        const overwrite = await confirmOverwrite()
+        if (!overwrite) return
+
+        if (result.name) formData.value.name = result.name
+        if (result.productionDate) {
+          formData.value.productionDate = result.productionDate
+        }
+        if (result.shelfLifeValue && result.shelfLifeUnit) {
+          formData.value.shelfLifeValue = result.shelfLifeValue
+          formData.value.shelfLifeUnit = result.shelfLifeUnit
+        }
+        formData.value.imageUrl = imageUrl
+        recognitionApplied.value = true
+        recognitionWarnings.value = result.warnings
+        uni.showToast({ title: '已识别，请核对', icon: 'success' })
+      } catch (err: any) {
+        uni.hideLoading()
+        uni.showToast({
+          title: err.message || '识别失败，请手动填写',
+          icon: 'none'
+        })
+      } finally {
+        recognizing.value = false
       }
     },
     fail: (err) => {
@@ -608,6 +739,73 @@ const submitForm = async () => {
   text-transform: uppercase;
   letter-spacing: 0.05em;
   color: var(--theme-primary);
+}
+
+/* Photo Recognition */
+.recognize-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+
+.recognize-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 10px 18px;
+  border-radius: 999px;
+  background: rgba(var(--theme-primary-rgb), 0.12);
+  border: 1px solid rgba(var(--theme-primary-rgb), 0.25);
+  color: var(--theme-primary);
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.recognize-btn:active {
+  transform: scale(0.97);
+}
+
+.recognize-btn.disabled {
+  opacity: 0.5;
+}
+
+.recognize-hint {
+  font-size: 12px;
+  color: #999;
+}
+
+.recognize-warnings {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 12px 16px;
+  border-radius: 12px;
+  background: rgba(var(--theme-primary-rgb), 0.08);
+  border: 1px solid rgba(var(--theme-primary-rgb), 0.18);
+}
+
+.warn-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.warn-title {
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--theme-primary);
+}
+
+.warn-close {
+  font-size: 12px;
+  color: #999;
+}
+
+.warn-item {
+  font-size: 12px;
+  line-height: 1.6;
+  color: #666;
 }
 
 /* Form Section */
