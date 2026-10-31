@@ -86,6 +86,11 @@ export class OssService {
     return `${this.host}/${key}?OSSAccessKeyId=${this.accessKeyId}&Expires=${expires}&Signature=${encodeURIComponent(signature)}`;
   }
 
+  /** 判断 URL 是否属于本 bucket，用于限制服务端主动抓取的范围。 */
+  isOwnedUrl(url: string): boolean {
+    return this.extractKey(url) !== '';
+  }
+
   /**
    * 去掉读取签名。
    * 签名会过期，绝不能入库——否则 TTL 到点后那条记录的图片永久失效。

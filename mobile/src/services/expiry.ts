@@ -3,6 +3,17 @@ import { getCurrentUser, type PageResult } from './foodieBuddy'
 
 export type ExpiryStatus = 'fresh' | 'expiring' | 'expired'
 
+export interface RecognizeExpiryResult {
+  recognized: boolean
+  name: string | null
+  productionDate: string | null
+  shelfLifeValue: number | null
+  shelfLifeUnit: 'day' | 'month' | null
+  expiryDate: string | null
+  confidence: 'high' | 'medium' | 'low'
+  warnings: string[]
+}
+
 export interface ExpiryItem {
   id: number
   userId?: number
@@ -74,6 +85,14 @@ export const getExpiryItem = async (id: number) => {
   const userId = await getUserId()
   return request<ExpiryItem>({ url: `/expiry-items/${id}`, query: { userId } })
 }
+
+/** 拍照识别商品名称与日期。只返回识别结果，不写库。 */
+export const recognizeExpiryLabel = (imageUrl: string) =>
+  request<RecognizeExpiryResult>({
+    url: '/expiry-items/recognize',
+    method: 'POST',
+    data: { imageUrl }
+  })
 
 export const createExpiryItem = (data: {
   userId: number
