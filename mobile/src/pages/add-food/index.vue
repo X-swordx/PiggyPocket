@@ -35,7 +35,7 @@
           <uni-icons type="camera" size="18" color="var(--theme-primary)" />
           <text>{{ recognizing ? '识别中...' : '拍照识别' }}</text>
         </view>
-        <text class="recognize-hint">请拍清商品名称和日期喷码</text>
+        <text class="recognize-hint">可先拍名称面，再拍日期面（日期面可跳过）</text>
       </view>
 
       <view
@@ -449,8 +449,39 @@ const clearRecognitionTip = () => {
   recognitionWarnings.value = []
 }
 
+/** 选一张图；取消或失败返回 null */
+const chooseOneImage = (): Promise<string | null> =>
+  new Promise((resolve) => {
+    uni.chooseMedia({
+      count: 1,
+      mediaType: ['image'],
+      sourceType: ['camera', 'album'],
+      sizeType: ['compressed'],
+      success: (res) => resolve(res.tempFiles?.[0]?.tempFilePath || null),
+      fail: (err) => {
+        console.error('chooseMedia fail', err)
+        if (!err.errMsg?.includes('cancel')) {
+          uni.showToast({ title: err.errMsg || '选择图片失败', icon: 'none' })
+        }
+        resolve(null)
+      }
+    })
+  })
+
+const askContinueDatePhoto = (): Promise<boolean> =>
+  new Promise((resolve) => {
+    uni.showModal({
+      title: '继续拍日期面',
+      content: '名称面已上传。是否再拍一张生产日期/保质期喷码面？',
+      confirmText: '继续拍',
+      cancelText: '跳过',
+      success: (res) => resolve(res.confirm),
+      fail: () => resolve(false)
+    })
+  })
+
 /**
- * 拍一张包含名称和日期喷码的照片，上传后交给后端识别。
+ * 先拍名称面，再询问是否拍日期面；两张一起交给后端识别。
  * 识别结果只预填表单，用户点「确认添加」才入库。
  */
 const recognizeFromPhoto = async () => {
@@ -458,65 +489,65 @@ const recognizeFromPhoto = async () => {
   const agreed = await privacyModal.value?.ensurePrivacyAgreement()
   if (!agreed) return
 
-  uni.chooseMedia({
-    count: 1,
-    mediaType: ['image'],
-    sourceType: ['camera', 'album'],
-    sizeType: ['compressed'],
-    success: async (res) => {
-      const tempFilePath = res.tempFiles?.[0]?.tempFilePath
-      if (!tempFilePath) return
+  recognizing.value = true
+  try {
+    const nameTempPath = await chooseOneImage()
+    if (!nameTempPath) return
 
-      recognizing.value = true
-      uni.showLoading({ title: '识别中...', mask: true })
-      try {
-        const imageUrl = await uploadToOSS(tempFilePath, 'items')
-        const result = await recognizeExpiryLabel(imageUrl)
+    uni.showLoading({ title: '上传名称面...', mask: true })
+    const nameImageUrl = await uploadToOSS(nameTempPath, 'items')
+    uni.hideLoading()
+
+    const imageUrls = [nameImageUrl]
+    if (await askContinueDatePhoto()) {
+      const dateTempPath = await chooseOneImage()
+      if (dateTempPath) {
+        uni.showLoading({ title: '上传日期面...', mask: true })
+        imageUrls.push(await uploadToOSS(dateTempPath, 'items'))
         uni.hideLoading()
-
-        const hasField = Boolean(
-          result.name ||
-            result.productionDate ||
-            (result.shelfLifeValue && result.shelfLifeUnit)
-        )
-        if (!result.recognized || !hasField) {
-          recognitionApplied.value = false
-          recognitionWarnings.value = result.warnings
-          uni.showToast({ title: '未识别到完整信息，请手动填写', icon: 'none' })
-          return
-        }
-
-        const overwrite = await confirmOverwrite()
-        if (!overwrite) return
-
-        if (result.name) formData.value.name = result.name
-        if (result.productionDate) {
-          formData.value.productionDate = result.productionDate
-        }
-        if (result.shelfLifeValue && result.shelfLifeUnit) {
-          formData.value.shelfLifeValue = result.shelfLifeValue
-          formData.value.shelfLifeUnit = result.shelfLifeUnit
-        }
-        formData.value.imageUrl = imageUrl
-        recognitionApplied.value = true
-        recognitionWarnings.value = result.warnings
-        uni.showToast({ title: '已识别，请核对', icon: 'success' })
-      } catch (err: any) {
-        uni.hideLoading()
-        uni.showToast({
-          title: err.message || '识别失败，请手动填写',
-          icon: 'none'
-        })
-      } finally {
-        recognizing.value = false
       }
-    },
-    fail: (err) => {
-      console.error('chooseMedia fail', err)
-      if (err.errMsg?.includes('cancel')) return
-      uni.showToast({ title: err.errMsg || '选择图片失败', icon: 'none' })
     }
-  })
+
+    uni.showLoading({ title: '识别中...', mask: true })
+    const result = await recognizeExpiryLabel(imageUrls)
+    uni.hideLoading()
+
+    const hasField = Boolean(
+      result.name ||
+        result.productionDate ||
+        (result.shelfLifeValue && result.shelfLifeUnit)
+    )
+    if (!result.recognized || !hasField) {
+      recognitionApplied.value = false
+      recognitionWarnings.value = result.warnings
+      uni.showToast({ title: '未识别到完整信息，请手动填写', icon: 'none' })
+      return
+    }
+
+    const overwrite = await confirmOverwrite()
+    if (!overwrite) return
+
+    if (result.name) formData.value.name = result.name
+    if (result.productionDate) {
+      formData.value.productionDate = result.productionDate
+    }
+    if (result.shelfLifeValue && result.shelfLifeUnit) {
+      formData.value.shelfLifeValue = result.shelfLifeValue
+      formData.value.shelfLifeUnit = result.shelfLifeUnit
+    }
+    formData.value.imageUrl = nameImageUrl
+    recognitionApplied.value = true
+    recognitionWarnings.value = result.warnings
+    uni.showToast({ title: '已识别，请核对', icon: 'success' })
+  } catch (err: any) {
+    uni.hideLoading()
+    uni.showToast({
+      title: err.message || '识别失败，请手动填写',
+      icon: 'none'
+    })
+  } finally {
+    recognizing.value = false
+  }
 }
 
 const goBack = () => {

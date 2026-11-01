@@ -44,7 +44,7 @@ describe('ExpiryRecognitionService', () => {
   it('模型未配置时返回 503', async () => {
     const { service } = createService(null);
     await expect(
-      service.recognize('https://bucket.oss.example.com/items/a.jpg'),
+      service.recognize(['https://bucket.oss.example.com/items/a.jpg']),
     ).rejects.toBeInstanceOf(ServiceUnavailableException);
   });
 
@@ -55,7 +55,7 @@ describe('ExpiryRecognitionService', () => {
     const { service } = createService(model, false);
 
     await expect(
-      service.recognize('https://evil.example.com/a.jpg'),
+      service.recognize(['https://evil.example.com/a.jpg']),
     ).rejects.toBeInstanceOf(BadRequestException);
     expect(fetchMock).not.toHaveBeenCalled();
   });
@@ -66,7 +66,7 @@ describe('ExpiryRecognitionService', () => {
     const { service } = createService(model);
 
     await expect(
-      service.recognize('https://bucket.oss.example.com/items/a.jpg'),
+      service.recognize(['https://bucket.oss.example.com/items/a.jpg']),
     ).rejects.toBeInstanceOf(BadRequestException);
     expect(model.invoke).not.toHaveBeenCalled();
   });
@@ -79,7 +79,7 @@ describe('ExpiryRecognitionService', () => {
     const { service } = createService(model);
 
     await expect(
-      service.recognize('https://bucket.oss.example.com/items/a.jpg'),
+      service.recognize(['https://bucket.oss.example.com/items/a.jpg']),
     ).rejects.toBeInstanceOf(BadRequestException);
   });
 
@@ -89,7 +89,7 @@ describe('ExpiryRecognitionService', () => {
     const { service } = createService(model);
 
     await expect(
-      service.recognize('https://bucket.oss.example.com/items/a.jpg'),
+      service.recognize(['https://bucket.oss.example.com/items/a.jpg']),
     ).rejects.toBeInstanceOf(BadGatewayException);
   });
 
@@ -98,9 +98,9 @@ describe('ExpiryRecognitionService', () => {
     const model = { invoke: jest.fn().mockResolvedValue({ content: '不是 JSON' }) };
     const { service } = createService(model);
 
-    const result = await service.recognize(
+    const result = await service.recognize([
       'https://bucket.oss.example.com/items/a.jpg',
-    );
+    ]);
 
     expect(result.recognized).toBe(false);
     expect(result.warnings).toEqual(['未识别到可用的商品信息，请手动填写']);
@@ -112,7 +112,7 @@ describe('ExpiryRecognitionService', () => {
     const model = { invoke: jest.fn().mockResolvedValue({ content: '{}' }) };
     const { service, ossService } = createService(model);
 
-    await service.recognize('https://bucket.oss.example.com/items/a.jpg');
+    await service.recognize(['https://bucket.oss.example.com/items/a.jpg']);
 
     expect(ossService.signUrl).toHaveBeenCalledWith(
       'https://bucket.oss.example.com/items/a.jpg',
@@ -121,6 +121,84 @@ describe('ExpiryRecognitionService', () => {
       'https://bucket.oss.example.com/items/a.jpg?OSSAccessKeyId=id&Expires=1&Signature=sig',
       expect.anything(),
     );
+  });
+
+  it('两张图片都下载并按顺序交给模型', async () => {
+    const fetchMock = jest
+      .fn()
+      .mockResolvedValueOnce(imageResponse('front'))
+      .mockResolvedValueOnce(imageResponse('back'));
+    global.fetch = fetchMock as never;
+    const model = { invoke: jest.fn().mockResolvedValue({ content: '{}' }) };
+    const { service } = createService(model);
+
+    await service.recognize([
+      'https://bucket.oss.example.com/items/front.jpg',
+      'https://bucket.oss.example.com/items/back.jpg',
+    ]);
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    const parts = (
+      model.invoke.mock.calls[0][0] as Array<{
+        content: Array<{ type: string; image_url?: { url: string } }>;
+      }>
+    )[1].content.filter((part) => part.type === 'image_url');
+    expect(parts.map((part) => part.image_url?.url)).toEqual([
+      `data:image/jpeg;base64,${Buffer.from('front').toString('base64')}`,
+      `data:image/jpeg;base64,${Buffer.from('back').toString('base64')}`,
+    ]);
+  });
+
+  it('任意一张图片不属于本站 OSS 时拒绝，且不发起抓取', async () => {
+    const fetchMock = jest.fn();
+    global.fetch = fetchMock as never;
+    const model = { invoke: jest.fn() };
+    const { service, ossService } = createService(model);
+    ossService.isOwnedUrl.mockImplementation(
+      (url: string) => !url.includes('evil'),
+    );
+
+    await expect(
+      service.recognize([
+        'https://bucket.oss.example.com/items/a.jpg',
+        'https://evil.example.com/b.jpg',
+      ]),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('图片数量不在 1～2 张时返回 400，且不发起抓取', async () => {
+    const fetchMock = jest.fn();
+    global.fetch = fetchMock as never;
+    const model = { invoke: jest.fn() };
+    const { service } = createService(model);
+
+    await expect(service.recognize([])).rejects.toBeInstanceOf(
+      BadRequestException,
+    );
+    await expect(
+      service.recognize([
+        'https://bucket.oss.example.com/items/a.jpg',
+        'https://bucket.oss.example.com/items/b.jpg',
+        'https://bucket.oss.example.com/items/c.jpg',
+      ]),
+    ).rejects.toBeInstanceOf(BadRequestException);
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('两张图片合计超过 12MB 时返回 400', async () => {
+    const big = 'a'.repeat(7 * 1024 * 1024);
+    global.fetch = jest.fn().mockResolvedValue(imageResponse(big)) as never;
+    const model = { invoke: jest.fn() };
+    const { service } = createService(model);
+
+    await expect(
+      service.recognize([
+        'https://bucket.oss.example.com/items/a.jpg',
+        'https://bucket.oss.example.com/items/b.jpg',
+      ]),
+    ).rejects.toThrow('图片总大小不能超过 12MB');
+    expect(model.invoke).not.toHaveBeenCalled();
   });
 
   it('把图片转成 data URL 交给模型，并归一化返回结果', async () => {
@@ -138,9 +216,9 @@ describe('ExpiryRecognitionService', () => {
     };
     const { service } = createService(model);
 
-    const result = await service.recognize(
+    const result = await service.recognize([
       'https://bucket.oss.example.com/items/a.jpg',
-    );
+    ]);
 
     expect(result).toMatchObject({
       recognized: true,

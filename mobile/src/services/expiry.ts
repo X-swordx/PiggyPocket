@@ -86,12 +86,12 @@ export const getExpiryItem = async (id: number) => {
   return request<ExpiryItem>({ url: `/expiry-items/${id}`, query: { userId } })
 }
 
-/** 拍照识别商品名称与日期。只返回识别结果，不写库。 */
-export const recognizeExpiryLabel = (imageUrl: string) =>
+/** 拍照识别商品名称与日期。imageUrls 按 [名称面, 日期面] 顺序传入。 */
+export const recognizeExpiryLabel = (imageUrls: string[]) =>
   request<RecognizeExpiryResult>({
     url: '/expiry-items/recognize',
     method: 'POST',
-    data: { imageUrl }
+    data: { imageUrls }
   })
 
 export const createExpiryItem = (data: {
