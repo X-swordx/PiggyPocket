@@ -87,7 +87,9 @@ export class ExpiryRecognitionService {
       throw new BadRequestException('图片地址不合法');
     }
 
-    const dataUrl = await this.downloadImage(imageUrl);
+    // OssUrlMiddleware 会把请求体里的读取签名剥掉（防止签名入库），
+    // 而 bucket 是私有读，这里按 object key 重新签名后再抓取。
+    const dataUrl = await this.downloadImage(this.ossService.signUrl(imageUrl));
 
     let content: string;
     try {
