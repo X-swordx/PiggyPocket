@@ -88,7 +88,7 @@ git -C "$ROOT_DIR" tag -a "$TAG" -m "Release $TAG"
 
 echo "[INFO] 发布产物已写入：$RELEASE_DIR"
 echo "[INFO] 开始部署 $TAG ..."
-ENV_FILE="$ENV_FILE" PROJECT_NAME="$PROJECT_NAME" "$SCRIPT_DIR/deploy.sh"
+ENV_FILE="$ENV_FILE" PROJECT_NAME="$PROJECT_NAME" bash "$SCRIPT_DIR/deploy.sh"
 
 echo "[INFO] 发布完成：$TAG"
 echo "[INFO] 记得推送 tag：git push origin $TAG"

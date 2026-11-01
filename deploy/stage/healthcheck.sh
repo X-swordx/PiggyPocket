@@ -8,4 +8,4 @@ export ENV_FILE="${ENV_FILE:-$SCRIPT_DIR/.env.stage}"
 export PROJECT_NAME="${PROJECT_NAME:-piggy-pocket-stage}"
 export COMPOSE_FILE="${COMPOSE_FILE:-$SCRIPT_DIR/../cloud/docker-compose.yml}"
 
-exec "$SCRIPT_DIR/../cloud/healthcheck.sh"
+exec bash "$SCRIPT_DIR/../cloud/healthcheck.sh"
