@@ -37,7 +37,7 @@ export class ExpiryController {
   @Post('recognize')
   @ApiOperation({ summary: '拍照识别商品名称、生产日期和保质期（不写库）' })
   recognize(@Body() recognizeDto: RecognizeExpiryItemDto) {
-    return this.recognitionService.recognize(recognizeDto.imageUrl);
+    return this.recognitionService.recognize(recognizeDto.imageUrls);
   }
 
   @Get()

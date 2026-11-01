@@ -17,9 +17,11 @@ import { VISION_MODEL, type VisionModel } from './expiry-recognition.model';
 
 const IMAGE_TIMEOUT_MS = 10000;
 const MODEL_TIMEOUT_HINT_MS = 20000;
+const MAX_IMAGES = 2;
 const MAX_IMAGE_BYTES = 8 * 1024 * 1024;
+const MAX_TOTAL_IMAGE_BYTES = 12 * 1024 * 1024;
 
-const SYSTEM_PROMPT = `你是商品包装信息识别助手。只读取图片里清晰可见的文字，不要猜测、不要补全。
+const SYSTEM_PROMPT = `你是商品包装信息识别助手。可能收到同一商品不同面的 1～2 张照片，请综合所有照片识别。只读取图片里清晰可见的文字，不要猜测、不要补全。
 
 只输出 JSON，不要 markdown 代码块，不要解释。格式：
 {
@@ -79,17 +81,28 @@ export class ExpiryRecognitionService {
     private readonly ossService: OssService,
   ) {}
 
-  async recognize(imageUrl: string): Promise<NormalizedRecognition> {
+  async recognize(imageUrls: string[]): Promise<NormalizedRecognition> {
     if (!this.model) {
       throw new ServiceUnavailableException('图片识别服务未配置');
     }
-    if (!this.ossService.isOwnedUrl(imageUrl)) {
+    if (imageUrls.length < 1 || imageUrls.length > MAX_IMAGES) {
+      throw new BadRequestException('图片数量不合法');
+    }
+    if (imageUrls.some((url) => !this.ossService.isOwnedUrl(url))) {
       throw new BadRequestException('图片地址不合法');
     }
 
     // OssUrlMiddleware 会把请求体里的读取签名剥掉（防止签名入库），
     // 而 bucket 是私有读，这里按 object key 重新签名后再抓取。
-    const dataUrl = await this.downloadImage(this.ossService.signUrl(imageUrl));
+    const images = await Promise.all(
+      imageUrls.map((url) =>
+        this.downloadImage(this.ossService.signUrl(url)),
+      ),
+    );
+    const totalBytes = images.reduce((sum, { buffer }) => sum + buffer.length, 0);
+    if (totalBytes > MAX_TOTAL_IMAGE_BYTES) {
+      throw new BadRequestException('图片总大小不能超过 12MB');
+    }
 
     let content: string;
     try {
@@ -97,8 +110,16 @@ export class ExpiryRecognitionService {
         new SystemMessage(SYSTEM_PROMPT),
         new HumanMessage({
           content: [
-            { type: 'text', text: '识别这张商品包装照片。' },
-            { type: 'image_url', image_url: { url: dataUrl } },
+            {
+              type: 'text',
+              text: '识别这些商品包装照片。第 1 张是商品名称面，第 2 张（如果有）是日期喷码面。',
+            },
+            ...images.map(({ contentType, buffer }) => ({
+              type: 'image_url' as const,
+              image_url: {
+                url: `data:${contentType};base64,${buffer.toString('base64')}`,
+              },
+            })),
           ],
         }),
       ]);
@@ -120,7 +141,9 @@ export class ExpiryRecognitionService {
     return normalizeRecognition(raw);
   }
 
-  private async downloadImage(url: string): Promise<string> {
+  private async downloadImage(
+    url: string,
+  ): Promise<{ contentType: string; buffer: Buffer }> {
     const controller = new AbortController();
     const timer = setTimeout(() => controller.abort(), IMAGE_TIMEOUT_MS);
     try {
@@ -146,7 +169,7 @@ export class ExpiryRecognitionService {
       if (buffer.length > MAX_IMAGE_BYTES) {
         throw new BadRequestException('图片不能超过 8MB');
       }
-      return `data:${contentType};base64,${buffer.toString('base64')}`;
+      return { contentType, buffer };
     } catch (error) {
       if (error instanceof BadRequestException) throw error;
       throw new BadRequestException('图片读取失败');
