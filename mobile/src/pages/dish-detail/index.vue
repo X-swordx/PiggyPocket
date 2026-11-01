@@ -19,6 +19,7 @@
         <!-- Hero Section - with gradient overlay per design rule -->
         <view class="hero-section">
           <view class="hero-image" :style="{ backgroundColor: food.bgColor }">
+            <image v-if="food.image" class="hero-bg-image" :src="food.image" mode="aspectFill" />
             <view class="hero-gradient-overlay"></view>
             <view class="category-badge">
               <text>{{ food.category || '未分类' }}</text>
@@ -315,6 +316,7 @@ interface Dish {
 
 interface FoodItem {
   name: string
+  image?: string
   expiryDate: string
   daysText: string
   daysCount?: string
@@ -576,6 +578,7 @@ const loadExpiryItem = async (id: number) => {
     const item = await getExpiryItem(id)
     food.value = {
       name: item.name,
+      image: item.imageUrl,
       expiryDate: item.expiryDate,
       daysText: item.daysText,
       daysCount: String(Math.abs(item.daysRemaining)),

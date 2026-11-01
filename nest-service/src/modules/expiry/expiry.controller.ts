@@ -14,6 +14,8 @@ import { ExpiryService, ExpiryStatus } from './expiry.service';
 import { CreateExpiryItemDto } from './dto/create-expiry-item.dto';
 import { UpdateExpiryItemDto } from './dto/update-expiry-item.dto';
 import { SearchExpiryItemDto } from './dto/search-expiry-item.dto';
+import { RecognizeExpiryItemDto } from './dto/recognize-expiry-item.dto';
+import { ExpiryRecognitionService } from './expiry-recognition.service';
 import { WechatService } from '../wechat/wechat.service';
 import { PaginationDto } from '../../common/dto/pagination.dto';
 
@@ -23,12 +25,19 @@ export class ExpiryController {
   constructor(
     private readonly expiryService: ExpiryService,
     private readonly wechatService: WechatService,
+    private readonly recognitionService: ExpiryRecognitionService,
   ) {}
 
   @Post()
   @ApiOperation({ summary: '添加物品' })
   create(@Body() createDto: CreateExpiryItemDto) {
     return this.expiryService.create(createDto);
+  }
+
+  @Post('recognize')
+  @ApiOperation({ summary: '拍照识别商品名称、生产日期和保质期（不写库）' })
+  recognize(@Body() recognizeDto: RecognizeExpiryItemDto) {
+    return this.recognitionService.recognize(recognizeDto.imageUrls);
   }
 
   @Get()
