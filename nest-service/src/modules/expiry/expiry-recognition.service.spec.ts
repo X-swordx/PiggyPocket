@@ -23,7 +23,10 @@ const imageResponse = (
 });
 
 const createService = (model: unknown, owned = true) => {
-  const ossService = { isOwnedUrl: jest.fn().mockReturnValue(owned) };
+  const ossService = {
+    isOwnedUrl: jest.fn().mockReturnValue(owned),
+    signUrl: jest.fn((url: string) => `${url}?OSSAccessKeyId=id&Expires=1&Signature=sig`),
+  };
   return {
     service: new ExpiryRecognitionService(model as never, ossService as never),
     ossService,
@@ -101,6 +104,23 @@ describe('ExpiryRecognitionService', () => {
 
     expect(result.recognized).toBe(false);
     expect(result.warnings).toEqual(['未识别到可用的商品信息，请手动填写']);
+  });
+
+  it('请求体里的签名被中间件剥掉后，服务端重新签名再抓取', async () => {
+    const fetchMock = jest.fn().mockResolvedValue(imageResponse());
+    global.fetch = fetchMock as never;
+    const model = { invoke: jest.fn().mockResolvedValue({ content: '{}' }) };
+    const { service, ossService } = createService(model);
+
+    await service.recognize('https://bucket.oss.example.com/items/a.jpg');
+
+    expect(ossService.signUrl).toHaveBeenCalledWith(
+      'https://bucket.oss.example.com/items/a.jpg',
+    );
+    expect(fetchMock).toHaveBeenCalledWith(
+      'https://bucket.oss.example.com/items/a.jpg?OSSAccessKeyId=id&Expires=1&Signature=sig',
+      expect.anything(),
+    );
   });
 
   it('把图片转成 data URL 交给模型，并归一化返回结果', async () => {
