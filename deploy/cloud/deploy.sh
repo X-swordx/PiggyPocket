@@ -107,7 +107,7 @@ done
 if [ "$MYSQL_DATA_EXISTED" = "1" ] && [ "${SKIP_PRE_DEPLOY_BACKUP:-0}" != "1" ]; then
   log_info "部署前备份数据库..."
   ENV_FILE="$ENV_FILE" PROJECT_NAME="$PROJECT_NAME" COMPOSE_FILE="$COMPOSE_FILE" \
-    "$SCRIPT_DIR/backup.sh"
+    bash "$SCRIPT_DIR/backup.sh"
 else
   log_warn "未检测到已有数据库数据，跳过部署前备份"
 fi

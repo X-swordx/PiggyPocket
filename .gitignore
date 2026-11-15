@@ -19,5 +19,9 @@ deploy/stage/.env.stage
 deploy/stage/data/
 deploy/stage/backup/
 
+# deploy.sh 按 DATA_DIR / BACKUP_DIR 创建的运行时数据（默认在仓库根目录）
+/data/
+/backup/
+
 # 发布产物（保留目录，忽略内容）
 deploy/cloud/releases/

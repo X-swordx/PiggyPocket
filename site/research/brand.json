@@ -1,0 +1,19 @@
+{
+  "title": "猪猪生活本",
+  "source": "mobile/src/utils/theme.ts (樱花粉), mobile/src/pages, mobile/src/static/logo.png",
+  "colors": {
+    "background": "#F8F5F6",
+    "surface": "#FFFFFF",
+    "text": "#1F1A1B",
+    "muted": "#777777",
+    "primary": "#F08DA0",
+    "primarySoft": "#FFC2CC",
+    "primaryLight": "#FFE6EA",
+    "warn": "#EA580C",
+    "danger": "#DC2626"
+  },
+  "fonts": {
+    "body": "\"PingFang SC\", \"Microsoft YaHei\", sans-serif",
+    "display": "\"PingFang SC\", \"Microsoft YaHei\", sans-serif"
+  }
+}
