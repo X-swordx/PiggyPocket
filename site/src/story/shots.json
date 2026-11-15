@@ -1,0 +1,468 @@
+{
+  "home": {
+    "src": "shots/home.png",
+    "url": "http://127.0.0.1:5174/#/",
+    "w": 390,
+    "h": 844,
+    "focus": {
+      "expiryCard": {
+        "x": 16,
+        "y": 375,
+        "width": 358,
+        "height": 270
+      },
+      "menuCard": {
+        "x": 16,
+        "y": 81,
+        "width": 358,
+        "height": 270
+      },
+      "poopCard": {
+        "x": 16,
+        "y": 669,
+        "width": 358,
+        "height": 270
+      },
+      "wishCard": {
+        "x": 16,
+        "y": 963,
+        "width": 358,
+        "height": 270
+      }
+    }
+  },
+  "expiry": {
+    "src": "shots/expiry.png",
+    "url": "http://127.0.0.1:5174/#/pages/expiry/index",
+    "w": 390,
+    "h": 844,
+    "focus": {
+      "reminder": {
+        "x": 16,
+        "y": 85,
+        "width": 358,
+        "height": 42
+      },
+      "firstItem": {
+        "x": 16,
+        "y": 212,
+        "width": 358,
+        "height": 117
+      },
+      "medicine": {
+        "x": 16,
+        "y": 478,
+        "width": 358,
+        "height": 117
+      }
+    }
+  },
+  "detail": {
+    "src": "shots/detail.png",
+    "url": "http://127.0.0.1:5174/#/pages/dish-detail/index?id=107&mode=expiry",
+    "w": 390,
+    "h": 844,
+    "focus": {
+      "expiryStatus": {
+        "x": 16,
+        "y": 430,
+        "width": 358,
+        "height": 202
+      },
+      "reminder": {
+        "x": 16,
+        "y": 648,
+        "width": 400,
+        "height": 74
+      }
+    }
+  },
+  "add": {
+    "src": "shots/add.png",
+    "url": "http://127.0.0.1:5174/#/pages/add-food/index?id=107",
+    "w": 390,
+    "h": 844,
+    "focus": {
+      "recognize": {
+        "x": 16,
+        "y": 301,
+        "width": 358,
+        "height": 67
+      },
+      "name": {
+        "x": 16,
+        "y": 368,
+        "width": 358,
+        "height": 85.390625
+      },
+      "shelfLife": {
+        "x": 16,
+        "y": 578.78125,
+        "width": 358,
+        "height": 111
+      }
+    }
+  },
+  "search": {
+    "src": "shots/search.png",
+    "url": "http://127.0.0.1:5174/#/pages/expiry/index",
+    "w": 390,
+    "h": 844,
+    "focus": {
+      "searchBar": {
+        "x": 16,
+        "y": 139,
+        "width": 358,
+        "height": 42
+      },
+      "result": {
+        "x": 16,
+        "y": 197,
+        "width": 358,
+        "height": 117
+      }
+    }
+  },
+  "notification": {
+    "src": "shots/notification.png",
+    "url": "http://127.0.0.1:5174/#/",
+    "w": 390,
+    "h": 844,
+    "focus": {
+      "notice": {
+        "x": 74.5,
+        "y": 149.5,
+        "width": 331.5,
+        "height": 95
+      }
+    }
+  },
+  "foodMenu": {
+    "src": "shots/foodMenu.png",
+    "url": "http://127.0.0.1:5174/#/pages/food-menu/index",
+    "w": 390,
+    "h": 844,
+    "focus": {
+      "upload": {
+        "x": 16,
+        "y": 89,
+        "width": 358,
+        "height": 243
+      },
+      "inspiration": {
+        "x": 16,
+        "y": 348,
+        "width": 358,
+        "height": 80
+      },
+      "menu": {
+        "x": 0,
+        "y": 444,
+        "width": 390,
+        "height": 2970
+      },
+      "dish": {
+        "x": 16,
+        "y": 554,
+        "width": 358,
+        "height": 270
+      }
+    }
+  },
+  "recipeUpload": {
+    "src": "shots/recipeUpload.png",
+    "url": "http://127.0.0.1:5174/#/pages/recipe-upload/index",
+    "w": 390,
+    "h": 844,
+    "focus": {
+      "cover": {
+        "x": 0,
+        "y": 73,
+        "width": 390,
+        "height": 237.375
+      },
+      "name": {
+        "x": 0,
+        "y": 310.375,
+        "width": 390,
+        "height": 181
+      },
+      "ingredients": {
+        "x": 0,
+        "y": 491.375,
+        "width": 390,
+        "height": 288
+      },
+      "steps": {
+        "x": 0,
+        "y": 779.375,
+        "width": 390,
+        "height": 464
+      }
+    }
+  },
+  "recipeInspiration": {
+    "src": "shots/recipeInspiration.png",
+    "url": "http://127.0.0.1:5174/#/pages/recipe-inspiration/index",
+    "w": 390,
+    "h": 844,
+    "focus": {
+      "hint": {
+        "x": 16,
+        "y": 89,
+        "width": 358,
+        "height": 62
+      },
+      "ingredients": {
+        "x": 0,
+        "y": 167,
+        "width": 390,
+        "height": 375
+      },
+      "people": {
+        "x": 0,
+        "y": 542,
+        "width": 390,
+        "height": 89
+      },
+      "preferences": {
+        "x": 0,
+        "y": 717,
+        "width": 390,
+        "height": 187
+      }
+    }
+  },
+  "order": {
+    "src": "shots/order.png",
+    "url": "http://127.0.0.1:5174/#/pages/order/index",
+    "w": 390,
+    "h": 844,
+    "focus": {
+      "cookDate": {
+        "x": 0,
+        "y": 139,
+        "width": 390,
+        "height": 56
+      },
+      "items": {
+        "x": 0,
+        "y": 253,
+        "width": 390,
+        "height": 212
+      },
+      "first": {
+        "x": 16,
+        "y": 253,
+        "width": 358,
+        "height": 100
+      },
+      "footer": {
+        "x": 0,
+        "y": 715,
+        "width": 390,
+        "height": 129
+      }
+    }
+  },
+  "wishlist": {
+    "src": "shots/wishlist.png",
+    "url": "http://127.0.0.1:5174/#/pages/wishlist/index",
+    "w": 390,
+    "h": 844,
+    "focus": {
+      "progress": {
+        "x": 16,
+        "y": 96,
+        "width": 358,
+        "height": 145
+      },
+      "filters": {
+        "x": 0,
+        "y": 265,
+        "width": 390,
+        "height": 52
+      },
+      "first": {
+        "x": 16,
+        "y": 317,
+        "width": 358,
+        "height": 77
+      },
+      "second": {
+        "x": 16,
+        "y": 406,
+        "width": 358,
+        "height": 77
+      }
+    }
+  },
+  "fulfilled": {
+    "src": "shots/fulfilled.png",
+    "url": "http://127.0.0.1:5174/#/pages/fulfilled-wishes/index",
+    "w": 390,
+    "h": 844,
+    "focus": {
+      "first": {
+        "x": 16,
+        "y": 97,
+        "width": 358,
+        "height": 77
+      },
+      "second": {
+        "x": 16,
+        "y": 186,
+        "width": 358,
+        "height": 77
+      }
+    }
+  },
+  "buddy": {
+    "src": "shots/buddy.png",
+    "url": "http://127.0.0.1:5174/#/pages/foodie-buddy/index",
+    "w": 390,
+    "h": 844,
+    "focus": {
+      "summary": {
+        "x": 16,
+        "y": 93,
+        "width": 358,
+        "height": 152
+      },
+      "buddy": {
+        "x": 16,
+        "y": 307,
+        "width": 358,
+        "height": 90
+      },
+      "invite": {
+        "x": 16,
+        "y": 625,
+        "width": 358,
+        "height": 293
+      }
+    }
+  },
+  "poop": {
+    "src": "shots/poop.png",
+    "url": "http://127.0.0.1:5174/#/pages/poop/index",
+    "w": 390,
+    "h": 844,
+    "focus": {
+      "stats": {
+        "x": 16,
+        "y": 89,
+        "width": 358,
+        "height": 76
+      },
+      "calendar": {
+        "x": 16,
+        "y": 181,
+        "width": 358,
+        "height": 412
+      },
+      "day": {
+        "x": 16,
+        "y": 609,
+        "width": 358,
+        "height": 217
+      },
+      "advice": {
+        "x": 16,
+        "y": 842,
+        "width": 358,
+        "height": 158.59375
+      },
+      "reminder": {
+        "x": 16,
+        "y": 1016.59375,
+        "width": 358,
+        "height": 88
+      }
+    }
+  },
+  "poopAdd": {
+    "src": "shots/poopAdd.png",
+    "url": "http://127.0.0.1:5174/#/pages/poop/add",
+    "w": 390,
+    "h": 844,
+    "focus": {
+      "types": {
+        "x": 32,
+        "y": 139,
+        "width": 326,
+        "height": 290
+      },
+      "time": {
+        "x": 16,
+        "y": 461,
+        "width": 358,
+        "height": 107
+      },
+      "notes": {
+        "x": 16,
+        "y": 584,
+        "width": 358,
+        "height": 146
+      },
+      "save": {
+        "x": 16,
+        "y": 754,
+        "width": 358,
+        "height": 48
+      }
+    }
+  },
+  "profile": {
+    "src": "shots/profile.png",
+    "url": "http://127.0.0.1:5174/#/pages/profile/index",
+    "w": 390,
+    "h": 844,
+    "focus": {
+      "profile": {
+        "x": 0,
+        "y": 72,
+        "width": 390,
+        "height": 182
+      },
+      "stats": {
+        "x": 0,
+        "y": 254,
+        "width": 390,
+        "height": 73
+      },
+      "orders": {
+        "x": 0,
+        "y": 327,
+        "width": 390,
+        "height": 570
+      },
+      "first": {
+        "x": 16,
+        "y": 424,
+        "width": 358,
+        "height": 182
+      }
+    }
+  },
+  "history": {
+    "src": "shots/history.png",
+    "url": "http://127.0.0.1:5174/#/pages/history-menu/index",
+    "w": 390,
+    "h": 844,
+    "focus": {
+      "group": {
+        "x": 0,
+        "y": 81,
+        "width": 390,
+        "height": 231
+      },
+      "first": {
+        "x": 16,
+        "y": 130,
+        "width": 358,
+        "height": 182
+      }
+    }
+  }
+}
