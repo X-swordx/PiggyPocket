@@ -112,6 +112,9 @@ services:
       dockerfile: Dockerfile
     container_name: ${CONTAINER_PREFIX:-piggy}_admin
     restart: always
+    volumes:
+      # 官网静态站，挂在 admin 的 nginx 根目录下；发布时切换 site-current 软链
+      - /home/admin/PiggyPocket/site-current:/usr/share/nginx/html/site:ro
     networks:
       - piggy-network
     depends_on:
